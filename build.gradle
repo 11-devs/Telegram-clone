@@ -1,5 +1,7 @@
 plugins {
-    id 'java'
+    id("java")
+    id("org.openjfx.javafxplugin") version "0.0.13"
+    id("application")
 }
 
 group = 'AP'
@@ -12,6 +14,22 @@ repositories {
 dependencies {
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
+
+    implementation 'org.openjfx:javafx-controls:23.0.2'
+    implementation 'org.openjfx:javafx-fxml:23.0.2'
+
+    implementation 'com.jfoenix:jfoenix:9.0.10'
+}
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(23))
+    }
+}
+
+javafx {
+    version = "23.0.2"
+    modules = ["javafx.controls", "javafx.fxml"]
 }
 
 test {
