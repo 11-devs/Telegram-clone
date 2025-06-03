@@ -1,0 +1,31 @@
+.root {
+    -fx-background-color: #17212B;
+}
+
+.title {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+}
+
+.subtitle {
+    -fx-text-fill: #B0B3B8;
+    -fx-font-size: 14px;
+}
+
+.button {
+    -fx-background-color: #2F6EA5;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 16px;
+    -fx-padding: 10px 20px;
+    -fx-background-radius: 5px;
+}
+
+.button:hover {
+    -fx-background-color: #3476AB;
+}
+
+.verified {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
