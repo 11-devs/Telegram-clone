@@ -1,6 +1,6 @@
 plugins {
     id("java")
-    id("org.openjfx.javafxplugin") version "0.0.13"
+    id("org.openjfx.javafxplugin") version "0.1.0"
     id("application")
 }
 
@@ -30,6 +30,10 @@ java {
 javafx {
     version = "23.0.2"
     modules = ["javafx.controls", "javafx.fxml"]
+}
+
+application {
+    mainClass.set("Main")
 }
 
 test {
