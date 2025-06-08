@@ -1,7 +1,6 @@
 package Shared.Utils;
 import java.util.Scanner;
 
-
 public class Console {
     public enum Color {
         // Foreground Colors
