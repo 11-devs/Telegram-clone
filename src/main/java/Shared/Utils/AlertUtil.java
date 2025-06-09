@@ -2,17 +2,20 @@ package Shared.Utils;
 
 import javafx.scene.control.*;
 import javafx.scene.control.Alert.AlertType;
-import javafx.stage.Modality;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
 import java.util.Objects;
 
 public class AlertUtil {
+
+    private static final String LOGO_PATH = "/Client/images/TelegramLogo.png";
+
     public static void showAlert(AlertType type, String title, String headerText, String message) {
-        showAlert(type, title, headerText, message, null, "/css/alert.css");
+        showAlert(type, title, headerText, message, "/Client/css/alert.css");
     }
 
-    public static void showAlert(AlertType type, String title, String headerText, String message, Stage owner, String cssPath) {
+    public static void showAlert(AlertType type, String title, String headerText, String message, String cssPath) {
         try {
             Alert alert = new Alert(type);
             alert.setTitle(title);
@@ -21,10 +24,12 @@ public class AlertUtil {
             if (cssPath != null) {
                 alert.getDialogPane().getStylesheets().add(Objects.requireNonNull(AlertUtil.class.getResource(cssPath)).toExternalForm());
             }
-            if (owner != null) {
-                alert.initOwner(owner);
-                alert.initModality(Modality.WINDOW_MODAL);
-            }
+
+            Stage stage = (Stage) alert.getDialogPane().getScene().getWindow();
+            stage.getIcons().add(new Image(Objects.requireNonNull(
+                    AlertUtil.class.getResourceAsStream(LOGO_PATH)
+            )));
+
             alert.showAndWait();
         } catch (Exception e) {
             System.err.println("Error showing alert: " + e.getMessage());
@@ -52,6 +57,12 @@ public class AlertUtil {
         if (cssPath != null) {
             alert.getDialogPane().getStylesheets().add(Objects.requireNonNull(AlertUtil.class.getResource(cssPath)).toExternalForm());
         }
+
+        Stage stage = (Stage) alert.getDialogPane().getScene().getWindow();
+        stage.getIcons().add(new Image(Objects.requireNonNull(
+                AlertUtil.class.getResourceAsStream(LOGO_PATH)
+        )));
+
         alert.showAndWait();
         return alert;
     }
@@ -64,6 +75,12 @@ public class AlertUtil {
         if (cssPath != null) {
             dialog.getDialogPane().getStylesheets().add(Objects.requireNonNull(AlertUtil.class.getResource(cssPath)).toExternalForm());
         }
+
+        Stage stage = (Stage) dialog.getDialogPane().getScene().getWindow();
+        stage.getIcons().add(new Image(Objects.requireNonNull(
+                AlertUtil.class.getResourceAsStream(LOGO_PATH)
+        )));
+
         return dialog.showAndWait().orElse(null);
     }
 }
