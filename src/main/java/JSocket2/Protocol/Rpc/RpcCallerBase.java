@@ -1,0 +1,52 @@
+package JSocket2.Protocol.Rpc;
+
+import JSocket2.Core.Client.ConnectionManager;
+import JSocket2.Protocol.*;
+import com.google.gson.Gson;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+
+public class RpcCallerBase {
+    private final ConnectionManager connectionManager;
+    protected final Gson gson;
+    public RpcCallerBase(ConnectionManager connectionManager) {
+        this(connectionManager, new Gson());
+    }
+
+    public RpcCallerBase(ConnectionManager connectionManager, Gson gson) {
+        this.connectionManager = connectionManager;
+        this.gson = gson;
+    }
+
+    protected void callRpc(String controllerName, String actionName, Object payloadObject) throws IOException {
+        UUID requestId = UUID.randomUUID();
+        Message message = createRpcCallMessage(controllerName, actionName, payloadObject, requestId);
+        connectionManager.getClient().getMessageHandler().write(message);
+    }
+
+    private Message createRpcCallMessage(String controllerName, String actionName, Object payloadObject, UUID requestId) throws IOException {
+        RpcCallMetadata metadata = new RpcCallMetadata(controllerName, actionName);
+        String metadataJson = gson.toJson(metadata);
+        String payloadJson  = gson.toJson(payloadObject);
+        byte[] metadataBytes = metadataJson.getBytes(StandardCharsets.UTF_8);
+        byte[] payloadBytes  = payloadJson.getBytes(StandardCharsets.UTF_8);
+        MessageHeader header = MessageHeader.BuildRpcCallHeader(
+                requestId, true, metadataBytes.length, payloadBytes.length
+        );
+        return new Message(header, metadataBytes, payloadBytes);
+    }
+
+    protected <T> RpcResponse<T> callRpcAndGetResponse(String controllerName, String actionName, Object payloadObject,Class<T> responseClass) throws IOException {
+        UUID requestId = UUID.randomUUID();
+        Message message = createRpcCallMessage(controllerName, actionName, payloadObject, requestId);
+        CompletableFuture<Message> future = new CompletableFuture<>();
+        connectionManager.getClient().getPendingRequests().put(requestId, future);
+        connectionManager.getClient().getMessageHandler().write(message);
+        var responseMessage = future.join();
+        var response = RpcHelper.convertMessageToRpcResponse(responseMessage,responseClass);
+        return response;
+    }
+}
