@@ -1,20 +1,27 @@
 plugins {
     id 'java'
+    id 'org.openjfx.javafxplugin' version '0.0.14'
 }
 
 group = 'AP'
 version = '1.0-SNAPSHOT'
 
+javafx {
+    version = '21'
+    modules = ['javafx.controls', 'javafx.fxml']
+}
+
 repositories {
     mavenCentral()
 }
+
 dependencies {
     implementation 'org.postgresql:postgresql:42.6.0' // or latest version
     implementation 'jakarta.persistence:jakarta.persistence-api:3.1.0'
     implementation 'org.hibernate.orm:hibernate-core:6.4.2.Final'
     implementation 'org.postgresql:postgresql:42.6.0'
     implementation 'com.zaxxer:HikariCP:5.0.1'
-
+    implementation 'com.google.code.gson:gson:2.10.1'
 }
 
 test {

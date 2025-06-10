@@ -4,8 +4,6 @@ import Shared.Models.Account.Account;
 import Shared.Models.BaseEntity;
 import jakarta.persistence.*;
 
-import java.time.LocalDateTime;
-
 @Entity
 @Table(name = "contacts",
         uniqueConstraints = @UniqueConstraint(columnNames = {"owner_id", "contact_id"}))

@@ -1,11 +1,7 @@
 package Shared.Models.Account;
 
 import Shared.Models.BaseEntity;
-import Shared.Models.Chat.Chat;
-
 import jakarta.persistence.*;
-import java.util.HashSet;
-import java.util.Set;
 
 @Entity
 @Table(name = "accounts")

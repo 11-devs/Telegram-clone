@@ -10,7 +10,6 @@ import java.time.LocalDateTime;
 @Inheritance(strategy = InheritanceType.JOINED)
 @Table(name = "messages")
 public abstract class Message extends BaseEntity {
-
     @ManyToOne(optional = false)
     @JoinColumn(name = "sender_id")
     private Account sender;
