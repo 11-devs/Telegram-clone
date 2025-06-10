@@ -25,7 +25,7 @@ public class Main extends Application {
 
         // Set icon for app
         primaryStage.getIcons().add(new Image(Objects.requireNonNull(
-                AlertUtil.class.getResourceAsStream(LOGO_PATH)
+                Main.class.getResourceAsStream(LOGO_PATH)
         )));
 
         // Setting the scene and window display
