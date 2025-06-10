@@ -1,12 +1,16 @@
+import Shared.Utils.AlertUtil;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
 import java.util.Objects;
 
 public class Main extends Application {
+
+    private static final String LOGO_PATH = "/Client/images/TelegramLogo.png";
 
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -18,6 +22,11 @@ public class Main extends Application {
 
         // Set window title
         primaryStage.setTitle("Telegram Desktop");
+
+        // Set icon for app
+        primaryStage.getIcons().add(new Image(Objects.requireNonNull(
+                AlertUtil.class.getResourceAsStream(LOGO_PATH)
+        )));
 
         // Setting the scene and window display
         primaryStage.setScene(scene);
