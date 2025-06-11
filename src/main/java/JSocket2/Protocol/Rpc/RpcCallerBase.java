@@ -5,7 +5,9 @@ import JSocket2.Protocol.*;
 import com.google.gson.Gson;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -39,7 +41,7 @@ public class RpcCallerBase {
         return new Message(header, metadataBytes, payloadBytes);
     }
 
-    protected <T> RpcResponse<T> callRpcAndGetResponse(String controllerName, String actionName, Object payloadObject,Class<T> responseClass) throws IOException {
+    protected <T> RpcResponse<T> callRpcAndGetResponse(String controllerName, String actionName, Object payloadObject, Class<T> responseClass) throws IOException {
         UUID requestId = UUID.randomUUID();
         Message message = createRpcCallMessage(controllerName, actionName, payloadObject, requestId);
         CompletableFuture<Message> future = new CompletableFuture<>();
@@ -47,6 +49,16 @@ public class RpcCallerBase {
         connectionManager.getClient().getMessageHandler().write(message);
         var responseMessage = future.join();
         var response = RpcHelper.convertMessageToRpcResponse(responseMessage,responseClass);
+        return response;
+    }
+    protected <T> RpcResponse<List<T>> callRpcAndGetListResponse(String controllerName, String actionName, Object payloadObject, Class<T> responseClass) throws IOException {
+        UUID requestId = UUID.randomUUID();
+        Message message = createRpcCallMessage(controllerName, actionName, payloadObject, requestId);
+        CompletableFuture<Message> future = new CompletableFuture<>();
+        connectionManager.getClient().getPendingRequests().put(requestId, future);
+        connectionManager.getClient().getMessageHandler().write(message);
+        var responseMessage = future.join();
+        var response = RpcHelper.convertMessageToRpcListResponse(responseMessage,responseClass);
         return response;
     }
 }

@@ -25,6 +25,10 @@ public class ServerApplicationBuilder {
         this.rpcDispatcher.registerAction(controller,action,modelType);
         return this;
     }
+    public <T> ServerApplicationBuilder addAction(String controller, String action) {
+        this.rpcDispatcher.registerAction(controller,action,null);
+        return this;
+    }
     public ServerApplication build() throws IOException {
         if(!canBuild()){
             throw new RuntimeException("Can't build ServerApplication");

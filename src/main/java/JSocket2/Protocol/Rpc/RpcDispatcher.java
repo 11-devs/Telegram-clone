@@ -32,13 +32,16 @@ public class RpcDispatcher {
         String key = metadata.getController() + "/" + metadata.getAction();
         Object controller = controllers.get(metadata.getController());
         if (controller == null) throw new RuntimeException("Controller not registered: " + metadata.getController());
-
         Class<?> modelType = modelMap.get(key);
-        if (modelType == null) throw new RuntimeException("No model found for route: " + key);
-        Object methodModel = gson.fromJson(payload_json, modelType);
         try {
-            Method method = controller.getClass().getMethod(metadata.getAction(), modelType);
-            return (RpcResponse<?>) method.invoke(controller, methodModel);
+            if(modelType == null){
+                Method method = controller.getClass().getMethod(metadata.getAction());
+                return (RpcResponse<?>) method.invoke(controller);
+            }else{
+                Object methodModel = gson.fromJson(payload_json, modelType);
+                Method method = controller.getClass().getMethod(metadata.getAction(), modelType);
+                return (RpcResponse<?>) method.invoke(controller, methodModel);
+            }
         } catch (NoSuchMethodException e) {
             throw new RuntimeException("Action method not found: " + metadata.getAction());
         } catch (Exception e) {
