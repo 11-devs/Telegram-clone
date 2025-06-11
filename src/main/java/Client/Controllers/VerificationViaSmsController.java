@@ -11,7 +11,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
-public class VerificationViaTelegramController {
+public class VerificationViaSmsController {
     @FXML
     private VBox root;
 
@@ -28,7 +28,6 @@ public class VerificationViaTelegramController {
 
     @FXML
     private void initialize() {
-
         // Animation of moving from a little further right to the main target
         if (root != null) {
             root.setTranslateX(75);
@@ -144,8 +143,8 @@ public class VerificationViaTelegramController {
     }
 
     @FXML
-    private void handleSmsLinkClick() {
-        // Switch to SMS login page
-        SceneUtil.changeSceneWithSameSize(code1, "/Client/fxml/VerificationViaSms.fxml");
+    private void handleTelegramLinkClick() {
+        // Switch to Telegram login page
+        SceneUtil.changeSceneWithSameSize(code1, "/Client/fxml/VerificationViaTelegram.fxml");
     }
 }
