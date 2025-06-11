@@ -7,7 +7,7 @@ import javafx.util.Duration;
 
 import static Shared.Utils.SceneUtil.changeSceneWithSameSize;
 
-public class Welcome {
+public class WelcomeController {
     @FXML
     private VBox root;
 
