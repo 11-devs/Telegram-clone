@@ -1,6 +1,5 @@
 package JSocket2.Core.Client;
 
-import JSocket2.Example.ProcessListener;
 import JSocket2.Protocol.*;
 
 import java.io.IOException;
@@ -66,7 +65,17 @@ public class ClientApplication {
     public boolean isConnected() {
         return connectedProperty.get();
     }
+    private void onConnected() {
+        Platform.runLater(() -> {
+            connectedProperty.set(true);
+        });
+    }
 
+    private void onDisconnected() {
+        Platform.runLater(() -> {
+            connectedProperty.set(false);
+        });
+    }
     public boolean connect() {
         try {
             socket = new Socket(host, port);
@@ -75,7 +84,7 @@ public class ClientApplication {
             InputStream in = socket.getInputStream();
 
             messageHandler = new MessageHandler(in, out, clientSession);
-            messageProcessor = new ClientMessageProcessor(messageHandler, clientSession, pendingRequests, getFileTransferManager());
+            messageProcessor = new ClientMessageProcessor(messageHandler, clientSession, pendingRequests, getFileTransferManager(),this::onConnected);
             messageListener = new MessageListener(messageHandler, pendingRequests, messageProcessor, clientSession, connectionEventListener);
 
             listenerThread = new Thread(messageListener);
@@ -83,19 +92,13 @@ public class ClientApplication {
             listenerThread.start();
 
             running.set(true);
-            Platform.runLater(() -> connectedProperty.set(true));
 
-            doHandshake();
             return true;
         } catch (IOException e) {
             running.set(false);
-            Platform.runLater(() -> connectedProperty.set(false));
+            onDisconnected();
             return false;
         }
-    }
-
-    private void doHandshake() {
-        // TODO: Implement if needed
     }
 
     public void shutdown() {

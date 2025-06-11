@@ -4,6 +4,7 @@ import JSocket2.Protocol.Authentication.AuthProcessState;
 import JSocket2.Protocol.Authentication.IAccessKeyManager;
 import JSocket2.Core.Client.ClientSession;
 import JSocket2.Cryptography.EncryptionUtil;
+import JSocket2.Protocol.Rpc.RpcHelper;
 import JSocket2.Protocol.Rpc.RpcResponseMetadata;
 import JSocket2.Protocol.Transfer.ClientFileTransferManager;
 import com.google.gson.Gson;
@@ -23,7 +24,9 @@ public class ClientMessageProcessor implements IMessageProcessor {
     private final ClientFileTransferManager fileTransferManager;
     private final Map<UUID, CompletableFuture<Message>> pendingRequests;
     private IAccessKeyManager accessKeyManager;
-    public ClientMessageProcessor(MessageHandler handler, ClientSession clientSession,Map<UUID, CompletableFuture<Message>> pendingRequests,ClientFileTransferManager fileTransferManager){
+    private final Runnable onHandShakeComplete;
+    public ClientMessageProcessor(MessageHandler handler, ClientSession clientSession, Map<UUID, CompletableFuture<Message>> pendingRequests, ClientFileTransferManager fileTransferManager, Runnable onHandShakeComplete){
+        this.onHandShakeComplete = onHandShakeComplete;
         this.gson = new Gson();
         this.messageHandler = handler;
         this.clientSession = clientSession;
@@ -81,6 +84,10 @@ public class ClientMessageProcessor implements IMessageProcessor {
         Message message = new Message(header);
         message.setPayload(encrypted_aes_key);
         messageHandler.write(message);
+        if(onHandShakeComplete != null){
+            onHandShakeComplete.run();
+        }
+
     }
 
 
