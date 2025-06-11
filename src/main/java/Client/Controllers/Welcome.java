@@ -15,13 +15,15 @@ public class Welcome {
         // Animation of moving from slightly lower to the original position
         if (root != null) {
             root.setTranslateY(75); // Starting a little lower (e.g. 75 pixels lower)
-            TranslateTransition transition = new TranslateTransition(Duration.seconds(0.5), root); // Duration 0.5 second
+            TranslateTransition transition = new TranslateTransition(Duration.seconds(0.75), root); // Duration 0.75 second
             transition.setToY(0); // Return to the original position (center)
             transition.setAutoReverse(false);
             transition.setCycleCount(1);
             transition.play();
         }
     }
+
+    // TODO: Connect to the server
 
     @FXML
     private void startMessaging() {
