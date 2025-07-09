@@ -1,4 +1,5 @@
 import Shared.Utils.AlertUtil;
+import Shared.Utils.DialogUtil;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
@@ -32,13 +33,16 @@ public class DialogTest extends Application {
         Button inputButton = new Button("Show Text Input Dialog");
         inputButton.setOnAction(e -> showTextInputDialog());
 
-        root.getChildren().addAll(infoButton, warningButton, errorButton, inputButton);
+        Button notifyButton = new Button("Show notify Dialog");
+        notifyButton.setOnAction(e -> showNotifyDialog(primaryStage));
+
+        root.getChildren().addAll(infoButton, warningButton, errorButton, inputButton, notifyButton);
 
         primaryStage.getIcons().add(new Image(Objects.requireNonNull(
                 AlertUtil.class.getResourceAsStream(LOGO_PATH)
         )));
 
-        Scene scene = new Scene(root, 300, 200);
+        Scene scene = new Scene(root, 800, 700);
         primaryStage.setScene(scene);
         primaryStage.show();
     }
@@ -60,6 +64,10 @@ public class DialogTest extends Application {
         if (result != null) {
             System.out.println("Your name: " + result);
         }
+    }
+
+    private void showNotifyDialog(Stage primaryStage) {
+        DialogUtil.showNotificationDialog(primaryStage,"notification...\nnotification...\nnotification...");
     }
 
     public static void main(String[] args) {
