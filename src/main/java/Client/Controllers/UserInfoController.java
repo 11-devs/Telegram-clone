@@ -46,7 +46,7 @@ public class UserInfoController implements Initializable {
         }
         // Animation of moving from a little further lower to the main target
         if (signUpButton != null) {
-            signUpButton.setTranslateY(75);
+            signUpButton.setTranslateY(50);
             var transition = new javafx.animation.TranslateTransition(javafx.util.Duration.seconds(0.5), signUpButton);
             transition.setToY(0);
             transition.setAutoReverse(false);

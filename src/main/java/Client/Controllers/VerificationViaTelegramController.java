@@ -47,7 +47,7 @@ public class VerificationViaTelegramController {
         }
         // Animation of moving from a little further lower to the main target
         if (nextButton != null) {
-            nextButton.setTranslateY(75);
+            nextButton.setTranslateY(50);
             var transition = new javafx.animation.TranslateTransition(javafx.util.Duration.seconds(0.5), nextButton);
             transition.setToY(0);
             transition.setAutoReverse(false);
