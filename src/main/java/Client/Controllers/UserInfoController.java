@@ -22,6 +22,8 @@ public class UserInfoController implements Initializable {
     @FXML
     private VBox root;
     @FXML
+    public VBox infoBox;
+    @FXML
     private TextField firstNameField;
     @FXML
     private TextField lastNameField;
@@ -34,10 +36,19 @@ public class UserInfoController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         System.out.println("Controller initialized successfully");
         // Animation of moving from a little further right to the main target
-        if (root != null) {
-            root.setTranslateX(75);
-            var transition = new javafx.animation.TranslateTransition(javafx.util.Duration.seconds(0.5), root);
+        if (infoBox != null) {
+            infoBox.setTranslateX(75);
+            var transition = new javafx.animation.TranslateTransition(javafx.util.Duration.seconds(0.5), infoBox);
             transition.setToX(0);
+            transition.setAutoReverse(false);
+            transition.setCycleCount(1);
+            transition.play();
+        }
+        // Animation of moving from a little further lower to the main target
+        if (signUpButton != null) {
+            signUpButton.setTranslateY(75);
+            var transition = new javafx.animation.TranslateTransition(javafx.util.Duration.seconds(0.5), signUpButton);
+            transition.setToY(0);
             transition.setAutoReverse(false);
             transition.setCycleCount(1);
             transition.play();

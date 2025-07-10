@@ -13,42 +13,46 @@
    <children>
       <VBox fx:id="root" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="386.0" prefWidth="294.0">
          <children>
-            <Label fx:id="phoneLabel" styleClass="phone-label" text="Email">
-               <font>
-                  <Font name="System" size="18.0" />
-               </font>
-               <VBox.margin>
-                  <Insets top="50.0" />
-               </VBox.margin>
-            </Label>
-            <Label fx:id="infoLabel" maxWidth="431.0" prefHeight="20.0" prefWidth="292.0" styleClass="info-label" text="A code was sent via Email to your other">
-               <font>
-                  <Font name="System" size="14.0" />
-               </font>
-               <VBox.margin>
-                  <Insets top="10.0" />
-               </VBox.margin>
-            </Label>
-            <Label fx:id="infoLabel1" maxWidth="310.0" prefHeight="20.0" prefWidth="310.0" styleClass="info-label" text="devices, if you have any connected.">
-               <font>
-                  <Font name="System" size="14.0" />
-               </font>
-               <VBox.margin>
-                  <Insets />
-               </VBox.margin>
-            </Label>
-            <HBox fx:id="codeFields" alignment="CENTER" prefHeight="50.0" prefWidth="365.0" spacing="10.0" styleClass="code-fields">
+            <VBox fx:id="infoBox" prefHeight="254.0" prefWidth="294.0">
                <children>
-                  <TextField fx:id="code1" prefHeight="50.0" prefWidth="40.0" styleClass="code-field" />
-                  <TextField fx:id="code2" prefHeight="50.0" prefWidth="40.0" styleClass="code-field" />
-                  <TextField fx:id="code3" prefHeight="50.0" prefWidth="40.0" styleClass="code-field" />
-                  <TextField fx:id="code4" prefHeight="50.0" prefWidth="40.0" styleClass="code-field" />
-                  <TextField fx:id="code5" prefHeight="50.0" prefWidth="40.0" styleClass="code-field" />
+                  <Label fx:id="phoneLabel" styleClass="phone-label" text="Email">
+                     <font>
+                        <Font name="System" size="18.0" />
+                     </font>
+                     <VBox.margin>
+                        <Insets top="50.0" />
+                     </VBox.margin>
+                  </Label>
+                  <Label fx:id="infoLabel" maxWidth="431.0" prefHeight="20.0" prefWidth="292.0" styleClass="info-label" text="A code was sent via Email to your other">
+                     <font>
+                        <Font name="System" size="14.0" />
+                     </font>
+                     <VBox.margin>
+                        <Insets top="10.0" />
+                     </VBox.margin>
+                  </Label>
+                  <Label fx:id="infoLabel1" maxWidth="310.0" prefHeight="20.0" prefWidth="310.0" styleClass="info-label" text="devices, if you have any connected.">
+                     <font>
+                        <Font name="System" size="14.0" />
+                     </font>
+                     <VBox.margin>
+                        <Insets />
+                     </VBox.margin>
+                  </Label>
+                  <HBox fx:id="codeFields" alignment="CENTER" prefHeight="50.0" prefWidth="365.0" spacing="10.0" styleClass="code-fields">
+                     <children>
+                        <TextField fx:id="code1" prefHeight="50.0" prefWidth="40.0" styleClass="code-field" />
+                        <TextField fx:id="code2" prefHeight="50.0" prefWidth="40.0" styleClass="code-field" />
+                        <TextField fx:id="code3" prefHeight="50.0" prefWidth="40.0" styleClass="code-field" />
+                        <TextField fx:id="code4" prefHeight="50.0" prefWidth="40.0" styleClass="code-field" />
+                        <TextField fx:id="code5" prefHeight="50.0" prefWidth="40.0" styleClass="code-field" />
+                     </children>
+                     <VBox.margin>
+                        <Insets top="50.0" />
+                     </VBox.margin>
+                  </HBox>
                </children>
-               <VBox.margin>
-                  <Insets top="50.0" />
-               </VBox.margin>
-            </HBox>
+            </VBox>
             <Button fx:id="nextButton" onMouseClicked="#handleNext" prefHeight="42.0" prefWidth="294.0" styleClass="next-button" text="Next">
                <VBox.margin>
                   <Insets top="30.0" />

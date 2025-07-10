@@ -5,6 +5,7 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.animation.TranslateTransition;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -14,6 +15,9 @@ import javafx.util.Duration;
 public class VerificationViaSmsController {
     @FXML
     private VBox root;
+
+    @FXML
+    private VBox infoBox;
 
     @FXML
     private TextField code1;
@@ -27,12 +31,24 @@ public class VerificationViaSmsController {
     private TextField code5;
 
     @FXML
+    public Button nextButton;
+
+    @FXML
     private void initialize() {
         // Animation of moving from a little further right to the main target
-        if (root != null) {
-            root.setTranslateX(75);
-            TranslateTransition transition = new TranslateTransition(Duration.seconds(0.5), root);
+        if (infoBox != null) {
+            infoBox.setTranslateX(75);
+            var transition = new javafx.animation.TranslateTransition(javafx.util.Duration.seconds(0.5), infoBox);
             transition.setToX(0);
+            transition.setAutoReverse(false);
+            transition.setCycleCount(1);
+            transition.play();
+        }
+        // Animation of moving from a little further lower to the main target
+        if (nextButton != null) {
+            nextButton.setTranslateY(75);
+            var transition = new javafx.animation.TranslateTransition(javafx.util.Duration.seconds(0.5), nextButton);
+            transition.setToY(0);
             transition.setAutoReverse(false);
             transition.setCycleCount(1);
             transition.play();
