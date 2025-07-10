@@ -8,6 +8,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
+import javafx.scene.shape.Circle;
 import javafx.stage.FileChooser;
 
 import java.io.File;
@@ -57,10 +58,8 @@ public class UserInfoController implements Initializable {
         }
     }
 
-    // TODO: There is a problem with vertical stretching of long photos
     @FXML
     private void handleUploadPhoto(MouseEvent event) {
-
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Select Profile Photo");
         fileChooser.getExtensionFilters().addAll(
@@ -73,21 +72,51 @@ public class UserInfoController implements Initializable {
             long maxSizeBytes = 10L * 1024 * 1024; // 10 MB
             long fileSizeBytes = selectedFile.length();
             if (fileSizeBytes <= maxSizeBytes) {
-                // Load image and crop to fit within 168x171, centered
+                // Load image
                 Image originalImage = new Image(selectedFile.toURI().toString());
-                double fitWidth = 171.0; // Fixed width from FXML
-                double fitHeight = 168.0; // Fixed height from FXML
-                // Create a temporary ImageView to handle the cropping
-                ImageView tempView = new ImageView(originalImage);
-                tempView.setFitWidth(fitWidth);
-                tempView.setFitHeight(fitHeight);
-                tempView.setPreserveRatio(false); // Allow stretching to fit
-                // Set the cropped image to the main ImageView
-                photoPreview.setFitWidth(fitWidth);
-                photoPreview.setFitHeight(fitHeight);
-                photoPreview.setPreserveRatio(false);
-                photoPreview.setImage(originalImage);
-                System.out.println("Image loaded successfully with fixed size and centered crop");
+                double originalWidth = originalImage.getWidth();
+                double originalHeight = originalImage.getHeight();
+
+                // Calculate the target aspect ratio (171:168 ≈ 1.019)
+                double targetAspectRatio = 171.0 / 168.0;
+                double imageAspectRatio = originalWidth / originalHeight;
+
+                // Determine the crop dimensions to match the target aspect ratio
+                double cropWidth, cropHeight;
+                if (imageAspectRatio > targetAspectRatio) {
+                    // Image is wider than target, crop width
+                    cropWidth = originalHeight * targetAspectRatio;
+                    cropHeight = originalHeight;
+                } else {
+                    // Image is taller than target, crop height
+                    cropWidth = originalWidth;
+                    cropHeight = originalWidth / targetAspectRatio;
+                }
+
+                // Calculate the starting points for centered crop
+                double startX = (originalWidth - cropWidth) / 2;
+                double startY = (originalHeight - cropHeight) / 2;
+
+                // Create a cropped image (zoom effect)
+                javafx.scene.image.PixelReader pixelReader = originalImage.getPixelReader();
+                javafx.scene.image.WritableImage croppedImage = new javafx.scene.image.WritableImage(pixelReader, (int)startX, (int)startY, (int)cropWidth, (int)cropHeight);
+
+                // Set the cropped image to photoPreview
+                photoPreview.setImage(croppedImage);
+                photoPreview.setFitWidth(171.0); // Fixed width
+                photoPreview.setFitHeight(168.0); // Fixed height
+                photoPreview.setPreserveRatio(false); // Allow fitting to fixed size
+
+                // Apply circular clip with fixed radius
+                Circle clip = new Circle();
+                clip.setCenterX(85.5); // Center based on FXML design
+                clip.setCenterY(84.0); // Center based on FXML design
+                clip.setRadius(84.0); // Fixed radius to match FXML design
+
+                // Apply the clip to photoPreview
+                photoPreview.setClip(clip);
+
+                System.out.println("Image loaded successfully with zoom, centered crop, and fixed circular clip. Original Size: " + originalWidth + "x" + originalHeight + ", Cropped Size: " + cropWidth + "x" + cropHeight);
             } else {
                 System.out.println("File size exceeds 10 MB limit. Please select a smaller image.");
             }

@@ -14,7 +14,13 @@ public class Main extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
         // Upload FXML file
+        // --------------------------------
+        // Main order
         Parent root = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("/Client/fxml/welcome.fxml")));
+        // --------------------------------
+        // Custom order
+        // Parent root = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("/Client/fxml/userInfo.fxml")));
+        // --------------------------------
 
         // Create a scene
         Scene scene = new Scene(root); // Initial size according to FXML
