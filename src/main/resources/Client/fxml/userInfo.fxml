@@ -36,14 +36,14 @@
                       </Label>
                       <HBox prefHeight="211.0" prefWidth="442.0">
                           <children>
-                              <HBox alignment="CENTER" prefHeight="168.0" prefWidth="171.0" spacing="20.0">
+                              <HBox alignment="CENTER" prefHeight="201.0" prefWidth="186.0" spacing="20.0">
                                   <children>
-                                      <ImageView fx:id="photoPreview" fitHeight="168.0" fitWidth="171.0" onMouseClicked="#handleUploadPhoto" preserveRatio="true" styleClass="profile-image">
+                                      <ImageView fx:id="photoPreview" fitHeight="174.0" fitWidth="174.0" onMouseClicked="#handleUploadPhoto" preserveRatio="true" styleClass="profile-image">
                                           <clip>
                                               <Circle centerX="85.5" centerY="84.0" radius="84.0" />
                                           </clip>
                                           <image>
-                                              <Image url="@../images/11devs.png" />
+                                              <Image url="@../images/11Devs-white.png" />
                                           </image>
                                       </ImageView>
                                   </children>
