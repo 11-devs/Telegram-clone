@@ -18,6 +18,8 @@ dependencies {
     implementation 'org.openjfx:javafx-controls:23.0.2'
     implementation 'org.openjfx:javafx-fxml:23.0.2'
 
+    implementation 'com.google.code.gson:gson:2.10.1'
+
     implementation 'com.jfoenix:jfoenix:9.0.10'
 }
 
