@@ -11,7 +11,11 @@ import javafx.scene.layout.VBox;
 import javafx.scene.shape.Circle;
 import javafx.stage.FileChooser;
 
+import javax.imageio.ImageIO;
+import javax.imageio.stream.ImageInputStream;
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
 
@@ -83,51 +87,85 @@ public class UserInfoController implements Initializable {
             long maxSizeBytes = 10L * 1024 * 1024; // 10 MB
             long fileSizeBytes = selectedFile.length();
             if (fileSizeBytes <= maxSizeBytes) {
-                // Load image
-                Image originalImage = new Image(selectedFile.toURI().toString());
-                double originalWidth = originalImage.getWidth();
-                double originalHeight = originalImage.getHeight();
+                ImageInputStream inputStream = null;
+                try {
+                    // Load image using ImageIO to check dimensions
+                    inputStream = ImageIO.createImageInputStream(selectedFile);
+                    if (inputStream == null) {
+                        System.err.println("Failed to create ImageInputStream for file: " + selectedFile.getAbsolutePath());
+                        return;
+                    }
+                    BufferedImage bufferedImage = ImageIO.read(inputStream);
+                    if (bufferedImage == null) {
+                        System.err.println("Failed to read image from file: " + selectedFile.getAbsolutePath());
+                        return;
+                    }
+                    double originalWidth = bufferedImage.getWidth();
+                    double originalHeight = bufferedImage.getHeight();
+                    if (originalWidth <= 0 || originalHeight <= 0) {
+                        System.err.println("Invalid image dimensions: " + originalWidth + "x" + originalHeight);
+                        return;
+                    }
 
-                // Calculate the target aspect ratio (171:168 ≈ 1.019)
-                double targetAspectRatio = 171.0 / 168.0;
-                double imageAspectRatio = originalWidth / originalHeight;
+                    // Load into JavaFX Image
+                    Image originalImage = new Image(selectedFile.toURI().toString());
+                    if (originalImage.isError()) {
+                        System.err.println("Failed to load image into JavaFX: " + originalImage.getException().getMessage());
+                        return;
+                    }
 
-                // Determine the crop dimensions to match the target aspect ratio
-                double cropWidth, cropHeight;
-                if (imageAspectRatio > targetAspectRatio) {
-                    // Image is wider than target, crop width
-                    cropWidth = originalHeight * targetAspectRatio;
-                    cropHeight = originalHeight;
-                } else {
-                    // Image is taller than target, crop height
-                    cropWidth = originalWidth;
-                    cropHeight = originalWidth / targetAspectRatio;
+                    // Set the original image to photoPreview if cropping fails
+                    photoPreview.setImage(originalImage);
+                    photoPreview.setFitWidth(171.0); // Fixed width
+                    photoPreview.setFitHeight(168.0); // Fixed height
+                    photoPreview.setPreserveRatio(true); // Keep aspect ratio
+
+                    // Apply circular clip with fixed radius
+                    Circle clip = new Circle();
+                    clip.setCenterX(85.5); // Center based on FXML design
+                    clip.setCenterY(84.0); // Center based on FXML design
+                    clip.setRadius(84.0); // Fixed radius to match FXML design
+
+                    // Apply the clip to photoPreview
+                    photoPreview.setClip(clip);
+
+                    // Try cropping if PixelReader is available
+                    javafx.scene.image.PixelReader pixelReader = originalImage.getPixelReader();
+                    if (pixelReader != null) {
+                        // Calculate the target aspect ratio (171:168 ≈ 1.019)
+                        double targetAspectRatio = 171.0 / 168.0;
+                        double imageAspectRatio = originalWidth / originalHeight;
+
+                        // Determine the crop dimensions to match the target aspect ratio
+                        double cropWidth, cropHeight;
+                        if (imageAspectRatio > targetAspectRatio) {
+                            // Image is wider than target, crop width
+                            cropWidth = originalHeight * targetAspectRatio;
+                            cropHeight = originalHeight;
+                        } else {
+                            // Image is taller than target, crop height
+                            cropWidth = originalWidth;
+                            cropHeight = originalWidth / targetAspectRatio;
+                        }
+
+                        // Calculate the starting points for centered crop
+                        double startX = (originalWidth - cropWidth) / 2;
+                        double startY = (originalHeight - cropHeight) / 2;
+
+                        // Create a cropped image
+                        javafx.scene.image.WritableImage croppedImage = new javafx.scene.image.WritableImage(pixelReader, (int)startX, (int)startY, (int)cropWidth, (int)cropHeight);
+
+                        // Update photoPreview with cropped image
+                        photoPreview.setImage(croppedImage);
+                        photoPreview.setPreserveRatio(false); // Allow fitting to fixed size
+
+                        System.out.println("Image loaded successfully with zoom, centered crop, and fixed circular clip. Original Size: " + originalWidth + "x" + originalHeight + ", Cropped Size: " + cropWidth + "x" + cropHeight);
+                    } else {
+                        System.out.println("PixelReader is null, using original image without crop. Original Size: " + originalWidth + "x" + originalHeight);
+                    }
+                } catch (IOException e) {
+                    System.err.println("Error loading or processing image: " + e.getMessage());
                 }
-
-                // Calculate the starting points for centered crop
-                double startX = (originalWidth - cropWidth) / 2;
-                double startY = (originalHeight - cropHeight) / 2;
-
-                // Create a cropped image (zoom effect)
-                javafx.scene.image.PixelReader pixelReader = originalImage.getPixelReader();
-                javafx.scene.image.WritableImage croppedImage = new javafx.scene.image.WritableImage(pixelReader, (int)startX, (int)startY, (int)cropWidth, (int)cropHeight);
-
-                // Set the cropped image to photoPreview
-                photoPreview.setImage(croppedImage);
-                photoPreview.setFitWidth(171.0); // Fixed width
-                photoPreview.setFitHeight(168.0); // Fixed height
-                photoPreview.setPreserveRatio(false); // Allow fitting to fixed size
-
-                // Apply circular clip with fixed radius
-                Circle clip = new Circle();
-                clip.setCenterX(85.5); // Center based on FXML design
-                clip.setCenterY(84.0); // Center based on FXML design
-                clip.setRadius(84.0); // Fixed radius to match FXML design
-
-                // Apply the clip to photoPreview
-                photoPreview.setClip(clip);
-
-                System.out.println("Image loaded successfully with zoom, centered crop, and fixed circular clip. Original Size: " + originalWidth + "x" + originalHeight + ", Cropped Size: " + cropWidth + "x" + cropHeight);
             } else {
                 System.out.println("File size exceeds 10 MB limit. Please select a smaller image.");
             }
