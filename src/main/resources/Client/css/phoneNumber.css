@@ -16,7 +16,8 @@
 .continue-button {
     -fx-background-color: #2F6EA5;
     -fx-text-fill: #FFFFFF;
-    -fx-font-size: 14px;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
     -fx-padding: 10px 20px;
     -fx-background-radius: 5px;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 5, 0.5, 0, 0);
