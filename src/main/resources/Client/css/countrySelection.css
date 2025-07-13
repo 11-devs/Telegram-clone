@@ -1,0 +1,86 @@
+.root {
+    -fx-background-color: #17212B;
+    -fx-background-radius: 10px;
+    -fx-padding: 10px;
+}
+
+.Select-Country-label {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 18px;
+}
+
+.search-field {
+    -fx-background-color: #17212B;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 14px;
+    -fx-prompt-text-fill: #313C49;
+    -fx-padding: 5px;
+    -fx-border-color: transparent transparent #313C49 transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.search-field:focused {
+    -fx-border-color: transparent transparent #6AB2F2 transparent;
+}
+
+.country-list {
+    -fx-background-color: #17212B;
+}
+
+.country-list .list-cell {
+    -fx-background-color: #17212B;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 14px;
+    -fx-padding: 5px;
+}
+
+.country-list .list-cell:hover {
+    -fx-background-color: #232E3C;
+}
+
+/* Style for scroll bar */
+.country-list .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-pref-width: 6px; /* Navigation bar width */
+    -fx-padding: 0; /* Remove extra padding */
+}
+
+.country-list .scroll-bar:vertical .track {
+    -fx-background-color: #1E293B;
+    -fx-border-color: transparent;
+    -fx-background-radius: 4px; /* Rounded corners */
+}
+
+.country-list .scroll-bar:vertical .thumb {
+    -fx-background-color: #4A5568; /* Bar handle color */
+    -fx-background-radius: 4px; /* Rounded corners of the handle */
+    -fx-pref-width: 4px; /* Handle width */
+}
+
+.country-list .scroll-bar:vertical .thumb:hover {
+    -fx-background-color: #6AB2F2; /* Hover handle color */
+}
+
+.country-list .scroll-bar:vertical .increment-button,
+.country-list .scroll-bar:vertical .decrement-button {
+    -fx-background-color: transparent; /* Transparent up and down buttons */
+    -fx-padding: 0; /* Remove extra padding */
+}
+
+.country-list .scroll-bar:vertical .increment-button .increment-arrow,
+.country-list .scroll-bar:vertical .decrement-button .decrement-arrow {
+    -fx-shape: " "; /* Remove button arrows */
+    -fx-padding: 0; /* Remove extra padding */
+}
+
+.close-button {
+    -fx-background-color: #17212B;
+    -fx-text-fill: #6AB2F2;
+    -fx-font-size: 14px;
+    -fx-padding: 5px 15px;
+    -fx-background-radius: 5px;
+}
+
+.close-button:hover {
+    -fx-background-color: #1D2A39;
+}
