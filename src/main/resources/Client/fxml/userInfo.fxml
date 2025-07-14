@@ -7,78 +7,116 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.shape.Circle?>
+<?import javafx.scene.shape.SVGPath?>
 <?import javafx.scene.text.Font?>
 
-<VBox alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="650.0" prefWidth="790.0" stylesheets="@../css/userInfo.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.Controllers.UserInfoController">
-    <children>
-        <VBox fx:id="root" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="474.0" prefWidth="442.0">
-            <children>
-            <VBox fx:id="infoBox" prefHeight="323.0" prefWidth="442.0">
+
+<BorderPane stylesheets="@../css/userInfo.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.Controllers.UserInfoController">
+   <center>
+      <VBox alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="650.0" prefWidth="790.0">
+          <children>
+              <VBox fx:id="root" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="474.0" prefWidth="442.0">
+                  <children>
+                  <VBox fx:id="infoBox" prefHeight="323.0" prefWidth="442.0">
+                     <children>
+                            <Label styleClass="title" text="Your Info">
+                                <font>
+                                    <Font name="System Bold" size="18.0" />
+                                </font>
+                                <VBox.margin>
+                                    <Insets top="50.0" />
+                                </VBox.margin>
+                            </Label>
+                            <Label styleClass="info-label" text="Please enter your name and upload a photo.">
+                                <font>
+                                    <Font name="System" size="14.0" />
+                                </font>
+                                <VBox.margin>
+                                    <Insets top="5.0" />
+                                </VBox.margin>
+                            </Label>
+                            <HBox prefHeight="211.0" prefWidth="442.0">
+                                <children>
+                                    <HBox alignment="CENTER" prefHeight="201.0" prefWidth="186.0" spacing="20.0">
+                                        <children>
+                                            <ImageView fx:id="photoPreview" fitHeight="174.0" fitWidth="174.0" onMouseClicked="#handleUploadPhoto" preserveRatio="true" styleClass="profile-image">
+                                                <clip>
+                                                    <Circle centerX="85.5" centerY="84.0" radius="84.0" />
+                                                </clip>
+                                                <image>
+                                                    <Image url="@../images/11Devs-white.png" />
+                                                </image>
+                                            </ImageView>
+                                        </children>
+                                        <HBox.margin>
+                                            <Insets right="10.0" top="10.0" />
+                                        </HBox.margin>
+                                    </HBox>
+                              <HBox prefHeight="178.0" prefWidth="26.0" />
+                                    <VBox alignment="CENTER" prefHeight="178.0" prefWidth="236.0">
+                                        <children>
+                                            <TextField fx:id="firstNameField" prefHeight="40.0" prefWidth="250.0" promptText="First Name" styleClass="input-field">
+                                                <VBox.margin>
+                                                    <Insets top="20.0" />
+                                                </VBox.margin>
+                                            </TextField>
+                                            <TextField fx:id="lastNameField" prefHeight="40.0" prefWidth="250.0" promptText="Last Name" styleClass="input-field">
+                                                <VBox.margin>
+                                                    <Insets top="20.0" />
+                                                </VBox.margin>
+                                            </TextField>
+                                        </children>
+                                    </VBox>
+                                </children>
+                            </HBox>
+                     </children>
+                  </VBox>
+                      <Button fx:id="signUpButton" onMouseClicked="#handleSignUp" prefHeight="42.0" prefWidth="451.0" styleClass="sign-up-button" text="SIGN UP">
+                          <VBox.margin>
+                              <Insets top="20.0" />
+                          </VBox.margin>
+                          <cursor>
+                              <Cursor fx:constant="HAND" />
+                          </cursor>
+                      </Button>
+                  </children>
+              </VBox>
+          </children>
+      </VBox>
+   </center>
+   <top>
+      <HBox prefHeight="40.0" prefWidth="200.0" BorderPane.alignment="CENTER">
+         <children>
+            <HBox prefHeight="40.0" prefWidth="404.0">
                <children>
-                      <Label styleClass="title" text="Your Info">
-                          <font>
-                              <Font name="System Bold" size="18.0" />
-                          </font>
-                          <VBox.margin>
-                              <Insets top="50.0" />
-                          </VBox.margin>
-                      </Label>
-                      <Label styleClass="info-label" text="Please enter your name and upload a photo.">
-                          <font>
-                              <Font name="System" size="14.0" />
-                          </font>
-                          <VBox.margin>
-                              <Insets top="5.0" />
-                          </VBox.margin>
-                      </Label>
-                      <HBox prefHeight="211.0" prefWidth="442.0">
-                          <children>
-                              <HBox alignment="CENTER" prefHeight="201.0" prefWidth="186.0" spacing="20.0">
-                                  <children>
-                                      <ImageView fx:id="photoPreview" fitHeight="174.0" fitWidth="174.0" onMouseClicked="#handleUploadPhoto" preserveRatio="true" styleClass="profile-image">
-                                          <clip>
-                                              <Circle centerX="85.5" centerY="84.0" radius="84.0" />
-                                          </clip>
-                                          <image>
-                                              <Image url="@../images/11Devs-white.png" />
-                                          </image>
-                                      </ImageView>
-                                  </children>
-                                  <HBox.margin>
-                                      <Insets right="10.0" top="10.0" />
-                                  </HBox.margin>
-                              </HBox>
-                        <HBox prefHeight="178.0" prefWidth="26.0" />
-                              <VBox alignment="CENTER" prefHeight="178.0" prefWidth="236.0">
-                                  <children>
-                                      <TextField fx:id="firstNameField" prefHeight="40.0" prefWidth="250.0" promptText="First Name" styleClass="input-field">
-                                          <VBox.margin>
-                                              <Insets top="20.0" />
-                                          </VBox.margin>
-                                      </TextField>
-                                      <TextField fx:id="lastNameField" prefHeight="40.0" prefWidth="250.0" promptText="Last Name" styleClass="input-field">
-                                          <VBox.margin>
-                                              <Insets top="20.0" />
-                                          </VBox.margin>
-                                      </TextField>
-                                  </children>
-                              </VBox>
-                          </children>
-                      </HBox>
+                  <Button fx:id="backButton" mnemonicParsing="false" onAction="#handleBack" prefHeight="16.0" prefWidth="27.0" styleClass="back-button">
+                     <graphic>
+                        <SVGPath content="M12 8a.5.5 0 0 1-.5.5H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H11.5a.5.5 0 0 1 .5.5" fill="#5b6772" scaleX="2.0" scaleY="2.0" scaleZ="2.0" styleClass="svg-path" />
+                     </graphic>
+                     <HBox.margin>
+                        <Insets left="15.0" top="25.0" />
+                     </HBox.margin>
+                  </Button>
                </children>
-            </VBox>
-                <Button fx:id="signUpButton" onMouseClicked="#handleSignUp" prefHeight="42.0" prefWidth="451.0" styleClass="sign-up-button" text="SIGN UP">
-                    <VBox.margin>
-                        <Insets top="20.0" />
-                    </VBox.margin>
-                    <cursor>
-                        <Cursor fx:constant="HAND" />
-                    </cursor>
-                </Button>
-            </children>
-        </VBox>
-    </children>
-</VBox>
+            </HBox>
+            <HBox prefHeight="54.0" prefWidth="810.0" />
+            <HBox alignment="TOP_RIGHT" prefHeight="40.0" prefWidth="409.0">
+               <children>
+                  <Button fx:id="settingsButton" alignment="CENTER" onAction="#handleSettings" prefHeight="30.0" prefWidth="92.0" styleClass="settings-button" text="SETTINGS">
+                     <HBox.margin>
+                        <Insets right="10.0" top="15.0" />
+                     </HBox.margin>
+                  </Button>
+               </children>
+            </HBox>
+         </children>
+      </HBox>
+   </top>
+   <bottom>
+      <HBox prefHeight="40.0" prefWidth="200.0" BorderPane.alignment="CENTER" />
+   </bottom>
+</BorderPane>

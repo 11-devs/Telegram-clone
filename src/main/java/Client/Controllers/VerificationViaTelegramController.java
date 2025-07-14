@@ -12,6 +12,8 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
+import static Shared.Utils.SceneUtil.changeSceneWithSameSize;
+
 public class VerificationViaTelegramController {
     @FXML
     private VBox root;
@@ -143,6 +145,16 @@ public class VerificationViaTelegramController {
         transition.setCycleCount(1);
         transition.setAutoReverse(false);
         transition.play();
+    }
+
+    @FXML
+    private void handleSettings() {
+        // TODO: develop setting dialog
+    }
+
+    @FXML
+    private void handleBack() {
+        changeSceneWithSameSize(root, "/Client/fxml/phoneNumber.fxml");
     }
 
     @FXML

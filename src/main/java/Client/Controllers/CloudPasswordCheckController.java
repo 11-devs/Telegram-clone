@@ -42,6 +42,16 @@ public class CloudPasswordCheckController {
     }
 
     @FXML
+    private void handleSettings() {
+        // TODO: develop setting dialog
+    }
+
+    @FXML
+    private void handleBack() {
+        changeSceneWithSameSize(root, "/Client/fxml/phoneNumber.fxml");
+    }
+
+    @FXML
     private void handleSubmit() {
         String password = passwordField.getText();
         if (password != null && !password.isEmpty()) {

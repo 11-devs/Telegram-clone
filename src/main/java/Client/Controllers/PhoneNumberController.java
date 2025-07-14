@@ -149,6 +149,16 @@ public class PhoneNumberController {
     }
 
     @FXML
+    private void handleSettings() {
+        // TODO: develop setting dialog
+    }
+
+    @FXML
+    private void handleBack() {
+        changeSceneWithSameSize(root, "/Client/fxml/Welcome.fxml");
+    }
+
+    @FXML
     private void continueAction() {
         String preCode = countryPreCode.getText();
         String phoneNumber = phoneNumberField.getText();

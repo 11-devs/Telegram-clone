@@ -61,6 +61,16 @@ public class UserInfoController implements Initializable {
     }
 
     @FXML
+    private void handleSettings() {
+        // TODO: develop setting dialog
+    }
+
+    @FXML
+    private void handleBack() {
+        changeSceneWithSameSize(root, "/Client/fxml/phoneNumber.fxml");
+    }
+
+    @FXML
     private void handleSignUp() {
         String firstName = firstNameField.getText();
         String lastName = lastNameField.getText();

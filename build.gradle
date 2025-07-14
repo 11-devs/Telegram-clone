@@ -20,7 +20,7 @@ dependencies {
 
     implementation 'com.google.code.gson:gson:2.10.1'
 
-    implementation 'com.jfoenix:jfoenix:9.0.10'
+    implementation 'com.jfoenix:jfoenix:9.0.10' // TODO: use jfoenix components in the future
 }
 
 java {
