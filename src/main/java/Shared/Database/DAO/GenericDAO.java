@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class GenericDAO<T> {
-
     private final Class<T> type;
     final EntityManager entityManager;
 
@@ -66,4 +65,20 @@ public class GenericDAO<T> {
             delete(entity);
         }
     }
+
+    public T findByField(String fieldName, Object value) {
+        String jpql = "SELECT e FROM " + type.getSimpleName() + " e WHERE e." + fieldName + " = :value";
+        TypedQuery<T> query = entityManager.createQuery(jpql, type);
+        query.setParameter("value", value);
+        List<T> results = query.setMaxResults(1).getResultList();
+        return results.isEmpty() ? null : results.get(0);
+    }
+
+    public List<T> findAllByField(String fieldName, Object value) {
+        String jpql = "SELECT e FROM " + type.getSimpleName() + " e WHERE e." + fieldName + " = :value";
+        TypedQuery<T> query = entityManager.createQuery(jpql, type);
+        query.setParameter("value", value);
+        return query.getResultList();
+    }
+
 }
