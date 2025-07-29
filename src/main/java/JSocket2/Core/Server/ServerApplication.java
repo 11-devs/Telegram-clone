@@ -1,5 +1,7 @@
 package JSocket2.Core.Server;
 
+import JSocket2.DI.ServiceCollection;
+import JSocket2.DI.ServiceProvider;
 import JSocket2.Protocol.Authentication.AuthService;
 import JSocket2.Utils.Logger;
 import JSocket2.Cryptography.RsaKeyManager;
@@ -20,7 +22,7 @@ public class ServerApplication {
     private final int PORT;
     private final ServerSocket serverSocket;
     private final RpcDispatcher rpcDispatcher;
-
+    private final ServiceProvider serviceProvider;
     private final AuthService authService;
     public ServerSessionManager getServerSessionManager() {
         return serverSessionManager;
@@ -29,19 +31,20 @@ public class ServerApplication {
     final ServerSessionManager serverSessionManager;
     private final RsaKeyManager rsaKeyManager;
     private final Map<UUID, CompletableFuture<Message>> pendingRequests;
-    public ServerApplication(int port, RpcDispatcher rpcDispatcher, AuthService authService) throws IOException {
+    public ServerApplication(int port, RpcDispatcher rpcDispatcher, AuthService authService, ServiceCollection services) throws IOException {
         this.PORT = port;
         this.rpcDispatcher = rpcDispatcher;
         this.serverSocket = new ServerSocket(PORT);
         this.serverSessionManager = new ServerSessionManager();
         this.rsaKeyManager = new RsaKeyManager();
         this.pendingRequests = new ConcurrentHashMap<>();
+        this.serviceProvider = services.CreateServiceProvider();
         this.authService =  authService;
     }
 
     public void Run() {
         try {
-            System.out.println("Server run in "+InetAddress.getLocalHost().getHostAddress()+":"+PORT);
+            System.out.println("Server run in " + InetAddress.getLocalHost().getHostAddress() + ":"+PORT);
             while (!serverSocket.isClosed()) {
                 Socket socket = serverSocket.accept();
                 Logger.get().info("A new client has connected");

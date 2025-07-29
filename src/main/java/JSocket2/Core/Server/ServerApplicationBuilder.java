@@ -1,5 +1,6 @@
 package JSocket2.Core.Server;
 
+import JSocket2.DI.ServiceCollection;
 import JSocket2.Protocol.Authentication.AuthService;
 import JSocket2.Protocol.Rpc.RpcDispatcher;
 
@@ -8,10 +9,15 @@ import java.io.IOException;
 public class ServerApplicationBuilder {
     private int port = 8080;
     private final RpcDispatcher rpcDispatcher = new RpcDispatcher();
+    private ServiceCollection services;
     private AuthService authService = null;
     public ServerApplicationBuilder setPort(int port) {
         this.port = port;
+        services = new ServiceCollection();
         return this;
+    }
+    public ServiceCollection getServices(){
+        return services;
     }
     public ServerApplicationBuilder setAuthService(AuthService authService) {
         this.authService = authService;
@@ -33,7 +39,7 @@ public class ServerApplicationBuilder {
         if(!canBuild()){
             throw new RuntimeException("Can't build ServerApplication");
         }
-        return new ServerApplication(port, rpcDispatcher,authService);
+        return new ServerApplication(port, rpcDispatcher,authService,services);
     }
     private boolean canBuild(){
         return authService != null && port > 1023 && port < 49151;

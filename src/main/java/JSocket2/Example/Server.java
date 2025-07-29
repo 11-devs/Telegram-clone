@@ -9,6 +9,7 @@ import JSocket2.Example.Models.LoginInputModel;
 import java.io.IOException;
 
 public class Server {
+
     public static void main(String[] args) throws IOException {
         ServerApplicationBuilder builder = new ServerApplicationBuilder();
         AuthService authService = new AuthService(null,null);
@@ -17,5 +18,6 @@ public class Server {
                 .addAction("LoginController","Login", LoginInputModel.class);
         ServerApplication app = builder.build();
         app.Run();
+
     }
 }

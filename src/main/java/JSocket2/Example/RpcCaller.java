@@ -20,7 +20,7 @@ public class RpcCaller extends RpcCallerBase {
         callRpc("LoginController","Login",login);
     }
     public void sendMessage(SendMessageInputModel input){
-       var outpur = callRpcAndGetResponse("MessageController","SendMessage",input, SendMessageOutputModel.class);
+       //var outpur = callRpcAndGetResponse("MessageController","SendMessage",input, SendMessageOutputModel.class);
     }
 
 }
