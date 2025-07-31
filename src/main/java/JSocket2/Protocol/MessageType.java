@@ -15,7 +15,7 @@ public enum MessageType {
     SEND_CHUNK(51),
     RECEIVE_CHUNK_ACK(52),
     AUTH(60),
-    PUSH_NOTIFICATION(70);
+    EVENT(70);
     public final int code;
     MessageType(int code) {
         this.code = code;

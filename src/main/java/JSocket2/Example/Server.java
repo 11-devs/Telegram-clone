@@ -17,6 +17,5 @@ public class Server {
                 .addController(LoginController.class);
         ServerApplication app = builder.build();
         app.Run();
-
     }
 }

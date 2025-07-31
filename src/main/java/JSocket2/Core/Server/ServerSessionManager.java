@@ -10,24 +10,23 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class ServerSessionManager {
-    private final Map<Socket, ServerSession> sessions = new ConcurrentHashMap<>();
+    private final Map<ClientHandler, ServerSession> sessions = new ConcurrentHashMap<>();
 
-    public ServerSession createSession(Socket socket) {
-        ServerSession serverSession = new ServerSession(socket,this);
-        sessions.put(socket, serverSession);
+    public ServerSession createSession(ClientHandler clientHandler) {
+        ServerSession serverSession = new ServerSession(clientHandler,this);
+        sessions.put(clientHandler, serverSession);
         return serverSession;
     }
 
-    public ServerSession getSession(Socket socket) {
-        return sessions.get(socket);
+    public ServerSession getSession(ClientHandler clientHandler) {
+        return sessions.get(clientHandler);
     }
 
-    public void removeSession(Socket socket) {
-        sessions.remove(socket);
+    public void removeSession(ClientHandler clientHandler) {
+        sessions.remove(clientHandler);
     }
     public void closeAll() throws IOException {
         for(var socket: sessions.keySet()){
-            socket.close();
             removeSession(socket);
         }
     }
@@ -49,11 +48,11 @@ public class ServerSessionManager {
         }
     }
 
-    public void pushToUser(String userId, Message msg) {
+    public void publishMessage(String userId, Message msg) throws IOException {
         var list = userSessions.get(userId);
         if (list != null) {
             for (var sess : list) {
-                //sess.
+                sess.getClientHandler().send(msg);
             }
         }
     }

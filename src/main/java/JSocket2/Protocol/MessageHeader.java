@@ -87,4 +87,7 @@ public class MessageHeader {
     public static MessageHeader BuildAuthHeader(UUID uuid, int payloadLength) {
         return new MessageHeader(uuid,MessageType.AUTH,true,true,0,payloadLength);
     }
+    public static MessageHeader BuildEventHeader(UUID uuid,int metadataLength, int payloadLength) {
+        return new MessageHeader(uuid,MessageType.EVENT,true,true,metadataLength,payloadLength);
+    }
 }

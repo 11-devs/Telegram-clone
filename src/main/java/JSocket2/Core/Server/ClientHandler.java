@@ -35,7 +35,7 @@ public class ClientHandler implements Runnable {
         this.out = new DataOutputStream(socket.getOutputStream());
         this.in = new DataInputStream(socket.getInputStream());
         this.rpcDispatcher = rpcDispatcher;
-        this.serverSession = serverSessionManager.createSession(socket);
+        this.serverSession = serverSessionManager.createSession(this);
         this.messageHandler = new MessageHandler(in,out,serverSession);
         this.rsaKeyManager = rsaKeyManager;
         this.pendingRequests = pendingRequests;
@@ -79,8 +79,8 @@ public class ClientHandler implements Runnable {
             }
         }
     }
-    public void send(String message) {
-
+    public void send(Message message) throws IOException {
+        messageHandler.write(message);
     }
 }
 

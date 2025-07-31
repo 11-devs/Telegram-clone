@@ -1,4 +1,4 @@
-package JSocket2.Protocol.Push;
+package JSocket2.Protocol.EventHub;
 
 import JSocket2.Core.Client.ConnectionManager;
 import JSocket2.Protocol.Message;

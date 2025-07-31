@@ -10,16 +10,18 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ServerSession extends Session {
     private final ServerSessionManager serverSessionManager;
-    private final Socket socket;
+    private final ClientHandler clientHandler;
     private final Set<String> subscribedUserIds = ConcurrentHashMap.newKeySet();
     private boolean isAuthorized = false;
 
-    public ServerSession(Socket socket, ServerSessionManager serverSessionManager) {
+    public ServerSession(ClientHandler clientHandler, ServerSessionManager serverSessionManager) {
         super();
-        this.socket = socket;
+        this.clientHandler = clientHandler;
         this.serverSessionManager = serverSessionManager;
     }
-
+    public ClientHandler getClientHandler(){
+        return clientHandler;
+    }
     public void subscribeUser(String userId) {
         if (subscribedUserIds.add(userId)) {
             serverSessionManager.indexSessionForUser(this, userId);
@@ -43,7 +45,7 @@ public class ServerSession extends Session {
         for (var userId : subscribedUserIds) {
             serverSessionManager.deindexSessionForUser(this, userId);
         }
-        socket.close();
+        //socket.close();
     }
 
     public boolean isAuthorized() {
