@@ -14,8 +14,7 @@ public class Server {
         ServerApplicationBuilder builder = new ServerApplicationBuilder();
         AuthService authService = new AuthService(null,null);
         builder.setPort(8585).setAuthService(authService)
-                .addController("LoginController" , new LoginController())
-                .addAction("LoginController","Login", LoginInputModel.class);
+                .addController(LoginController.class);
         ServerApplication app = builder.build();
         app.Run();
 
