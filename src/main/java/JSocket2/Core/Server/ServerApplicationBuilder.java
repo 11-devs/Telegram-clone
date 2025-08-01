@@ -1,5 +1,6 @@
 package JSocket2.Core.Server;
 
+import JSocket2.Cryptography.RsaKeyManager;
 import JSocket2.DI.ServiceCollection;
 import JSocket2.Protocol.Authentication.AuthService;
 import JSocket2.Protocol.Rpc.RpcControllerCollection;
@@ -8,12 +9,17 @@ import java.io.IOException;
 
 public class ServerApplicationBuilder {
     private int port = 8080;
-    private final RpcControllerCollection rpcControllerCollection = new RpcControllerCollection();
-    private ServiceCollection services;
+    private final RpcControllerCollection rpcControllerCollection;
+    private final ServiceCollection services;
     private AuthService authService = null;
+    public ServerApplicationBuilder(){
+        services = new ServiceCollection();
+        rpcControllerCollection = new RpcControllerCollection();
+        services.AddSingleton(ServerSessionManager.class);
+        services.AddSingleton(RsaKeyManager.class);
+    }
     public ServerApplicationBuilder setPort(int port) {
         this.port = port;
-        services = new ServiceCollection();
         return this;
     }
 
@@ -27,7 +33,6 @@ public class ServerApplicationBuilder {
     public <T> ServerApplicationBuilder addController(Class<T> controllerType) {
         this.services.AddSingleton(controllerType);
         this.rpcControllerCollection.registerController(controllerType);
-        this.rpcControllerCollection.registerActions(controllerType);
         return this;
     }
     public ServerApplication build() throws IOException {

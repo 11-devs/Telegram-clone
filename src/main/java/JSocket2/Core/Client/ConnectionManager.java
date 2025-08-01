@@ -13,11 +13,11 @@ import java.util.concurrent.Executors;
 
 public class ConnectionManager implements IConnectionEventListener {
 
-    private final String host;
-    private final int port;
+    private String host;
+    private int port;
 
     private ClientApplication app;
-
+    private ClientApplicationBuilder builder;
 
     private final List<ChangeListener<Boolean>> externalListeners = new ArrayList<>();
 
@@ -26,16 +26,14 @@ public class ConnectionManager implements IConnectionEventListener {
     private int maxTryCount_for_changeRetryDeley = 5;
     private int tryCount = 0;
     private int currentRetryDelay = minRetryDelay;
-    public ConnectionManager(String host, int port) {
-        this.host = host;
-        this.port = port;
-
+    public ConnectionManager(ClientApplicationBuilder builder) {
+        this.builder = builder;
         createAndStartClient();
     }
 
     private void createAndStartClient() {
-
-        app = new ClientApplication(host, port,this);
+        builder.setConnectionEventListener(this);
+        app = builder.Build();
 
         for (ChangeListener<Boolean> extListener : externalListeners) {
             app.connectedProperty().addListener(extListener);

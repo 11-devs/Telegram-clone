@@ -1,5 +1,7 @@
 package JSocket2.Core.Client;
 
+import JSocket2.DI.ServiceCollection;
+import JSocket2.DI.ServiceProvider;
 import JSocket2.Protocol.*;
 
 import java.io.IOException;
@@ -10,6 +12,8 @@ import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import JSocket2.Protocol.EventHub.EventBroker;
+import JSocket2.Protocol.EventHub.EventSubscriberCollection;
 import JSocket2.Protocol.Transfer.ClientFileTransferManager;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
@@ -29,6 +33,8 @@ public class ClientApplication {
     private Thread listenerThread;
     private ClientSession clientSession;
     private ClientFileTransferManager fileTransferManager;
+    private EventBroker eventBroker;
+    private ServiceProvider serviceProvider;
     private final ConcurrentMap<UUID, CompletableFuture<Message>> pendingRequests = new ConcurrentHashMap<>();
     private final UUID sessionId = UUID.randomUUID();
     private final ExecutorService backgroundExecutor = Executors.newCachedThreadPool(r -> {
@@ -38,11 +44,15 @@ public class ClientApplication {
     });
     private final ConcurrentMap<String, Task<?>> activeTasks = new ConcurrentHashMap<>();
     private final IConnectionEventListener connectionEventListener;
-    public ClientApplication(String host, int port,IConnectionEventListener connectionEventListener) {
+
+    public ClientApplication(String host, int port, IConnectionEventListener connectionEventListener, EventSubscriberCollection subscribers, ServiceCollection services) {
         this.host = host;
         this.port = port;
         this.connectionEventListener = connectionEventListener;
+        serviceProvider = services.CreateServiceProvider();
+        eventBroker = subscribers.CreateEventBroker(serviceProvider);
     }
+
     public void registerTask(String Id, Task<?> task) {
         activeTasks.put(Id, task);
     }
@@ -84,7 +94,7 @@ public class ClientApplication {
             InputStream in = socket.getInputStream();
 
             messageHandler = new MessageHandler(in, out, clientSession);
-            messageProcessor = new ClientMessageProcessor(messageHandler, clientSession, pendingRequests, getFileTransferManager(),this::onConnected);
+            messageProcessor = new ClientMessageProcessor(messageHandler, clientSession, pendingRequests, getFileTransferManager(),this::onConnected,serviceProvider,eventBroker);
             messageListener = new MessageListener(messageHandler, pendingRequests, messageProcessor, clientSession, connectionEventListener);
 
             listenerThread = new Thread(messageListener);

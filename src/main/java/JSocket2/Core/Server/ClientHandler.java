@@ -1,5 +1,6 @@
 package JSocket2.Core.Server;
 
+import JSocket2.DI.ServiceProvider;
 import JSocket2.Protocol.Authentication.AuthService;
 import JSocket2.Cryptography.RsaKeyManager;
 import JSocket2.Protocol.*;
@@ -22,22 +23,23 @@ public class ClientHandler implements Runnable {
     private ServerFileTransferManager fileTransferManager;
     private RsaKeyManager rsaKeyManager;
     private AuthService authService;
+    private final ServiceProvider serviceProvider;
     private final Map<UUID, CompletableFuture<Message>> pendingRequests;
     private final ServerSession serverSession;
     private boolean isActive = true;
 
-    public ClientHandler(Socket socket,
+    public ClientHandler(ServiceProvider serviceProvider,Socket socket,
                          RpcDispatcher rpcDispatcher,
                          ServerSessionManager serverSessionManager,
-                         RsaKeyManager rsaKeyManager,
                          Map<UUID, CompletableFuture<Message>> pendingRequests, AuthService authService) throws IOException {
+        this.serviceProvider = serviceProvider;
         this.socket = socket;
         this.out = new DataOutputStream(socket.getOutputStream());
         this.in = new DataInputStream(socket.getInputStream());
         this.rpcDispatcher = rpcDispatcher;
         this.serverSession = serverSessionManager.createSession(this);
         this.messageHandler = new MessageHandler(in,out,serverSession);
-        this.rsaKeyManager = rsaKeyManager;
+        this.rsaKeyManager = this.serviceProvider.GetService(RsaKeyManager.class);
         this.pendingRequests = pendingRequests;
         this.fileTransferManager = new ServerFileTransferManager(messageHandler,this.pendingRequests);
         this.authService = authService;

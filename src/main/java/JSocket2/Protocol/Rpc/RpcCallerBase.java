@@ -23,16 +23,16 @@ public class RpcCallerBase {
         this.gson = gson;
     }
 
-    protected void callRpc(String controllerName, String actionName, Object payloadObject) throws IOException {
+    protected void callRpc(String controllerName, String actionName, Object... payloadObjects) throws IOException {
         UUID requestId = UUID.randomUUID();
-        Message message = createRpcCallMessage(controllerName, actionName, payloadObject, requestId);
+        Message message = createRpcCallMessage(controllerName, actionName, payloadObjects, requestId);
         connectionManager.getClient().getMessageHandler().write(message);
     }
 
-    private Message createRpcCallMessage(String controllerName, String actionName, Object payloadObject, UUID requestId) throws IOException {
+    private Message createRpcCallMessage(String controllerName, String actionName, Object[] payloadObjects, UUID requestId) throws IOException {
         RpcCallMetadata metadata = new RpcCallMetadata(controllerName, actionName);
         String metadataJson = gson.toJson(metadata);
-        String payloadJson  = gson.toJson(payloadObject);
+        String payloadJson  = gson.toJson(payloadObjects);
         byte[] metadataBytes = metadataJson.getBytes(StandardCharsets.UTF_8);
         byte[] payloadBytes  = payloadJson.getBytes(StandardCharsets.UTF_8);
         MessageHeader header = MessageHeader.BuildRpcCallHeader(
@@ -41,9 +41,9 @@ public class RpcCallerBase {
         return new Message(header, metadataBytes, payloadBytes);
     }
 
-    protected <T> RpcResponse<T> callRpcAndGetResponse(String controllerName, String actionName, Object payloadObject, Class<T> responseClass) throws IOException {
+    protected <T> RpcResponse<T> callRpcAndGetResponse(String controllerName, String actionName, Class<T> responseClass, Object... payloadObjects) throws IOException {
         UUID requestId = UUID.randomUUID();
-        Message message = createRpcCallMessage(controllerName, actionName, payloadObject, requestId);
+        Message message = createRpcCallMessage(controllerName, actionName, payloadObjects, requestId);
         CompletableFuture<Message> future = new CompletableFuture<>();
         connectionManager.getClient().getPendingRequests().put(requestId, future);
         connectionManager.getClient().getMessageHandler().write(message);
@@ -51,9 +51,9 @@ public class RpcCallerBase {
         var response = RpcHelper.convertMessageToRpcResponse(responseMessage,responseClass);
         return response;
     }
-    protected <T> RpcResponse<List<T>> callRpcAndGetListResponse(String controllerName, String actionName, Object payloadObject, Class<T> responseClass) throws IOException {
+    protected <T> RpcResponse<List<T>> callRpcAndGetListResponse(String controllerName, String actionName,Class<T> responseClass, Object... payloadObjects) throws IOException {
         UUID requestId = UUID.randomUUID();
-        Message message = createRpcCallMessage(controllerName, actionName, payloadObject, requestId);
+        Message message = createRpcCallMessage(controllerName, actionName, payloadObjects, requestId);
         CompletableFuture<Message> future = new CompletableFuture<>();
         connectionManager.getClient().getPendingRequests().put(requestId, future);
         connectionManager.getClient().getMessageHandler().write(message);

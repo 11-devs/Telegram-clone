@@ -30,16 +30,14 @@ public class ServerApplication {
     }
 
     final ServerSessionManager serverSessionManager;
-    private final RsaKeyManager rsaKeyManager;
     private final Map<UUID, CompletableFuture<Message>> pendingRequests;
     public ServerApplication(int port, RpcControllerCollection rpcControllerCollection, AuthService authService, ServiceCollection services) throws IOException {
         this.PORT = port;
-
-        this.serverSocket = new ServerSocket(PORT);
-        this.serverSessionManager = new ServerSessionManager();
-        this.rsaKeyManager = new RsaKeyManager();
-        this.pendingRequests = new ConcurrentHashMap<>();
         this.serviceProvider = services.CreateServiceProvider();
+        this.serverSocket = new ServerSocket(PORT);
+        this.serverSessionManager =serviceProvider.GetService(ServerSessionManager.class);
+        this.pendingRequests = new ConcurrentHashMap<>();
+
         this.rpcDispatcher = rpcControllerCollection.CreateRpcDispatcher(this.serviceProvider);
         this.authService =  authService;
     }
@@ -50,7 +48,7 @@ public class ServerApplication {
             while (!serverSocket.isClosed()) {
                 Socket socket = serverSocket.accept();
                 Logger.get().info("A new client has connected");
-                ClientHandler clientHandler = new ClientHandler(socket, rpcDispatcher, serverSessionManager,rsaKeyManager,pendingRequests,authService);
+                ClientHandler clientHandler = new ClientHandler(serviceProvider,socket, rpcDispatcher, serverSessionManager,pendingRequests,authService);
                 new Thread(clientHandler).start();
                 Scanner scanner = new Scanner(System.in);
                     scanner.nextLine();

@@ -1,9 +1,13 @@
 package JSocket2.Protocol;
 
+import JSocket2.DI.ServiceProvider;
 import JSocket2.Protocol.Authentication.AuthProcessState;
 import JSocket2.Protocol.Authentication.IAccessKeyManager;
 import JSocket2.Core.Client.ClientSession;
 import JSocket2.Cryptography.EncryptionUtil;
+import JSocket2.Protocol.EventHub.EventBroker;
+import JSocket2.Protocol.EventHub.EventMetadata;
+import JSocket2.Protocol.Rpc.RpcCallMetadata;
 import JSocket2.Protocol.Rpc.RpcHelper;
 import JSocket2.Protocol.Rpc.RpcResponseMetadata;
 import JSocket2.Protocol.Transfer.ClientFileTransferManager;
@@ -25,8 +29,12 @@ public class ClientMessageProcessor implements IMessageProcessor {
     private final Map<UUID, CompletableFuture<Message>> pendingRequests;
     private IAccessKeyManager accessKeyManager;
     private final Runnable onHandShakeComplete;
-    public ClientMessageProcessor(MessageHandler handler, ClientSession clientSession, Map<UUID, CompletableFuture<Message>> pendingRequests, ClientFileTransferManager fileTransferManager, Runnable onHandShakeComplete){
+    private final ServiceProvider serviceProvider;
+    private final EventBroker eventBroker;
+    public ClientMessageProcessor(MessageHandler handler, ClientSession clientSession, Map<UUID, CompletableFuture<Message>> pendingRequests, ClientFileTransferManager fileTransferManager, Runnable onHandShakeComplete, ServiceProvider serviceProvider, EventBroker eventBroker){
         this.onHandShakeComplete = onHandShakeComplete;
+        this.serviceProvider = serviceProvider;
+        this.eventBroker = eventBroker;
         this.gson = new Gson();
         this.messageHandler = handler;
         this.clientSession = clientSession;
@@ -38,9 +46,17 @@ public class ClientMessageProcessor implements IMessageProcessor {
         switch (message.header.type) {
             case RSA_PUBLIC_KEY -> handleRsaPublicKey(message);
             case SEND_CHUNK -> handleDownloadChunk(message);
+            case EVENT -> handleEvent(message);
             default -> throw new UnsupportedOperationException("Unknown message type: " + message.header.type);
         }
     }
+
+    private void handleEvent(Message message) {
+        var metadata = gson.fromJson(new String(message.getMetadata(), StandardCharsets.UTF_8), EventMetadata.class);
+        var payloadJson = new String(message.getPayload(), StandardCharsets.UTF_8);
+        eventBroker.publish(metadata, payloadJson);
+    }
+
     private void handleDownloadChunk(Message message) throws IOException {
         fileTransferManager.ProcessSendChunk(message);
     }
