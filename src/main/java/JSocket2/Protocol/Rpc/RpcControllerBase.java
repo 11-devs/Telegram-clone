@@ -1,9 +1,8 @@
-package JSocket2.Mvc;
+package JSocket2.Protocol.Rpc;
 
 import JSocket2.Protocol.StatusCode;
-import JSocket2.Protocol.Rpc.RpcResponse;
 
-public abstract class ControllerBase {
+public abstract class RpcControllerBase {
 
     protected final <T> RpcResponse<T> response(StatusCode statusCode,String message, T content) {
         return new RpcResponse<>(statusCode,message, content);

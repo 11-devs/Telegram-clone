@@ -3,11 +3,16 @@ package JSocket2.DI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ServiceCollection {
     private Map<Class<?>,ServiceDescriptor> descriptors = new HashMap<>();
     public ServiceCollection AddScoped(Class<?> serviceType,Class<?> implementationType){
         descriptors.put(serviceType,new ServiceDescriptor(serviceType,implementationType,ServiceLifetime.SCOPED));
+        return this;
+    };
+    public <T> ServiceCollection AddSingletonWithInstance(Class<?> serviceType, T instance){
+        descriptors.put(serviceType,new ServiceDescriptor(serviceType,ServiceLifetime.SINGLETON,instance));
         return this;
     };
     public ServiceCollection AddSingleton(Class<?> serviceType,Class<?> implementationType){

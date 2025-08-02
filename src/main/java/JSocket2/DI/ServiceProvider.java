@@ -45,9 +45,27 @@ public class ServiceProvider {
                 k -> createNewInstance(descriptor));
     }
 
+    @SuppressWarnings("unchecked")
     private <T> T resolveSingletonService(ServiceDescriptor descriptor) {
-        return (T) singletonInstances.computeIfAbsent(descriptor.serviceType,
-                k -> createNewInstance(descriptor));
+        if (singletonInstances.containsKey(descriptor.serviceType)) {
+            return (T) singletonInstances.get(descriptor.serviceType);
+        }
+
+        synchronized (this) {
+            if (singletonInstances.containsKey(descriptor.serviceType)) {
+                return (T) singletonInstances.get(descriptor.serviceType);
+            }
+
+            Object instance;
+            if (descriptor.instance != null) {
+                instance = descriptor.instance;
+            } else {
+                instance = createNewInstance(descriptor);
+            }
+
+            singletonInstances.put(descriptor.serviceType, instance);
+            return (T) instance;
+        }
     }
 
     private <T> T createNewInstance(ServiceDescriptor descriptor) {
@@ -72,7 +90,7 @@ public class ServiceProvider {
         try {
             Constructor<?>[] constructors = implementationType.getConstructors();
             Constructor<?> constructor = selectConstructor(constructors);
-
+            constructor.setAccessible(true);
             Class<?>[] paramTypes = constructor.getParameterTypes();
             Object[] params = new Object[paramTypes.length];
 
@@ -81,7 +99,11 @@ public class ServiceProvider {
             }
 
             return implementationType.cast(constructor.newInstance(params));
-        } catch (Exception e) {
+        }
+        catch(CircularDependencyException e){
+            throw e;
+        }
+        catch (Exception e) {
             throw new ServiceCreationException(
                     "Failed to create instance of " + implementationType.getName()
             );

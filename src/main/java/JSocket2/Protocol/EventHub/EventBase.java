@@ -10,9 +10,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 public abstract class EventBase<T> {
-    public abstract void Invoke(String receiverId,T model) throws IOException;
+    public abstract void Invoke(String receiverId,Object... args) throws IOException;
     protected Gson gson = new Gson();
-    protected Message createEventMessage(String eventName, T payloadObject) {
+    protected Message createEventMessage(String eventName, Object[] payloadObject) {
         EventMetadata metadata = new EventMetadata(eventName);
         String metadataJson = gson.toJson(metadata);
         String payloadJson  = gson.toJson(payloadObject);

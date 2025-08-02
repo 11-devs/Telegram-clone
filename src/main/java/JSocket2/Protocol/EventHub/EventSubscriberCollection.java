@@ -20,7 +20,7 @@ public class EventSubscriberCollection {
             }
         }
     }
-    private <TEvent,TSubscriber> void subscribe(String eventName,Class<TSubscriber> subscribeType){
+    private <TSubscriber> void subscribe(String eventName,Class<TSubscriber> subscribeType){
         subscribers.computeIfAbsent(eventName.toLowerCase(),k -> new CopyOnWriteArrayList<>()).
                 add(subscribeType);
     }

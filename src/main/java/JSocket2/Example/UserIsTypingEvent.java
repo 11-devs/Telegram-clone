@@ -14,8 +14,8 @@ public class UserIsTypingEvent extends EventBase<UserIsTypingEventModel> {
     }
 
     @Override
-    public void Invoke(String receiverId,UserIsTypingEventModel model) throws IOException {
-        Message message = createEventMessage("UserIsTypingEvent",model);
+    public void Invoke(String receiverId,Object... args) throws IOException {
+        Message message = createEventMessage("UserIsTypingEvent",args);
         serverSessionManager.publishMessage(receiverId,message);
     }
 }
