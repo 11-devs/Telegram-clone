@@ -1,11 +1,18 @@
 plugins {
-    id("java")
-    id("org.openjfx.javafxplugin") version "0.1.0"
-    id("application")
+    id 'java'
+    id 'application'
+    id 'org.javamodularity.moduleplugin' version '1.8.12'
+    id 'org.openjfx.javafxplugin' version '0.1.0'
+    id 'org.beryx.jlink' version '2.25.0'
 }
 
 group = 'AP'
 version = '1.0-SNAPSHOT'
+
+javafx {
+    version = '21'
+    modules = ['javafx.controls', 'javafx.fxml']
+}
 
 repositories {
     mavenCentral()
@@ -14,7 +21,6 @@ repositories {
 dependencies {
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
-
     implementation 'org.openjfx:javafx-controls:23.0.2'
     implementation 'org.openjfx:javafx-fxml:23.0.2'
 
