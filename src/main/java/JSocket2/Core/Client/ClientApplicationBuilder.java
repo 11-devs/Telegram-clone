@@ -19,11 +19,8 @@ public class ClientApplicationBuilder {
         this.connectionEventListener = connectionEventListener;
         return this;
     }
-    public ClientApplicationBuilder setHost(String host){
+    public ClientApplicationBuilder setEndpoint(String host,int port){
         this.host = host;
-        return this;
-    }
-    public ClientApplicationBuilder setPort(int port){
         this.port = port;
         return this;
     }
