@@ -25,7 +25,7 @@ public class EventBroker {
         String eventName = metadata.getEventName().toLowerCase();
         List<Class<?>> subscriberTypes = subscribers.get(eventName);
 
-        //if (subscriberTypes == null || subscriberTypes.isEmpty()) {
+        if (subscriberTypes == null || subscriberTypes.isEmpty()) return;
 
         subscriberTypes.parallelStream().forEach(subscriberType -> {
             Object subscriber = provider.GetService(subscriberType);

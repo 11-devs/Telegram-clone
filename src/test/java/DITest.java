@@ -125,7 +125,19 @@ class DITest {
         assertNotNull(instances[1]);
         assertNotSame(instances[0], instances[1]);
     }
+    @Test
+    void shouldResolveSingletonServiceByInstance(){
+        ServiceCollection services = new ServiceCollection();
+        TestService instance = new TestService();
+        services.AddSingletonWithInstance(TestService.class,instance);
 
+        ServiceProvider provider = services.CreateServiceProvider();
+
+        TestService instance1 = provider.GetService(TestService.class);
+
+        assertNotNull(instance1);
+        assertSame(instance, instance1, "Singleton services should return same instance across providers");
+    }
     static class TestService {
         public TestService() {}
     }

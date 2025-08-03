@@ -6,7 +6,7 @@ import JSocket2.Protocol.Message;
 
 import java.io.IOException;
 
-public class UserIsTypingEvent extends EventBase<UserIsTypingEventModel> {
+public class UserIsTypingEvent extends EventBase {
 
     ServerSessionManager serverSessionManager;
     public UserIsTypingEvent(ServerSessionManager serverSessionManager){

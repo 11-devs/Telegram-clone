@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
-public abstract class EventBase<T> {
+public abstract class EventBase {
     public abstract void Invoke(String receiverId,Object... args) throws IOException;
     protected Gson gson = new Gson();
     protected Message createEventMessage(String eventName, Object[] payloadObject) {
