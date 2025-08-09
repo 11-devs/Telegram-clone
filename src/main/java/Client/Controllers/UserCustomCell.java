@@ -4,13 +4,13 @@ import Shared.Models.UserViewModel;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.ListCell;
 import javafx.scene.layout.GridPane;
-
 import java.io.IOException;
 
 public class UserCustomCell extends ListCell<UserViewModel> {
 
     private UserCustomCellController controller;
     private GridPane root;
+    private UserViewModel currentUser;
 
     public UserCustomCell() {
         try {
@@ -44,10 +44,13 @@ public class UserCustomCell extends ListCell<UserViewModel> {
         if (empty || item == null) {
             setText(null);
             setGraphic(null);
+            currentUser = null;
         } else {
+            currentUser = item; // Storage within the cell itself
             if (controller != null) {
-                controller.updateCell(item); // Updating data to the controller
-                setGraphic(root); // Using loaded graphics
+                controller.setCurrentUser(item); // Transfer to controller
+                controller.updateCell(item); // Display update
+                setGraphic(root);
             } else {
                 System.err.println("Controller is null, skipping updateCell.");
             }
