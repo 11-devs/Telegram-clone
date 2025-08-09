@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.shape.SVGPath?>
+
+<GridPane fx:id="root" alignment="CENTER" prefHeight="80.0" prefWidth="342.0" styleClass="telegram-cell" stylesheets="@../css/userCustomCell.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.Controllers.UserCustomCellController">
+    <fx:define>
+        <Circle fx:id="avatarClip" centerX="25" centerY="25" radius="25" />
+    </fx:define>
+    <columnConstraints>
+        <ColumnConstraints hgrow="NEVER" minWidth="60.0" prefWidth="60.0" />
+        <ColumnConstraints hgrow="ALWAYS" minWidth="10.0" />
+        <ColumnConstraints hgrow="NEVER" minWidth="50.0" prefWidth="50.0" />
+    </columnConstraints>
+    <rowConstraints>
+        <RowConstraints minHeight="70.0" prefHeight="70.0" vgrow="NEVER" />
+    </rowConstraints>
+    <padding>
+        <Insets bottom="8.0" left="12.0" right="12.0" top="8.0" />
+    </padding>
+    <children>
+        <!-- Avatar Column with online indicator -->
+        <StackPane alignment="CENTER" GridPane.columnIndex="0" GridPane.rowIndex="0">
+            <children>
+                <ImageView fx:id="avatarImage" fitHeight="50.0" fitWidth="50.0" pickOnBounds="true" preserveRatio="true" styleClass="avatar-image">
+                    <image>
+                        <Image url="@../images/11Devs-white.png" />
+                    </image>
+                    <clip>
+                        <fx:reference source="avatarClip" />
+                    </clip>
+                </ImageView>
+                <!-- Online/Offline Indicator -->
+                <Circle fx:id="onlineIndicator" radius="4.0" styleClass="online-indicator" StackPane.alignment="BOTTOM_RIGHT">
+                    <StackPane.margin>
+                        <Insets bottom="11.0" right="10.0" />
+                    </StackPane.margin>
+                </Circle>
+            </children>
+        </StackPane>
+        <!-- Content Column -->
+        <VBox alignment="CENTER_LEFT" spacing="0.5" GridPane.columnIndex="1" GridPane.rowIndex="0">
+            <children>
+                <HBox alignment="CENTER_LEFT">
+                    <children>
+                        <!-- Group/Channel/Bot Logo before username -->
+                        <StackPane alignment="CENTER" maxHeight="20.0" maxWidth="20.0" minHeight="20.0" minWidth="20.0" prefHeight="20.0" prefWidth="20.0">
+                            <SVGPath fx:id="typeLogo" styleClass="type-logo" visible="false" />
+                        </StackPane>
+                        <Label fx:id="userNameLabel" styleClass="user-name-label" text="User name">
+                            <HBox.margin>
+                                <Insets left="5.0" right="5.0" /> <!-- فاصله چپ و راست 5 پیکسل -->
+                            </HBox.margin>
+                        </Label>
+                        <!-- Pinned Icon -->
+                        <Label fx:id="pinnedIcon" styleClass="pinned-indicator" text="📌" visible="false" />
+                    </children>
+                </HBox>
+                <HBox alignment="CENTER_LEFT" spacing="10.0">
+                    <children>
+                        <!-- Media Icon Placeholder -->
+                        <ImageView fx:id="mediaIcon" fitHeight="16.0" fitWidth="16.0" visible="false" />
+                        <Label fx:id="lastMessageLabel" styleClass="last-message-label" text="Last message sent by user name" wrapText="true" />
+                    </children>
+                </HBox>
+            </children>
+            <GridPane.margin>
+                <Insets left="3.0" right="3.0" />
+            </GridPane.margin>
+        </VBox>
+        <!-- Time and Notification Column -->
+        <VBox alignment="CENTER_RIGHT" prefHeight="70.0" prefWidth="63.0" spacing="4.0" GridPane.columnIndex="2" GridPane.rowIndex="0">
+            <children>
+                <HBox alignment="CENTER" prefHeight="30.0" prefWidth="65.0">
+                    <children>
+                        <StackPane fx:id="messageStatusPanel" prefHeight="30.0" prefWidth="19.0" styleClass="message-status" visible="false">
+                            <children>
+                                <SVGPath fx:id="statusIconSvg" styleClass="status-icon" visible="false" />
+                            </children>
+                        </StackPane>
+                        <Label fx:id="messageTimeLabel" styleClass="message-time-label" text="10:00" />
+                    </children>
+                </HBox>
+                <StackPane fx:id="notificationPanel" styleClass="notification-badge" visible="false">
+                    <children>
+                        <Circle radius="10.0" stroke="TRANSPARENT" strokeType="INSIDE" />
+                        <Label fx:id="nombreMessageLabel" styleClass="notification-count-label" text="3" />
+                    </children>
+                </StackPane>
+            </children>
+        </VBox>
+    </children>
+</GridPane>

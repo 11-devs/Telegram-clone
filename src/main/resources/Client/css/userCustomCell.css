@@ -1,0 +1,189 @@
+.telegram-cell {
+    -fx-background-color: #17212B;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-cursor: hand;
+    -fx-background-radius: 0;
+    -fx-min-height: 70px;
+    -fx-pref-height: 70px;
+    -fx-max-height: 70px;
+}
+
+.telegram-cell:hover {
+    -fx-background-color: #232E3A;
+}
+
+.telegram-cell.selected {
+    -fx-background-color: #2B5278;
+}
+
+.telegram-cell.unread {
+    -fx-background-color: #1A252F;
+    -fx-font-weight: 600;
+}
+
+.telegram-cell.unread:hover {
+    -fx-background-color: #1F2A34;
+}
+
+/* Avatar styling */
+.avatar-image {
+    -fx-background-radius: 25px;
+    -fx-border-radius: 25px;
+    -fx-smooth: true;
+}
+
+.type-logo{
+    -fx-fill: #6B7A86;
+}
+
+/* User name label */
+.user-name-label {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-family: "System";
+    -fx-font-size: 15px;
+    -fx-font-weight: 500;
+    -fx-text-alignment: LEFT;
+    -fx-alignment: CENTER_LEFT;
+}
+
+/* Online status label */
+.online-status {
+    -fx-text-fill: #35B11A;
+    -fx-font-family: "System";
+    -fx-font-size: 13px;
+    -fx-font-weight: 400;
+    -fx-text-alignment: LEFT;
+}
+
+/* Last message label */
+.last-message-label {
+    -fx-text-fill: #92A3AF;
+    -fx-font-family: "System";
+    -fx-font-size: 14px;
+    -fx-font-weight: 400;
+    -fx-text-alignment: LEFT;
+    -fx-alignment: CENTER_LEFT;
+    -fx-max-width: 200px;
+    -fx-pref-width: 200px;
+}
+
+.telegram-cell.unread .last-message-label {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-weight: 500;
+}
+
+/* Message time label */
+.message-time-label {
+    -fx-text-fill: #92A3AF;
+    -fx-font-family: "System";
+    -fx-font-size: 13px;
+    -fx-font-weight: 400;
+    -fx-text-alignment: RIGHT;
+    -fx-alignment: CENTER_RIGHT;
+}
+
+.telegram-cell.unread .message-time-label {
+    -fx-text-fill: #4FC3F7;
+    -fx-font-weight: 500;
+}
+
+/* Notification badge */
+.notification-badge {
+    -fx-background-color: transparent;
+    -fx-min-width: 20px;
+    -fx-min-height: 20px;
+    -fx-pref-width: 20px;
+    -fx-pref-height: 20px;
+    -fx-max-width: 30px;
+    -fx-max-height: 20px;
+}
+
+.notification-badge Circle {
+    -fx-fill: #3476AB;
+    -fx-stroke: transparent;
+    -fx-stroke-width: 0;
+}
+
+.notification-count-label {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-family: "System";
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+    -fx-text-alignment: CENTER;
+    -fx-alignment: CENTER;
+}
+
+/* Message status styling */
+.message-status {
+    -fx-background-color: transparent;
+}
+
+.status-icon {
+    -fx-text-fill: #4FC3F7;
+    -fx-font-family: "System";
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+
+}
+
+.status-icon.sent {
+    -fx-text-fill: #92A3AF;
+}
+
+.status-icon.delivered {
+    -fx-text-fill: #92A3AF;
+}
+
+.status-icon.read {
+    -fx-text-fill: #4FC3F7;
+}
+
+/* Typing indicator */
+.typing-indicator {
+    -fx-text-fill: #4FC3F7;
+    -fx-font-family: "System";
+    -fx-font-size: 14px;
+    -fx-font-weight: 400;
+    -fx-font-style: italic;
+}
+
+/* Muted chat styling */
+.telegram-cell.muted .last-message-label {
+    -fx-text-fill: #6B7A86;
+}
+
+.telegram-cell.muted .message-time-label {
+    -fx-text-fill: #6B7A86;
+}
+
+.telegram-cell.muted .notification-badge Circle {
+    -fx-fill: #6B7A86;
+}
+
+/* Pinned chat indicator */
+.pinned-indicator {
+    -fx-text-fill: #6B7A86;
+    -fx-font-size: 13px;
+    -fx-padding: 0 0 0 2px;
+}
+
+/* Draft message indicator */
+.draft-indicator {
+    -fx-text-fill: #E53E3E;
+    -fx-font-family: "System";
+    -fx-font-size: 13px;
+    -fx-font-weight: 500;
+}
+
+/* Animation for smooth hover effects */
+.telegram-cell {
+    -fx-background-color: #17212B;
+    -fx-transition: -fx-background-color 0.2s ease;
+}
+
+/* Online status indicator */
+.online-indicator {
+    -fx-fill: #4CAF50; /* online color */
+    -fx-stroke: #35B11A; /* match cell background for border effect */
+}
