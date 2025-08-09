@@ -10,7 +10,7 @@ public class UserCustomCell extends ListCell<UserViewModel> {
 
     private UserCustomCellController controller;
     private GridPane root;
-    private UserViewModel currentUser;
+    private UserViewModel currentUser; // TODO: Should be connected to the DAO
 
     public UserCustomCell() {
         try {

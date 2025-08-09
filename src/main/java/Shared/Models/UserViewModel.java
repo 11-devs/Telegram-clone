@@ -3,6 +3,7 @@ package Shared.Models;
 import javafx.beans.property.*;
 
 public class UserViewModel {
+
     private final StringProperty userName = new SimpleStringProperty();
     private final StringProperty lastMessage = new SimpleStringProperty();
     private final StringProperty time = new SimpleStringProperty();
@@ -16,7 +17,7 @@ public class UserViewModel {
     private final StringProperty messageStatus = new SimpleStringProperty("none");
     private final BooleanProperty isTyping = new SimpleBooleanProperty(false);
     private final StringProperty lastSeen = new SimpleStringProperty("never");
-    private final StringProperty type = new SimpleStringProperty("user");
+    private final ObjectProperty<UserType> type = new SimpleObjectProperty<>(UserType.USER);
     private final StringProperty messagePreview = new SimpleStringProperty();
     private final StringProperty userId = new SimpleStringProperty();
     private final ReadOnlyBooleanWrapper isMessageSentByCurrentUser = new ReadOnlyBooleanWrapper(false);
@@ -40,7 +41,7 @@ public class UserViewModel {
     public StringProperty messageStatusProperty() { return messageStatus; }
     public BooleanProperty isTypingProperty() { return isTyping; }
     public StringProperty lastSeenProperty() { return lastSeen; }
-    public StringProperty typeProperty() { return type; }
+    public ObjectProperty<UserType> typeProperty() { return type; }
     public StringProperty messagePreviewProperty() { return messagePreview; }
     public StringProperty userIdProperty() { return userId; }
     public ReadOnlyBooleanProperty isMessageSentByCurrentUserProperty() { return isMessageSentByCurrentUser.getReadOnlyProperty(); }
@@ -60,7 +61,7 @@ public class UserViewModel {
     public String getMessageStatus() { return messageStatus.get(); }
     public boolean isTyping() { return isTyping.get(); }
     public String getLastSeen() { return lastSeen.get(); }
-    public String getType() { return type.get(); }
+    public UserType getType() { return type.get(); }
     public String getMessagePreview() { return messagePreview.get(); }
     public String getUserId() { return userId.get(); }
     public boolean isMessageSentByCurrentUser() { return isMessageSentByCurrentUser.get(); }
@@ -80,7 +81,10 @@ public class UserViewModel {
     public void setMessageStatus(String messageStatus) { this.messageStatus.set(messageStatus); }
     public void setTyping(boolean isTyping) { this.isTyping.set(isTyping); }
     public void setLastSeen(String lastSeen) { this.lastSeen.set(lastSeen); }
-    public void setType(String type) { this.type.set(type); }
+    public void setType(UserType type) { this.type.set(type); }
+    public void setType(String typeString) { // Convert string to enum
+        this.type.set(UserType.fromString(typeString));
+    }
     public void setMessagePreview(String messagePreview) { this.messagePreview.set(messagePreview); }
     public void setUserId(String userId) { this.userId.set(userId); updateIsMessageSentByCurrentUser(); }
     public void setDraft(boolean isDraft) { this.isDraft.set(isDraft); }
