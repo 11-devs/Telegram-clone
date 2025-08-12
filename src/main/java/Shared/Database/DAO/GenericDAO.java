@@ -1,6 +1,5 @@
 package Shared.Database.DAO;
 
-
 import Shared.Utils.Console;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;

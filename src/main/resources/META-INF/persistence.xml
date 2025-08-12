@@ -37,6 +37,9 @@
     </persistence-unit>
 
     <persistence-unit name="TelegramCloneSQLite" transaction-type="RESOURCE_LOCAL">
+        <class>Shared.Models.Account.Account</class>
+
+
         <properties>
             <property name="jakarta.persistence.jdbc.url" value="jdbc:sqlite:./DB/sqlite_db_file.db"/>
             <property name="jakarta.persistence.jdbc.driver" value="org.sqlite.JDBC"/>

@@ -1,49 +1,58 @@
 package Shared.Database;
 
-import Shared.Database.XMLManager.PersistenceXmlReader;
 import Shared.Utils.Console;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-
+/**
+ * Manages the lifecycle of the JPA EntityManagerFactory for the client-side SQLite database.
+ * This class should be instantiated once when the client application starts.
+ */
 public class SQLiteDatabase {
     private static final String PERSISTENCE_UNIT_NAME = "TelegramCloneSQLite";
-    String databaseName;
     private final EntityManagerFactory emf;
 
+    /**
+     * Initializes the connection to the SQLite database by creating the EntityManagerFactory.
+     * This single step reads persistence.xml, creates the database file if it doesn't exist,
+     * and prepares the connection pool.
+     */
     public SQLiteDatabase() {
         try {
-            databaseName = PersistenceXmlReader.getDatabaseNameFromPersistenceXml(PERSISTENCE_UNIT_NAME , "persistence.xml");
-            SQLiteDatabaseCreator.createDatabaseIfNotExists(databaseName);
+            // This single line does everything your original code was trying to do manually.
+            // 1. It finds and parses persistence.xml.
+            // 2. It reads the "jakarta.persistence.jdbc.url" property.
+            // 3. It connects to the database, automatically creating the .db file and directories if they don't exist.
+            this.emf = Persistence.createEntityManagerFactory(PERSISTENCE_UNIT_NAME);
+            Console.print("EntityManagerFactory created successfully for persistence unit: " + PERSISTENCE_UNIT_NAME);
         } catch (Exception e) {
-            Console.error("Failed to create or open SQLite database: " + databaseName + ": " + e.getMessage());
+            // If this fails, the application cannot continue.
+            Console.error("FATAL: Failed to create EntityManagerFactory for " + PERSISTENCE_UNIT_NAME);
+            e.printStackTrace();
+            throw new RuntimeException("Could not initialize the database.", e);
         }
-        emf = Persistence.createEntityManagerFactory(PERSISTENCE_UNIT_NAME);
-        Console.print("EntityManagerFactory created for persistence unit: " + PERSISTENCE_UNIT_NAME, Console.Color.GREEN);
     }
 
+    /**
+     * Creates a new, short-lived EntityManager for a single transaction or unit of work.
+     * @return A new EntityManager instance.
+     */
     public EntityManager getEntityManager() {
-        Console.log("Creating new EntityManager");
+        if (emf == null || !emf.isOpen()) {
+            throw new IllegalStateException("EntityManagerFactory is closed or was not initialized.");
+        }
         return emf.createEntityManager();
     }
 
-    // Inner static class to handle SQLite DB creation
-    private static class SQLiteDatabaseCreator {
-        private static final String SQLITE_JDBC_PREFIX = "jdbc:sqlite:";
-
-        public static void createDatabaseIfNotExists(String databaseFileName) {
-            String dbUrl = SQLITE_JDBC_PREFIX + databaseFileName;
-            try (Connection conn = DriverManager.getConnection(dbUrl)) {
-                if (conn != null) {
-                    Console.print("SQLite database file ready: " + databaseFileName, Console.Color.GREEN);
-                }
-            } catch (SQLException e) {
-                Console.error("Failed to create or connect to SQLite database file: " + e.getMessage());
-            }
+    /**
+     * Closes the EntityManagerFactory and releases all database resources.
+     * This method MUST be called when the application is shutting down.
+     */
+    public void close() {
+        if (emf != null && emf.isOpen()) {
+            emf.close();
+            Console.print("EntityManagerFactory has been closed.");
         }
     }
 }
