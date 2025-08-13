@@ -6,6 +6,7 @@
 
     <persistence-unit name="telegramclonePU" transaction-type="RESOURCE_LOCAL">
 
+        <class>Shared.Models.Account.Account</class>
 
         <properties>
             <!-- Standard JPA properties -->
@@ -32,6 +33,18 @@
             <property name="hibernate.show_sql" value="false"/>
             <property name="hibernate.format_sql" value="false"/>
             <property name="hibernate.use_sql_comments" value="false"/>
+        </properties>
+    </persistence-unit>
+
+    <persistence-unit name="TelegramCloneSQLite" transaction-type="RESOURCE_LOCAL">
+        <class>Shared.Models.Account.Account</class>
+
+
+        <properties>
+            <property name="jakarta.persistence.jdbc.url" value="jdbc:sqlite:./DB/sqlite_db_file.db"/>
+            <property name="jakarta.persistence.jdbc.driver" value="org.sqlite.JDBC"/>
+            <property name="hibernate.dialect" value="org.hibernate.community.dialect.SQLiteDialect"/>
+            <property name="hibernate.hbm2ddl.auto" value="update"/>
         </properties>
     </persistence-unit>
 </persistence>

@@ -11,8 +11,8 @@ import java.io.InputStream;
 import java.net.URI;
 
 public class PersistenceXmlReader {
-    public static String getDatabaseNameFromPersistenceXml(String persistenceUnitName) throws Exception {
-        InputStream is = Database.class.getClassLoader().getResourceAsStream("META-INF/persistence.xml");
+    public static String getDatabaseNameFromPersistenceXml(String persistenceUnitName , String fileName) throws Exception {
+        InputStream is = Database.class.getClassLoader().getResourceAsStream("META-INF/" + fileName);
         if (is == null) throw new RuntimeException("persistence.xml not found");
 
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
