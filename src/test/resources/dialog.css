@@ -1,0 +1,79 @@
+/* General style for DialogPane (Alert window) */
+.dialog-pane {
+    -fx-background-color: #17212B;
+    -fx-font-family: "System";
+    -fx-font-size: 14px;
+}
+
+/* Header Style */
+.dialog-pane .header-panel {
+    -fx-background-color: #34495E;
+    -fx-padding: 10px;
+}
+
+/* Header text style */
+.dialog-pane .header-panel .label {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+/* Content text style */
+.dialog-pane .content.label {
+    -fx-text-fill: #D5D8DC;
+    -fx-font-size: 14px;
+    -fx-wrap-text: true;
+}
+
+/* Button style */
+.dialog-pane .button {
+    -fx-background-color: #5288C1;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 15px;
+    -fx-padding: 8px 15px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 5, 0.5, 0, 0);
+}
+
+/* Effects for buttons */
+.dialog-pane .button:hover {
+    -fx-background-color: #426C9E;
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+}
+
+.dialog-pane .button:pressed {
+    -fx-background-color: #355A82;
+    -fx-scale-x: 0.95;
+    -fx-scale-y: 0.95;
+}
+
+/* Special style for TextInputDialog */
+.dialog-pane .text-field {
+    -fx-background-color: #34495E;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 14px;
+    -fx-background-radius: 5px;
+    -fx-border-color: #5288C1;
+    -fx-border-width: 1px;
+    -fx-border-radius: 5px;
+}
+
+.dialog-pane .text-field:focused {
+    -fx-border-color: #FFFFFF;
+    -fx-border-width: 2px;
+}
+
+/* Icon style (for different AlertTypes) */
+.dialog-pane:information .icon {
+    -fx-background-color: #5288C1; /* Info icon color */
+}
+
+.dialog-pane:error .icon {
+    -fx-background-color: #E74C3C; /* Error icon color */
+}
+
+.dialog-pane:warning .icon {
+    -fx-background-color: #F1C40F; /* Alert icon color */
+}

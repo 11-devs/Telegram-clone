@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.Cursor?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.SVGPath?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="666.0" prefWidth="804.0" stylesheets="@../css/phoneNumber.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.Controllers.PhoneNumberController">
+   <center>
+      <VBox alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="666.0" prefWidth="804.0">
+         <children>
+            <VBox fx:id="root" alignment="CENTER_LEFT" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="343.0" prefWidth="324.0">
+               <children>
+                  <VBox fx:id="infoBox" prefHeight="264.0" prefWidth="324.0">
+                     <children>
+                        <VBox prefHeight="118.0" prefWidth="324.0">
+                           <children>
+                              <Label styleClass="title" text="Your Phone Number">
+                                 <font>
+                                    <Font name="System Bold" size="24.0" />
+                                 </font>
+                                 <VBox.margin>
+                                    <Insets />
+                                 </VBox.margin>
+                              </Label>
+                              <Label prefHeight="0.0" prefWidth="250.0" styleClass="subtitle" text="Please confirm your country code">
+                                 <font>
+                                    <Font name="System" size="16.0" />
+                                 </font>
+                                 <VBox.margin>
+                                    <Insets top="10.0" />
+                                 </VBox.margin>
+                              </Label>
+                              <Label prefHeight="6.0" prefWidth="250.0" styleClass="subtitle" text="and enter your phone number.">
+                                 <font>
+                                    <Font name="System" size="16.0" />
+                                 </font>
+                              </Label>
+                           </children>
+                           <VBox.margin>
+                              <Insets />
+                           </VBox.margin>
+                        </VBox>
+                        <Button fx:id="selectCountryButton" onAction="#showCountrySelection" prefHeight="41.0" prefWidth="370.0" styleClass="country-button" text="Country Code">
+                           <VBox.margin>
+                              <Insets />
+                           </VBox.margin>
+                           <cursor>
+                              <Cursor fx:constant="HAND" />
+                           </cursor>
+                        </Button>
+                        <HBox alignment="CENTER" prefHeight="102.0" prefWidth="324.0">
+                           <VBox.margin>
+                              <Insets />
+                           </VBox.margin>
+                           <children>
+                              <TextField fx:id="countryPreCode" minHeight="30.0" prefHeight="30.0" prefWidth="269.0" styleClass="text-field" text="+">
+                                 <HBox.margin>
+                                    <Insets right="10.0" />
+                                 </HBox.margin>
+                              </TextField>
+                              <TextField fx:id="phoneNumberField" minHeight="30.0" prefHeight="30.0" prefWidth="438.0" />
+                           </children>
+                        </HBox>
+                     </children>
+                  </VBox>
+                  <Button fx:id="continueButton" onAction="#continueAction" prefHeight="46.0" prefWidth="461.0" styleClass="continue-button" text="Next">
+                     <cursor>
+                        <Cursor fx:constant="HAND" />
+                     </cursor>
+                     <VBox.margin>
+                        <Insets />
+                     </VBox.margin>
+                  </Button>
+               </children>
+            </VBox>
+         </children>
+      </VBox>
+   </center>
+   <top>
+      <HBox prefHeight="40.0" prefWidth="200.0" BorderPane.alignment="CENTER">
+         <children>
+            <HBox prefHeight="40.0" prefWidth="404.0">
+               <children>
+                  <Button fx:id="backButton" mnemonicParsing="false" onAction="#handleBack" prefHeight="16.0" prefWidth="27.0" styleClass="back-button">
+                     <graphic>
+                        <SVGPath content="M12 8a.5.5 0 0 1-.5.5H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H11.5a.5.5 0 0 1 .5.5" fill="#5b6772" scaleX="2.0" scaleY="2.0" scaleZ="2.0" styleClass="svg-path" />
+                     </graphic>
+                     <HBox.margin>
+                        <Insets left="15.0" top="25.0" />
+                     </HBox.margin>
+                  </Button>
+               </children>
+            </HBox>
+            <HBox prefHeight="54.0" prefWidth="810.0" />
+            <HBox alignment="TOP_RIGHT" prefHeight="40.0" prefWidth="409.0">
+               <children>
+                  <Button fx:id="settingsButton" alignment="CENTER" onAction="#handleSettings" prefHeight="30.0" prefWidth="92.0" styleClass="settings-button" text="SETTINGS">
+                     <HBox.margin>
+                        <Insets right="10.0" top="15.0" />
+                     </HBox.margin>
+                  </Button>
+               </children></HBox>
+         </children>
+      </HBox>
+   </top>
+   <bottom>
+      <HBox prefHeight="40.0" prefWidth="200.0" BorderPane.alignment="CENTER" />
+   </bottom>
+</BorderPane>

@@ -1,6 +1,9 @@
 plugins {
     id 'java'
-    id 'org.openjfx.javafxplugin' version '0.0.14'
+    id 'application'
+    id 'org.javamodularity.moduleplugin' version '1.8.12'
+    id 'org.openjfx.javafxplugin' version '0.1.0'
+    id 'org.beryx.jlink' version '2.25.0'
 }
 
 group = 'AP'
@@ -16,12 +19,29 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.postgresql:postgresql:42.6.0' // or latest version
-    implementation 'jakarta.persistence:jakarta.persistence-api:3.1.0'
-    implementation 'org.hibernate.orm:hibernate-core:6.4.2.Final'
-    implementation 'org.postgresql:postgresql:42.6.0'
-    implementation 'com.zaxxer:HikariCP:5.0.1'
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    implementation 'org.openjfx:javafx-controls:23.0.2'
+    implementation 'org.openjfx:javafx-fxml:23.0.2'
+
     implementation 'com.google.code.gson:gson:2.10.1'
+
+    implementation 'com.jfoenix:jfoenix:9.0.10' // TODO: use jfoenix components in the future
+}
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(23))
+    }
+}
+
+javafx {
+    version = "23.0.2"
+    modules = ["javafx.controls", "javafx.fxml"]
+}
+
+application {
+    mainClass.set("Main")
 }
 
 test {
