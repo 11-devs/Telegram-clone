@@ -8,9 +8,11 @@ import jakarta.persistence.*;
 public class Account extends BaseEntity {
 
     @Column(nullable = false)
-    private String displayName;
-
+    private String firstName;
     @Column(nullable = false)
+    private String lastName;
+
+    @Column(nullable = true)
     private String hashedPassword;
 
     @Column(unique = true, nullable = false)
@@ -20,19 +22,20 @@ public class Account extends BaseEntity {
     @Column(nullable = false)
     private AccountStatus status;
 
-    @Column(name = "profile_picture_url")
-    private String profilePictureUrl;
+    @Column(name = "profile_picture_id")
+    private String profilePictureId;
 
     @Column(name = "bio", length = 160)
     private String bio;
 
 
-    public Account(String displayName, String hashedPassword, String username, AccountStatus status, String profilePictureUrl, String bio) {
-        this.displayName = displayName;
+    public Account(String firstName,String lastName, String hashedPassword, String username, AccountStatus status, String profilePictureId, String bio) {
+        this.firstName = firstName;
+        this.lastName = lastName;
         this.hashedPassword = hashedPassword;
         this.username = username;
         this.status = status;
-        this.profilePictureUrl = profilePictureUrl;
+        this.profilePictureId = profilePictureId;
         this.bio = bio;
     }
 
@@ -41,13 +44,6 @@ public class Account extends BaseEntity {
 
     }
 
-    public String getDisplayName() {
-        return displayName;
-    }
-
-    public void setDisplayName(String displayName) {
-        this.displayName = displayName;
-    }
 
     public String getHashedPassword() {
         return hashedPassword;
@@ -73,12 +69,12 @@ public class Account extends BaseEntity {
         this.status = status;
     }
 
-    public String getProfilePictureUrl() {
-        return profilePictureUrl;
+    public String getProfilePictureId() {
+        return profilePictureId;
     }
 
-    public void setProfilePictureUrl(String profilePictureUrl) {
-        this.profilePictureUrl = profilePictureUrl;
+    public void setProfilePictureId(String profilePictureId) {
+        this.profilePictureId = profilePictureId;
     }
 
     public String getBio() {
@@ -87,5 +83,21 @@ public class Account extends BaseEntity {
 
     public void setBio(String bio) {
         this.bio = bio;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
 }

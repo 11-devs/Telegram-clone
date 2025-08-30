@@ -1,8 +1,8 @@
 package Client;
 
-import JSocket.Core.Client.ConnectionManager;
-import JSocket.Example.Models.LoginInputModel;
-import JSocket.Protocol.Rpc.RpcCallerBase;
+import JSocket2.Core.Client.ConnectionManager;
+import JSocket2.Example.Models.LoginInputModel;
+import JSocket2.Protocol.Rpc.RpcCallerBase;
 import com.google.gson.Gson;
 
 import java.io.IOException;
@@ -14,9 +14,8 @@ public class RpcCaller extends RpcCallerBase {
     public RpcCaller(ConnectionManager connectionManager){
         super(connectionManager);
     }
-//
-//
-//    public void login(LoginInputModel login) throws IOException {
-//        callRpc("LoginController","Login",login);
-//    }
+
+
+    public void login(LoginInputModel login) throws IOException {
+        callRpc("LoginController","Login",login);}
 }

@@ -8,7 +8,6 @@ import JSocket2.Protocol.Rpc.RpcResponse;
 public class MessageRpcController extends RpcControllerBase {
     public RpcResponse<SendMessageOutputModel> SendMessage(SendMessageInputModel input){
         var output = new SendMessageOutputModel();
-
         return Ok(output);
     }
 }

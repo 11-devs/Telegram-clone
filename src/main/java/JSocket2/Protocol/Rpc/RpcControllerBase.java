@@ -3,7 +3,6 @@ package JSocket2.Protocol.Rpc;
 import JSocket2.Protocol.StatusCode;
 
 public abstract class RpcControllerBase {
-
     protected final <T> RpcResponse<T> response(StatusCode statusCode,String message, T content) {
         return new RpcResponse<>(statusCode,message, content);
     }

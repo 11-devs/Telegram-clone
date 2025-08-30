@@ -9,6 +9,7 @@ import Shared.Models.Media.Media;
 import Shared.Models.Membership.Membership;
 import Shared.Models.Message.Message;
 import Shared.Models.Notification.Notification;
+import Shared.Models.PendingAuth.PendingAuth;
 import Shared.Models.Relationship.Relationship;
 import Shared.Models.Session.Session;
 import Shared.Models.Setting.Setting;
@@ -30,6 +31,7 @@ public class DaoManager {
     private GenericDAO<Relationship> relationshipDAO;
     private GenericDAO<Session> sessionDAO;
     private GenericDAO<Setting> settingDAO;
+    private GenericDAO<PendingAuth> pendingAuthDAO;
 
     public DaoManager(EntityManager entityManager) {
         this.entityManager = entityManager;
@@ -129,6 +131,12 @@ public class DaoManager {
             settingDAO = new GenericDAO<>(Setting.class, entityManager);
         }
         return settingDAO;
+    }
+    public GenericDAO<PendingAuth> getPendingAuthDAO() {
+        if (pendingAuthDAO == null) {
+            pendingAuthDAO = new GenericDAO<>(PendingAuth.class, entityManager);
+        }
+        return pendingAuthDAO;
     }
 
 //    // Unit of Work methods
