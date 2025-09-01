@@ -5,10 +5,7 @@ import Shared.Models.BaseEntity;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
-@Entity
-//@Inheritance(strategy = InheritanceType.JOINED)
-@MappedSuperclass
-@Table(name = "relationships")
+@MappedSuperclass // Designates this as a template, not an entity
 public abstract class Relationship extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -18,4 +15,6 @@ public abstract class Relationship extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "target_account_id", nullable = false)
     private Account target;
+
+    // Getters and setters...
 }

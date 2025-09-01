@@ -7,6 +7,29 @@
     <persistence-unit name="telegramclonePU" transaction-type="RESOURCE_LOCAL">
 
         <class>Shared.Models.Account.Account</class>
+        <class>Shared.Models.Chat.Chat</class>
+        <class>Shared.Models.Interaction.Interaction</class>
+        <class>Shared.Models.Interaction.Reaction</class>
+        <class>Shared.Models.Interaction.View</class>
+        <class>Shared.Models.Contact.Contact</class>
+        <class>Shared.Models.Folder.Folder</class>
+        <class>Shared.Models.Media.Media</class>
+        <class>Shared.Models.Membership.Membership</class>
+        <class>Shared.Models.Message.Message</class>
+        <class>Shared.Models.Message.MediaMessage</class>
+        <class>Shared.Models.Message.PollMessage</class>
+        <class>Shared.Models.Message.SystemMessage</class>
+        <class>Shared.Models.Message.TextMessage</class>
+        <class>Shared.Models.Notification.Notification</class>
+        <class>Shared.Models.Relationship.Block</class>
+        <class>Shared.Models.Relationship.Mute</class>
+        <class>Shared.Models.Relationship.Pin</class>
+        <class>Shared.Models.Session.Session</class>
+        <class>Shared.Models.Setting.GeneralSetting</class>
+        <class>Shared.Models.Setting.NotificationSetting</class>
+        <class>Shared.Models.Setting.PrivacySetting</class>
+        <class>Shared.Models.Setting.Setting</class>
+
 
         <properties>
             <!-- Standard JPA properties -->
