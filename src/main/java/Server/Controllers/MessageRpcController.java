@@ -2,14 +2,11 @@ package Server.Controllers;
 
 import Server.DaoManager;
 import JSocket2.Protocol.Rpc.*;
-public class MessageController extends RpcControllerBase{
+public class MessageRpcController extends RpcControllerBase{
     private final DaoManager daoManager;
-    public MessageController(DaoManager daoManager){
+    public MessageRpcController(DaoManager daoManager){
         this.daoManager = daoManager;
     }
-//
-//    public RpcResponse<> getMessages(){
-//
-//    }
+
 }
 

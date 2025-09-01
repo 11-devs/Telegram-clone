@@ -28,5 +28,6 @@ public abstract class Message extends BaseEntity {
     @Column(nullable = false)
     private MessageType type;
 
-    // Getters and setters...
+
+
 }

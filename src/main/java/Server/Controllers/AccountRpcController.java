@@ -6,16 +6,15 @@ import Server.DaoManager;
 import Shared.Api.Models.AccountController.*;
 import Shared.Models.Account.Account;
 import Shared.Models.PendingAuth.PendingAuth;
-import Shared.Models.Session.Session;
 import Shared.Utils.PasswordUtil;
 
 import java.time.Instant;
 import java.util.UUID;
 
-public class AccountController extends RpcControllerBase {
+public class AccountRpcController extends RpcControllerBase {
     private final DaoManager daoManager;
 
-    public AccountController(DaoManager daoManager) {
+    public AccountRpcController(DaoManager daoManager) {
         this.daoManager = daoManager;
     }
 
@@ -108,19 +107,19 @@ public class AccountController extends RpcControllerBase {
         return Ok();
     }
     public RpcResponse<Object> setPassword(String password){
-        var account = daoManager.getAccountDAO().findById("0");
+        var account = daoManager.getAccountDAO().findById(getCurrentUser().getUserId());
         account.setHashedPassword(PasswordUtil.hash(password));
         daoManager.getAccountDAO().update(account);
         return Ok();
     }
     public RpcResponse<Object> setUsername(String username){
-        var account = daoManager.getAccountDAO().findById("0");
+        var account = daoManager.getAccountDAO().findById(getCurrentUser().getUserId());
         account.setUsername(username);
         daoManager.getAccountDAO().update(account);
         return Ok();
     }
     public RpcResponse<Object> setBio(String bio){
-        var account = daoManager.getAccountDAO().findById("0");
+        var account = daoManager.getAccountDAO().findById(getCurrentUser().getUserId());
         account.setBio(bio);
         daoManager.getAccountDAO().update(account);
         return Ok();
