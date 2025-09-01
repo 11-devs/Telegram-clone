@@ -34,14 +34,12 @@ java {
         languageVersion.set(JavaLanguageVersion.of(23))
     }
 }
-
+application {
+    setMainClass("Client.Main")
+}
 javafx {
     version = "23.0.2"
     modules = ["javafx.controls", "javafx.fxml"]
-}
-
-application {
-    mainClass.set("Main")
 }
 
 test {

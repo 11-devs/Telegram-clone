@@ -1,3 +1,5 @@
+package Client;
+
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -15,7 +17,7 @@ public class Main extends Application {
     public void start(Stage primaryStage) throws Exception {
         // Upload FXML file
         // --------------------------------
-        // Main order
+        // Client.Main order
         Parent root = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("/Client/fxml/welcome.fxml")));
         // --------------------------------
         // Custom order

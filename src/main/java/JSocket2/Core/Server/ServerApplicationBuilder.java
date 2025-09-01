@@ -28,6 +28,7 @@ public class ServerApplicationBuilder {
     }
     public ServerApplicationBuilder setAuthService(Class<?> authService) {
         services.AddScoped(IAuthService.class,authService);
+        setAuth = true;
         return this;
     }
     public <T> ServerApplicationBuilder addController(Class<T> controllerType) {
