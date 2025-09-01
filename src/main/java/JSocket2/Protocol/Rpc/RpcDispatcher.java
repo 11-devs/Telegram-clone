@@ -1,6 +1,8 @@
 package JSocket2.Protocol.Rpc;
 
+import JSocket2.Core.Server.ServerSession;
 import JSocket2.DI.ServiceProvider;
+import JSocket2.Protocol.Authentication.UserIdentity;
 import com.google.gson.Gson;
 
 import java.lang.reflect.Array;
@@ -19,12 +21,14 @@ public class RpcDispatcher {
     private final ServiceProvider provider;
 
     private final Gson gson = new Gson();
-    public RpcResponse<?> dispatch(RpcCallMetadata metadata, String payload_json) {
+    public RpcResponse<?> dispatch(RpcCallMetadata metadata, String payload_json, UserIdentity activeUser) {
         String controllerName =  metadata.getController().toLowerCase();
         String ActionName = metadata.getAction().toLowerCase();
         Class<?> controllerType = controllers.get(controllerName);
         Object controller = provider.GetService(controllerType);
         if (controller == null) throw new RuntimeException("Controller not registered: " + controllerName);
+        if(controller instanceof RpcControllerBase rpcController){
+            rpcController.setCurrentUser(activeUser);
         Object[] methodModels = gson.fromJson(payload_json, Object[].class);
         try {
             if(methodModels == null){
@@ -40,6 +44,8 @@ public class RpcDispatcher {
         } catch (Exception e) {
             throw new RuntimeException("Error invoking method: " + e.getMessage(), e);
         }
+        }
+        throw new RuntimeException("Class must be a inheritance of RpcControllerBase: " + ActionName);
     }
     private Map.Entry<Method, Object[]> findMatchingMethod(Class<?> controllerClass, String methodName, Object[] parameters)
             throws NoSuchMethodException {

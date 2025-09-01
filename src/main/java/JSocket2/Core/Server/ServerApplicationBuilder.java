@@ -2,7 +2,7 @@ package JSocket2.Core.Server;
 
 import JSocket2.Cryptography.RsaKeyManager;
 import JSocket2.DI.ServiceCollection;
-import JSocket2.Protocol.Authentication.AuthService;
+import JSocket2.Protocol.Authentication.IAuthService;
 import JSocket2.Protocol.Rpc.RpcControllerCollection;
 
 import java.io.IOException;
@@ -11,7 +11,7 @@ public class ServerApplicationBuilder {
     private int port = 8080;
     private final RpcControllerCollection rpcControllerCollection;
     private final ServiceCollection services;
-    private AuthService authService = null;
+    private boolean setAuth = false;
     public ServerApplicationBuilder(){
         services = new ServiceCollection();
         rpcControllerCollection = new RpcControllerCollection();
@@ -26,8 +26,8 @@ public class ServerApplicationBuilder {
     public ServiceCollection getServices(){
         return services;
     }
-    public ServerApplicationBuilder setAuthService(AuthService authService) {
-        this.authService = authService;
+    public ServerApplicationBuilder setAuthService(Class<?> authService) {
+        services.AddScoped(IAuthService.class,authService);
         return this;
     }
     public <T> ServerApplicationBuilder addController(Class<T> controllerType) {
@@ -35,13 +35,14 @@ public class ServerApplicationBuilder {
         this.rpcControllerCollection.registerController(controllerType);
         return this;
     }
+
     public ServerApplication build() throws IOException {
         if(!canBuild()){
             throw new RuntimeException("Can't build ServerApplication");
         }
-        return new ServerApplication(port, rpcControllerCollection,authService,services);
+        return new ServerApplication(port, rpcControllerCollection,services);
     }
     private boolean canBuild(){
-        return authService != null && port > 1023 && port < 49151;
+        return setAuth && port > 1023 && port < 49151;
     }
 }

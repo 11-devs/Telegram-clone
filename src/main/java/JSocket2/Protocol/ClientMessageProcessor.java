@@ -2,13 +2,11 @@ package JSocket2.Protocol;
 
 import JSocket2.DI.ServiceProvider;
 import JSocket2.Protocol.Authentication.AuthProcessState;
-import JSocket2.Protocol.Authentication.IAccessKeyManager;
 import JSocket2.Core.Client.ClientSession;
 import JSocket2.Cryptography.EncryptionUtil;
+import JSocket2.Protocol.Authentication.IAccessKeyManager;
 import JSocket2.Protocol.EventHub.EventBroker;
 import JSocket2.Protocol.EventHub.EventMetadata;
-import JSocket2.Protocol.Rpc.RpcCallMetadata;
-import JSocket2.Protocol.Rpc.RpcHelper;
 import JSocket2.Protocol.Rpc.RpcResponseMetadata;
 import JSocket2.Protocol.Transfer.ClientFileTransferManager;
 import com.google.gson.Gson;

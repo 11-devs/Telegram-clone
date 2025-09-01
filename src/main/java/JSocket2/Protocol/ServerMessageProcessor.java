@@ -1,6 +1,6 @@
 package JSocket2.Protocol;
 
-import JSocket2.Protocol.Authentication.AuthService;
+import JSocket2.Protocol.Authentication.IAuthService;
 import JSocket2.Protocol.Authentication.InvalidAccessKeyException;
 import JSocket2.Core.Server.ServerSession;
 import JSocket2.Cryptography.EncryptionUtil;
@@ -22,10 +22,10 @@ public class ServerMessageProcessor implements IMessageProcessor {
     private final MessageHandler messageHandler;
     private final ServerFileTransferManager fileTransferManager;
     private final ServerSession serverSession;
-    private final AuthService authService;
+    private final IAuthService authService;
     private RsaKeyManager rsaKeyManager;
 
-    public ServerMessageProcessor(MessageHandler handler, RpcDispatcher rpcDispatcher, ServerFileTransferManager fileTransferManager, ServerSession serverSession, RsaKeyManager rsaKeyManager, AuthService authService) {
+    public ServerMessageProcessor(MessageHandler handler, RpcDispatcher rpcDispatcher, ServerFileTransferManager fileTransferManager, ServerSession serverSession, RsaKeyManager rsaKeyManager, IAuthService authService) {
         this.gson = new Gson();
         this.messageHandler = handler;
         this.rpcDispatcher = rpcDispatcher;
@@ -80,7 +80,7 @@ public class ServerMessageProcessor implements IMessageProcessor {
         try {
             for (var key : response.getAccessKeys()) {
                 var user = authService.Login(key);
-                serverSession.subscribeUser(user.getUserId());
+                serverSession.subscribeUser(user);
             }
                 responseMetadata = gson.toJson(new RpcResponseMetadata(StatusCode.OK.code, "Auth was successful"));
         }
@@ -100,7 +100,7 @@ public class ServerMessageProcessor implements IMessageProcessor {
     private void handleRpcCall(Message message) throws IOException {
         var metadata = gson.fromJson(new String(message.getMetadata(), StandardCharsets.UTF_8), RpcCallMetadata.class);
         var payloadJson = new String(message.getPayload(), StandardCharsets.UTF_8);
-        var response = rpcDispatcher.dispatch(metadata, payloadJson);
+        var response = rpcDispatcher.dispatch(metadata, payloadJson,serverSession.getActiveUser());
 
         var responseMetadata = gson.toJson(new RpcResponseMetadata(response.getStatusCode().code, ""));
         var responsePayload = gson.toJson(response.getPayload());

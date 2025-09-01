@@ -1,17 +1,19 @@
 package JSocket2.Core.Server;
 
 import JSocket2.Core.Session;
+import JSocket2.Protocol.Authentication.UserIdentity;
+
 
 import javax.crypto.SecretKey;
 import java.io.IOException;
-import java.net.Socket;
-import java.util.Set;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ServerSession extends Session {
     private final ServerSessionManager serverSessionManager;
     private final ClientHandler clientHandler;
-    private final Set<String> subscribedUserIds = ConcurrentHashMap.newKeySet();
+    private final Map<String, UserIdentity> subscribedUsers = new ConcurrentHashMap<>();
+    private UserIdentity activeUser = null;
     private boolean isAuthorized = false;
 
     public ServerSession(ClientHandler clientHandler, ServerSessionManager serverSessionManager) {
@@ -19,33 +21,37 @@ public class ServerSession extends Session {
         this.clientHandler = clientHandler;
         this.serverSessionManager = serverSessionManager;
     }
+
     public ClientHandler getClientHandler(){
         return clientHandler;
     }
-    public void subscribeUser(String userId) {
-        if (subscribedUserIds.add(userId)) {
-            serverSessionManager.indexSessionForUser(this, userId);
+
+    public void subscribeUser(UserIdentity user) {
+        if (subscribedUsers.put(user.getUserId(), user) == null) {
+            serverSessionManager.indexSessionForUser(this, user.getUserId());
+            setActiveUser(user);
         }
         isAuthorized = true;
     }
 
-
     public void unsubscribeUser(String userId) {
-        if (subscribedUserIds.remove(userId)) {
+        if (subscribedUsers.remove(userId) != null) {
             serverSessionManager.deindexSessionForUser(this, userId);
         }
-        if(subscribedUserIds.isEmpty()){
+        if (activeUser != null && userId.equals(activeUser.getUserId())) {
+            activeUser = null;
+        }
+        if (subscribedUsers.isEmpty()) {
             isAuthorized = false;
         }
     }
 
-
     public void close() throws IOException {
-
-        for (var userId : subscribedUserIds) {
+        for (var userId : subscribedUsers.keySet()) {
             serverSessionManager.deindexSessionForUser(this, userId);
         }
-        //socket.close();
+        subscribedUsers.clear();
+        activeUser = null;
     }
 
     public boolean isAuthorized() {
@@ -53,7 +59,17 @@ public class ServerSession extends Session {
     }
 
     public void setAESKey(SecretKey aesKey) {
-        super.aesKey =aesKey;
+        super.aesKey = aesKey;
+    }
+
+    public void setActiveUser(UserIdentity user) {
+        if (!subscribedUsers.containsKey(user.getUserId())) {
+            throw new IllegalArgumentException("User not subscribed to this session.");
+        }
+        this.activeUser = user;
+    }
+
+    public UserIdentity getActiveUser() {
+        return this.activeUser;
     }
 }
-

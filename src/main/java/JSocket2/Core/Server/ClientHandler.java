@@ -1,7 +1,7 @@
 package JSocket2.Core.Server;
 
 import JSocket2.DI.ServiceProvider;
-import JSocket2.Protocol.Authentication.AuthService;
+import JSocket2.Protocol.Authentication.IAuthService;
 import JSocket2.Cryptography.RsaKeyManager;
 import JSocket2.Protocol.*;
 import JSocket2.Protocol.Rpc.RpcDispatcher;
@@ -22,7 +22,7 @@ public class ClientHandler implements Runnable {
     private IMessageProcessor messageProcessor;
     private ServerFileTransferManager fileTransferManager;
     private RsaKeyManager rsaKeyManager;
-    private AuthService authService;
+    private IAuthService authService;
     private final ServiceProvider serviceProvider;
     private final Map<UUID, CompletableFuture<Message>> pendingRequests;
     private final ServerSession serverSession;
@@ -31,7 +31,7 @@ public class ClientHandler implements Runnable {
     public ClientHandler(ServiceProvider serviceProvider,Socket socket,
                          RpcDispatcher rpcDispatcher,
                          ServerSessionManager serverSessionManager,
-                         Map<UUID, CompletableFuture<Message>> pendingRequests, AuthService authService) throws IOException {
+                         Map<UUID, CompletableFuture<Message>> pendingRequests) throws IOException {
         this.serviceProvider = serviceProvider;
         this.socket = socket;
         this.out = new DataOutputStream(socket.getOutputStream());
@@ -42,7 +42,7 @@ public class ClientHandler implements Runnable {
         this.rsaKeyManager = this.serviceProvider.GetService(RsaKeyManager.class);
         this.pendingRequests = pendingRequests;
         this.fileTransferManager = new ServerFileTransferManager(messageHandler,this.pendingRequests);
-        this.authService = authService;
+        this.authService =  serviceProvider.GetService(IAuthService.class);
         sendRsaPublicKey();
         this.messageProcessor = new ServerMessageProcessor(this.messageHandler,this.rpcDispatcher,this.fileTransferManager, serverSession,rsaKeyManager,this.authService);
 

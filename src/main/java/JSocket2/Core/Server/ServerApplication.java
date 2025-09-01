@@ -2,10 +2,9 @@ package JSocket2.Core.Server;
 
 import JSocket2.DI.ServiceCollection;
 import JSocket2.DI.ServiceProvider;
-import JSocket2.Protocol.Authentication.AuthService;
+import JSocket2.Protocol.Authentication.IAuthService;
 import JSocket2.Protocol.Rpc.RpcControllerCollection;
 import JSocket2.Utils.Logger;
-import JSocket2.Cryptography.RsaKeyManager;
 import JSocket2.Protocol.Rpc.RpcDispatcher;
 import JSocket2.Protocol.Message;
 
@@ -24,14 +23,13 @@ public class ServerApplication {
     private final ServerSocket serverSocket;
     private final RpcDispatcher rpcDispatcher;
     private final ServiceProvider serviceProvider;
-    private final AuthService authService;
     public ServerSessionManager getServerSessionManager() {
         return serverSessionManager;
     }
 
     final ServerSessionManager serverSessionManager;
     private final Map<UUID, CompletableFuture<Message>> pendingRequests;
-    public ServerApplication(int port, RpcControllerCollection rpcControllerCollection, AuthService authService, ServiceCollection services) throws IOException {
+    public ServerApplication(int port, RpcControllerCollection rpcControllerCollection, ServiceCollection services) throws IOException {
         this.PORT = port;
         this.serviceProvider = services.CreateServiceProvider();
         this.serverSocket = new ServerSocket(PORT);
@@ -39,7 +37,7 @@ public class ServerApplication {
         this.pendingRequests = new ConcurrentHashMap<>();
 
         this.rpcDispatcher = rpcControllerCollection.CreateRpcDispatcher(this.serviceProvider);
-        this.authService =  authService;
+
     }
 
     public void Run() {
@@ -48,7 +46,7 @@ public class ServerApplication {
             while (!serverSocket.isClosed()) {
                 Socket socket = serverSocket.accept();
                 Logger.get().info("A new client has connected");
-                ClientHandler clientHandler = new ClientHandler(serviceProvider,socket, rpcDispatcher, serverSessionManager,pendingRequests,authService);
+                ClientHandler clientHandler = new ClientHandler(serviceProvider,socket, rpcDispatcher, serverSessionManager,pendingRequests);
                 new Thread(clientHandler).start();
                 Scanner scanner = new Scanner(System.in);
                     scanner.nextLine();
