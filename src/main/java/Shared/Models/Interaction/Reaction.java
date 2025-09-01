@@ -13,4 +13,22 @@ public class Reaction extends Interaction {
 
     @Column(nullable = false)
     private String reactionEmoji;  // e.g., "👍", "❤️"
+
+    // --- Getters and Setters ---
+
+    public Message getMessage() {
+        return message;
+    }
+
+    public void setMessage(Message message) {
+        this.message = message;
+    }
+
+    public String getReactionEmoji() {
+        return reactionEmoji;
+    }
+
+    public void setReactionEmoji(String reactionEmoji) {
+        this.reactionEmoji = reactionEmoji;
+    }
 }

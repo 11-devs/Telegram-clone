@@ -27,7 +27,4 @@ public abstract class Message extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private MessageType type;
-
-
-
 }

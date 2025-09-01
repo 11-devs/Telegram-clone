@@ -12,6 +12,7 @@ import java.util.Set;
 @Entity
 @Table(name = "chat_folders")
 public class Folder extends BaseEntity {
+
     @Column(nullable = false)
     private String name;
 
@@ -27,5 +28,29 @@ public class Folder extends BaseEntity {
     )
     private Set<Chat> chats = new HashSet<>();
 
-    // Getters and setters...
+    // --- Getters and Setters ---
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Account getOwner() {
+        return owner;
+    }
+
+    public void setOwner(Account owner) {
+        this.owner = owner;
+    }
+
+    public Set<Chat> getChats() {
+        return chats;
+    }
+
+    public void setChats(Set<Chat> chats) {
+        this.chats = chats;
+    }
 }
