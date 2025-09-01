@@ -7,9 +7,11 @@ import jakarta.persistence.*;
 @Table(name = "accounts")
 public class Account extends BaseEntity {
 
-    @Column(nullable = false)
+    // The Fix: Provide a default value for existing rows
+    @Column(nullable = false, columnDefinition = "TEXT NOT NULL DEFAULT ''")
     private String firstName;
-    @Column(nullable = false)
+
+    @Column(nullable = true)
     private String lastName;
 
     @Column(nullable = true)
