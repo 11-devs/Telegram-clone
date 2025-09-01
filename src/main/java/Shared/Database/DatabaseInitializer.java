@@ -14,7 +14,12 @@ public class DatabaseInitializer {
         Database primaryDatabase = new Database();
         //SQLiteDatabase localDatabase = new SQLiteDatabase();
         Console.print("Database initialized" , Console.Color.GREEN);
+
+//        primaryDatabase.clearAllTables();
+
         GenericDAO<Account> accountGenericDAO = new GenericDAO<>(Account.class , primaryDatabase.getEntityManager());
+
+
 
         primaryDatabase.printAllTableNames();
 
