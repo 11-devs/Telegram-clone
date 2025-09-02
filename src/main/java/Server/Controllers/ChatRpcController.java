@@ -137,4 +137,14 @@ public class ChatRpcController extends RpcControllerBase {
 
         return Ok(output);
     }
+
+    public RpcResponse<Object> getChatById(GetChatByIdInputModel model) {
+        Chat chat = daoManager.getChatDAO().findById(model.getChatId());
+        if (chat == null) {
+            return BadRequest("Chat not found.");
+        }
+        return Ok(chat);
+    }
+
+
 }
