@@ -1,5 +1,6 @@
 package Client;
 
+import JSocket2.Protocol.StatusCode;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -7,6 +8,7 @@ import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
+import java.io.IOException;
 import java.util.Objects;
 
 public class Main extends Application {
@@ -18,7 +20,26 @@ public class Main extends Application {
         // Upload FXML file
         // --------------------------------
         // Client.Main order
+        var authModel = AccessKeyManager.loadAuthModel();
+        var connectionManager = AppConnectionManager.getInstance().getConnectionManager();
+        connectionManager.addExternalConnectedListener(clientApplication -> {
+                    if(authModel!= null && authModel.getAccessKeyCount() != 0) {
+                        try {
+                            var result = clientApplication.sendAuthModel(authModel);
+                            if(result == StatusCode.OK) System.out.println("Login Successful");
+                            else System.out.println("Login failed");
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+        );
+        connectionManager.createAndStartClient();
         Parent root = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("/Client/fxml/welcome.fxml")));
+        if(authModel!= null && authModel.getAccessKeyCount() != 0){
+            root = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("/Client/fxml/CloudPasswordCheck.fxml")));
+        }
+
         // --------------------------------
         // Custom order
         // Parent root = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("/Client/fxml/userInfo.fxml")));

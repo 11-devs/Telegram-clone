@@ -79,6 +79,8 @@ public class ServerMessageProcessor implements IMessageProcessor {
         String responseMetadata = null;
         try {
             for (var key : response.getAccessKeys()) {
+                if(!authService.IsKeyValid(key))
+                    continue;
                 var user = authService.Login(key);
                 serverSession.subscribeUser(user);
             }
@@ -86,6 +88,11 @@ public class ServerMessageProcessor implements IMessageProcessor {
         }
         catch (InvalidAccessKeyException e) {
             responseMetadata = gson.toJson(new RpcResponseMetadata(StatusCode.BAD_REQUEST.code, "Auth was failed"));
+        }
+        catch (Exception e){
+
+            e.printStackTrace();
+            throw new RuntimeException(e);
         }
         finally {
             var msg = new Message(

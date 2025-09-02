@@ -9,6 +9,7 @@ import Shared.Api.Models.AccountController.BasicRegisterInputModel;
 import Shared.Api.Models.AccountController.BasicRegisterOutputModel;
 import Shared.Api.Models.AccountController.VerifyCodeInputModel;
 import Shared.Api.Models.AccountController.VerifyCodeOutputModel;
+import Shared.Utils.DeviceUtil;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -99,7 +100,8 @@ public class UserInfoController implements Initializable {
             Task<RpcResponse<BasicRegisterOutputModel>> basicRegisterTask = new Task<>() {
                 @Override
                 protected RpcResponse<BasicRegisterOutputModel> call() throws Exception {
-                    return rpcCaller.basicRegister(new BasicRegisterInputModel(phoneNumber,firstName,lastName,profilePhotoId));
+                    var deviceInfo = DeviceUtil.getDeviceInfo();
+                    return rpcCaller.basicRegister(new BasicRegisterInputModel(phoneNumber,firstName,lastName,profilePhotoId,deviceInfo));
                 }
             };
             basicRegisterTask.setOnSucceeded(event -> {

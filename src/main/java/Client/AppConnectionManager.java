@@ -6,6 +6,7 @@ import JSocket2.Core.Client.ConnectionManager;
 public class AppConnectionManager {
 
     private static AppConnectionManager instance;
+    
     private ConnectionManager connectionManager;
 
     public RpcCaller getRpcCaller() {

@@ -1,13 +1,16 @@
 package Client.Controllers;
 
 import Client.AppConnectionManager;
+import Client.AccessKeyManager;
 import Client.RpcCaller;
 import JSocket2.Core.Client.ConnectionManager;
+import JSocket2.Protocol.Authentication.AuthModel;
 import JSocket2.Protocol.Rpc.RpcResponse;
 import JSocket2.Protocol.StatusCode;
 import Shared.Api.Models.AccountController.RequestCodeOutputModel;
 import Shared.Api.Models.AccountController.VerifyCodeInputModel;
 import Shared.Api.Models.AccountController.VerifyCodeOutputModel;
+import Shared.Utils.DeviceUtil;
 import Shared.Utils.SceneUtil;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -182,7 +185,8 @@ public class VerificationViaTelegramController {
             Task<RpcResponse<VerifyCodeOutputModel>> otpTask = new Task<>() {
                 @Override
                 protected RpcResponse<VerifyCodeOutputModel> call() throws Exception {
-                    return rpcCaller.verifyOTP(new VerifyCodeInputModel(requestCodeOutputModel.getPendingId(), requestCodeOutputModel.getPhoneNumber(), code));
+                    var deviceInfo = DeviceUtil.getDeviceInfo();
+                    return rpcCaller.verifyOTP(new VerifyCodeInputModel(requestCodeOutputModel.getPendingId(), requestCodeOutputModel.getPhoneNumber(), code, deviceInfo));
                 }
             };
             otpTask.setOnSucceeded(event -> {
@@ -194,7 +198,19 @@ public class VerificationViaTelegramController {
                                 changeSceneWithSameSize(root, "/Client/fxml/UserInfo.fxml",(UserInfoController controller) ->{
                                     controller.setPhoneNumber(requestCodeOutputModel.getPhoneNumber());
                                 });
-                                break;
+                            case "need_password":
+                                changeSceneWithSameSize(root, "/Client/fxml/UserInfo.fxml",(CloudPasswordCheckController controller) ->{
+                                    //controller.setPhoneNumber(requestCodeOutputModel.getPhoneNumber());
+                                });
+                            case "logged_in":
+                                /*changeSceneWithSameSize(root, "/Client/fxml/UserInfo.fxml",(CloudPasswordCheckController controller) ->{
+                                    //controller.setPhoneNumber(requestCodeOutputModel.getPhoneNumber());
+                                });*/
+                                AccessKeyManager.saveAccessKey(response.getPayload().getAccessKey());
+                                AuthModel authModel = new AuthModel(new String[]{response.getPayload().getAccessKey()}, 1);
+                                var resultCode = connectionManager.getClient().sendAuthModel(authModel);
+                                if(resultCode == StatusCode.OK) System.out.println("Successful login");
+                            break;
                         }
 
                     }

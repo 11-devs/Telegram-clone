@@ -1,11 +1,27 @@
 package JSocket2.Protocol.Authentication;
 
 public class AuthModel {
-    private int accessKeyCount;
+    private int accessKeyCount = 0;
     private String[] accessKeys;
-    public AuthModel(String[] accessKeys,int accessKeyCount){
+    private String fileHash;
+
+    public AuthModel(String[] accessKeys, int accessKeyCount) {
         this.accessKeys = accessKeys;
         this.accessKeyCount = accessKeyCount;
+    }
+
+    public AuthModel(String[] accessKeys, int accessKeyCount, String fileHash) {
+        this.accessKeys = accessKeys;
+        this.accessKeyCount = accessKeyCount;
+        this.fileHash = fileHash;
+    }
+
+    public String getFileHash() {
+        return fileHash;
+    }
+
+    public void setFileHash(String fileHash) {
+        this.fileHash = fileHash;
     }
 
     public String[] getAccessKeys() {

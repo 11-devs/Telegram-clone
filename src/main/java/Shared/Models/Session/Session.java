@@ -13,14 +13,24 @@ public class Session extends BaseEntity {
     @JoinColumn(name = "account_id", nullable = false)
     private Account account;
 
-    @Column(name = "session_token", nullable = false, unique = true, length = 128)
-    private String sessionToken;
+
+
+    @Column(name = "salt")
+    private String salt;
+
+    public String getAccessKey() {
+        return accessKey;
+    }
+
+    public void setAccessKey(String accessKey) {
+        this.accessKey = accessKey;
+    }
+
+    @Column(name = "access_key", nullable = false, unique = true, length = 256)
+    private String accessKey;
 
     @Column(name = "device_info")
     private String deviceInfo;
-
-    @Column(name = "ip_address")
-    private String ipAddress;
 
     @Column(name = "is_active", nullable = false)
     private boolean isActive = true;
@@ -33,13 +43,6 @@ public class Session extends BaseEntity {
         this.account = account;
     }
 
-    public String getSessionToken() {
-        return sessionToken;
-    }
-
-    public void setSessionToken(String sessionToken) {
-        this.sessionToken = sessionToken;
-    }
 
     public String getDeviceInfo() {
         return deviceInfo;
@@ -49,20 +52,19 @@ public class Session extends BaseEntity {
         this.deviceInfo = deviceInfo;
     }
 
-    public String getIpAddress() {
-        return ipAddress;
-    }
-
-    public void setIpAddress(String ipAddress) {
-        this.ipAddress = ipAddress;
-    }
-
     public boolean isActive() {
         return isActive;
     }
 
     public void setActive(boolean active) {
         isActive = active;
+    }
+    public String getSalt() {
+        return salt;
+    }
+
+    public void setSalt(String salt) {
+        this.salt = salt;
     }
 
 }

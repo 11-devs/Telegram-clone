@@ -5,14 +5,16 @@ public class BasicRegisterInputModel {
     private String lastName;
     private String profilePictureId;
     private String phoneNumber;
+    private String deviceInfo;
     public BasicRegisterInputModel(){
 
     }
-    public BasicRegisterInputModel( String phoneNumber,String firstName,String lastName,String profilePictureId){
+    public BasicRegisterInputModel( String phoneNumber,String firstName,String lastName,String profilePictureId,String deviceInfo){
         this.phoneNumber = phoneNumber;
         this.firstName = firstName;
         this.lastName = lastName;
         this.profilePictureId = profilePictureId;
+        this.deviceInfo = deviceInfo;
     }
 
     public String getFirstName() {
@@ -46,4 +48,12 @@ public class BasicRegisterInputModel {
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
     }
+    public String getDeviceInfo() {
+        return deviceInfo;
+    }
+
+    public void setDeviceInfo(String deviceInfo) {
+        this.deviceInfo = deviceInfo;
+    }
+
 }

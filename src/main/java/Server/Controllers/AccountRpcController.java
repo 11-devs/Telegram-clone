@@ -6,6 +6,7 @@ import Server.DaoManager;
 import Shared.Api.Models.AccountController.*;
 import Shared.Models.Account.Account;
 import Shared.Models.PendingAuth.PendingAuth;
+import Shared.Models.Session.Session;
 import Shared.Utils.PasswordUtil;
 
 import java.time.Instant;
@@ -63,10 +64,10 @@ public class AccountRpcController extends RpcControllerBase {
         VerifyCodeOutputModel output = new VerifyCodeOutputModel();
         if (account == null) {
             output.setStatus("need_register");
-        } else if (!account.getHashedPassword().isEmpty()) {
+        } else if (account.getHashedPassword() != null && account.getHashedPassword().isEmpty()) {
             output.setStatus("need_password");
         } else {
-            var accessKey = generateAccessKey(account);
+            var accessKey = generateAccessKey(account, model.getDeviceInfo());
             output.setStatus("logged_in");
             output.setAccessKey(accessKey);
         }
@@ -82,7 +83,7 @@ public class AccountRpcController extends RpcControllerBase {
             return BadRequest("invalid_password");
         }
 
-        var accessToken = generateAccessKey(account);
+        var accessToken = generateAccessKey(account,model.getDeviceInfo());
 
         LoginOutputModel output = new LoginOutputModel();
         output.setStatus("logged_in");
@@ -90,11 +91,27 @@ public class AccountRpcController extends RpcControllerBase {
 
         return Ok(output);
     }
+    public String generateAccessKey(Account account,String deviceInfo) {
+        try {
+            String salt = UUID.randomUUID().toString();
+            String accessKey = PasswordUtil.hash(salt+deviceInfo+account.getId());
+            Session newSession = new Session();
+            newSession.setAccount(account);
+            newSession.setAccessKey(accessKey);
+            newSession.setSalt(salt);
+            newSession.setDeviceInfo(deviceInfo);
+            newSession.setActive(true);
 
-    private String generateAccessKey(Account account) {
-        String accessKey = UUID.randomUUID().toString() + UUID.randomUUID().toString();
-        // Save to Table
-        return accessKey;
+            daoManager.getSessionDAO().insert(newSession);
+            return accessKey;
+
+
+        } catch (Exception e) {
+            // Log the detailed error
+            System.err.println("Error generating access key: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException();
+        }
     }
     public RpcResponse<Object> basicRegister(BasicRegisterInputModel model){
         var account = new Account();
@@ -103,7 +120,7 @@ public class AccountRpcController extends RpcControllerBase {
         account.setProfilePictureId(model.getProfilePictureId());
         account.setPhoneNumber(model.getPhoneNumber());
         daoManager.getAccountDAO().insert(account);
-        String accessKey = generateAccessKey(account);
+        String accessKey = generateAccessKey(account,model.getDeviceInfo());
         var output = new BasicRegisterOutputModel(accessKey);
         return Ok(output);
     }

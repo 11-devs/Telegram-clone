@@ -70,26 +70,6 @@ public class ClientMessageProcessor implements IMessageProcessor {
         }
     }
 
-    private void sendAuthModel() throws IOException {
-        var authModel = accessKeyManager.getKeys();
-        var payloadJson = gson.toJson(authModel);
-        UUID requestId = UUID.randomUUID();
-        MessageHeader header = MessageHeader.BuildAesKeyHeader(requestId,payloadJson.length());
-        Message message = new Message(header);
-        message.setPayload(payloadJson.getBytes(StandardCharsets.UTF_8));
-        messageHandler.write(message);
-        CompletableFuture<Message> future = new CompletableFuture<>();
-        pendingRequests.put(requestId, future);
-        var response = future.join();
-        var metadata = gson.fromJson(new String(response.getMetadata(),StandardCharsets.UTF_8), RpcResponseMetadata.class);
-        if(StatusCode.fromCode(metadata.getStatusCode()) == StatusCode.OK){
-            accessKeyManager.setAuthProcessState(AuthProcessState.SUCCESS);
-        }else{
-            accessKeyManager.setAuthProcessState(AuthProcessState.FAILED);
-        }
-
-    }
-
     private void sendAesKey() throws IOException {
         UUID requestId = UUID.randomUUID();
         byte[] aes_key = clientSession.getAESKey().getEncoded();

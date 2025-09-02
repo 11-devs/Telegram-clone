@@ -8,24 +8,32 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import JSocket2.Protocol.Authentication.AuthModel;
+import JSocket2.Protocol.Authentication.AuthProcessState;
 import JSocket2.Protocol.EventHub.EventBroker;
 import JSocket2.Protocol.EventHub.EventSubscriberCollection;
+import JSocket2.Protocol.Rpc.RpcResponseMetadata;
 import JSocket2.Protocol.Transfer.ClientFileTransferManager;
+import com.google.gson.Gson;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.concurrent.Task;
-
+import java.util.function.Consumer;
 public class ClientApplication {
+    private AuthModel authModel;
     private final String host;
     private final int port;
     private final BooleanProperty connectedProperty = new SimpleBooleanProperty(false);
     AtomicBoolean running = new AtomicBoolean(true);
-
+    private final Gson gson = new Gson();
     private Socket socket;
     private MessageHandler messageHandler;
     private ClientMessageProcessor messageProcessor;
@@ -44,6 +52,7 @@ public class ClientApplication {
     });
     private final ConcurrentMap<String, Task<?>> activeTasks = new ConcurrentHashMap<>();
     private final IConnectionEventListener connectionEventListener;
+    private final List<Consumer<ClientApplication>> connectedListeners = new ArrayList<>();
 
     public ClientApplication(String host, int port, IConnectionEventListener connectionEventListener, EventSubscriberCollection subscribers, ServiceCollection services) {
         this.host = host;
@@ -52,7 +61,9 @@ public class ClientApplication {
         serviceProvider = services.CreateServiceProvider();
         eventBroker = subscribers.CreateEventBroker(serviceProvider);
     }
-
+    public void addConnectedListener(Consumer<ClientApplication> listener) {
+        connectedListeners.add(listener);
+    }
     public void registerTask(String Id, Task<?> task) {
         activeTasks.put(Id, task);
     }
@@ -79,6 +90,8 @@ public class ClientApplication {
         Platform.runLater(() -> {
             connectedProperty.set(true);
         });
+        connectedListeners.forEach(listener -> listener.accept(this));
+
     }
 
     private void onDisconnected() {
@@ -100,7 +113,6 @@ public class ClientApplication {
             listenerThread = new Thread(messageListener);
             listenerThread.setDaemon(true);
             listenerThread.start();
-
             running.set(true);
 
             return true;
@@ -111,6 +123,19 @@ public class ClientApplication {
         }
     }
 
+    public StatusCode sendAuthModel(AuthModel authModel) throws IOException {
+        var payloadJson = gson.toJson(authModel);
+        UUID requestId = UUID.randomUUID();
+        MessageHeader header = MessageHeader.BuildAuthHeader(requestId,payloadJson.length());
+        Message message = new Message(header);
+        message.setPayload(payloadJson.getBytes(StandardCharsets.UTF_8));
+        messageHandler.write(message);
+        CompletableFuture<Message> future = new CompletableFuture<>();
+        pendingRequests.put(requestId, future);
+        var response = future.join();
+        var metadata = gson.fromJson(new String(response.getMetadata(),StandardCharsets.UTF_8), RpcResponseMetadata.class);
+        return StatusCode.fromCode(metadata.getStatusCode());
+    }
     public void shutdown() {
         try {
             if (listenerThread != null && listenerThread.isAlive()) {
@@ -153,7 +178,9 @@ public class ClientApplication {
         }
         return fileTransferManager;
     }
-
+    public void setAuthModel(AuthModel authModel){
+        this.authModel = authModel;
+    }
     public void onConnectionLost() {
         notifyConnectionLost();
         shutdown();

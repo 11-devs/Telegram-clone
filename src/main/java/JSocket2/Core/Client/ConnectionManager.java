@@ -20,30 +20,32 @@ public class ConnectionManager implements IConnectionEventListener {
     private ClientApplicationBuilder builder = new ClientApplicationBuilder();
 
     private final List<ChangeListener<Boolean>> externalListeners = new ArrayList<>();
+    private final List<Consumer<ClientApplication>> externalConnectedListeners = new ArrayList<>();
     private final List<Consumer<ClientApplication>> reconnectListeners = new ArrayList<>();
     Random random = new Random();
-
     private int tryCount = 0;
     private int currentRetryDelay = 0;
     public ConnectionManager(Consumer<ConnectionManagerOptions> optionsConsumer,ClientApplicationBuilder clientApplicationBuilder) {
         optionsConsumer.accept(options);
         builder = clientApplicationBuilder;
-        createAndStartClient();
     }
     public ConnectionManager(Consumer<ConnectionManagerOptions> optionsConsumer,Consumer<ClientApplicationBuilder> clientApplicationBuilder) {
         optionsConsumer.accept(options);
         clientApplicationBuilder.accept(builder);
-        createAndStartClient();
     }
     public void addReconnectListener(Consumer<ClientApplication> listener) {
         reconnectListeners.add(listener);
     }
-    private void createAndStartClient() {
+    public void createAndStartClient() {
         builder.setConnectionEventListener(this);
         app = builder.Build();
 
         for (ChangeListener<Boolean> extListener : externalListeners) {
             app.connectedProperty().addListener(extListener);
+        }
+
+        for (Consumer<ClientApplication> listener : externalConnectedListeners) {
+            app.addConnectedListener(listener);
         }
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -77,19 +79,25 @@ public class ConnectionManager implements IConnectionEventListener {
         reconnectListeners.forEach(listener -> listener.accept(app));
     }
 
-    public  void addConnectedListener(ChangeListener<Boolean> listener) {
+    public void addConnectedListener(ChangeListener<Boolean> listener) {
         externalListeners.add(listener);
         if (app != null) {
             app.connectedProperty().addListener(listener);
         }
     }
-    public  void removeConnectedListener(ChangeListener<Boolean> listener) {
+    public void removeConnectedListener(ChangeListener<Boolean> listener) {
         externalListeners.remove(listener);
         if (app != null) {
             app.connectedProperty().removeListener(listener);
         }
     }
 
+    public void addExternalConnectedListener(Consumer<ClientApplication> listener) {
+        externalConnectedListeners.add(listener);
+        if (app != null) {
+            app.addConnectedListener(listener);
+        }
+    }
     public ClientApplication getClient() {
         return app;
     }
