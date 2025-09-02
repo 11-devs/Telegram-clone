@@ -9,5 +9,6 @@ public enum MessageType {
     SYSTEM,
     STICKER,
     GIF,
-    LOCATION
+    LOCATION,
+
 }

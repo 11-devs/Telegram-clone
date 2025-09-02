@@ -1,20 +1,29 @@
 package Server.Controllers;
 
+import JSocket2.Protocol.Rpc.RpcControllerBase;
+import JSocket2.Protocol.Rpc.RpcResponse;
 import Server.DaoManager;
-import JSocket2.Protocol.Rpc.*;
 import Shared.Api.Models.MessageController.GetMessageByChatInputModel;
 import Shared.Api.Models.MessageController.GetMessageByIdInputModel;
+import Shared.Api.Models.MessageController.SendMessageInputModel;
+import Shared.Api.Models.MessageController.SendMessageOutputModel;
+import Shared.Models.Account.Account;
+import Shared.Models.Chat.Chat;
+import Shared.Models.Media.Media;
+import Shared.Models.Message.MediaMessage;
 import Shared.Models.Message.Message;
 import Shared.Models.Message.MessageType;
 import Shared.Models.Message.TextMessage;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-public class MessageRpcController extends RpcControllerBase{
+public class MessageRpcController extends RpcControllerBase {
     private final DaoManager daoManager;
-    public MessageRpcController(DaoManager daoManager){
+
+    public MessageRpcController(DaoManager daoManager) {
         this.daoManager = daoManager;
     }
 
@@ -27,6 +36,7 @@ public class MessageRpcController extends RpcControllerBase{
         private boolean isEdited;
         private MessageType messageType;
         private String textContent;
+        private UUID mediaId;
 
         //<editor-fold desc="Getters and Setters">
         public UUID getMessageId() {
@@ -92,6 +102,14 @@ public class MessageRpcController extends RpcControllerBase{
         public void setTextContent(String textContent) {
             this.textContent = textContent;
         }
+
+        public UUID getMediaId() {
+            return mediaId;
+        }
+
+        public void setMediaId(UUID mediaId) {
+            this.mediaId = mediaId;
+        }
         //</editor-fold>
     }
 
@@ -117,6 +135,11 @@ public class MessageRpcController extends RpcControllerBase{
 
         if (message instanceof TextMessage) {
             output.setTextContent(((TextMessage) message).getTextContent());
+        } else if (message instanceof MediaMessage) {
+            Media media = ((MediaMessage) message).getMedia();
+            if (media != null) {
+                output.setMediaId(media.getId());
+            }
         }
 
         return output;
@@ -142,4 +165,60 @@ public class MessageRpcController extends RpcControllerBase{
         return Ok(outputList);
     }
 
+    public RpcResponse<Object> sendMessage(SendMessageInputModel model) {
+        Account sender = daoManager.getAccountDAO().findById(model.getSenderId());
+        if (sender == null) {
+            return BadRequest("Sender account not found.");
+        }
+
+        Chat chat = daoManager.getChatDAO().findById(model.getChatId());
+        if (chat == null) {
+            return BadRequest("Chat not found.");
+        }
+
+        Message newMessage;
+
+        switch (model.getMessageType()) {
+            case TEXT:
+                if (model.getTextContent() == null || model.getTextContent().trim().isEmpty()) {
+                    return BadRequest("Text content cannot be empty for a TEXT message.");
+                }
+                TextMessage textMessage = new TextMessage();
+                textMessage.setTextContent(model.getTextContent());
+                newMessage = textMessage;
+                break;
+
+            case MEDIA:
+                if (model.getMediaId() == null) {
+                    return BadRequest("Media ID cannot be null for a MEDIA message.");
+                }
+                Media media = daoManager.getMediaDAO().findById(model.getMediaId());
+                if (media == null) {
+                    return BadRequest("Media not found.");
+                }
+                MediaMessage mediaMessage = new MediaMessage();
+                mediaMessage.setMedia(media);
+                newMessage = mediaMessage;
+                break;
+
+            default:
+                return BadRequest("The specified message type is not supported yet.");
+        }
+
+        newMessage.setSender(sender);
+        newMessage.setChat(chat);
+        newMessage.setTimestamp(LocalDateTime.now());
+        newMessage.setEdited(false);
+        newMessage.setType(model.getMessageType());
+
+        daoManager.getMessageDAO().insert(newMessage);
+
+        SendMessageOutputModel output = new SendMessageOutputModel(
+                newMessage.getId(),
+                newMessage.getTimestamp(),
+                "Message sent successfully"
+        );
+
+        return Ok(output);
+    }
 }
