@@ -7,10 +7,9 @@ public class AppConnectionManager {
 
     private static AppConnectionManager instance;
     private ConnectionManager connectionManager;
-
     private AppConnectionManager() {
         ClientApplicationBuilder builder = new ClientApplicationBuilder();
-        builder.setEndpoint("localhost",8585);
+        builder.setEndpoint("localhost",8586);
         this.connectionManager = new ConnectionManager(options -> {},builder);
     }
 

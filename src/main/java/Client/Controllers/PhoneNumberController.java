@@ -1,5 +1,10 @@
 package Client.Controllers;
 
+import Client.AppConnectionManager;
+import Client.RpcCaller;
+import JSocket2.Core.Client.ConnectionManager;
+import JSocket2.Protocol.Rpc.RpcResponse;
+import Shared.Api.Models.AccountController.RequestCodeOutputModel;
 import Shared.Models.CountryCode;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -12,6 +17,7 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -37,6 +43,8 @@ import java.util.Objects;
 import static Shared.Utils.SceneUtil.changeSceneWithSameSize;
 
 public class PhoneNumberController {
+    private ConnectionManager connectionManager;
+    private RpcCaller rpcCaller;
     @FXML
     private VBox root;
 
@@ -59,6 +67,8 @@ public class PhoneNumberController {
 
     public void initialize() {
         // Animation for infoBox (moving from right to center)
+        connectionManager = AppConnectionManager.getInstance().getConnectionManager();
+        rpcCaller = new RpcCaller(connectionManager);
         if (infoBox != null) {
             infoBox.setTranslateX(75);
             TranslateTransition transition = new TranslateTransition(Duration.seconds(0.5), infoBox);
@@ -168,8 +178,47 @@ public class PhoneNumberController {
             return;
         }
 
-        System.out.println("Phone Number: " + preCode + " " + phoneNumber);
-        changeSceneWithSameSize(root, "/Client/fxml/verificationViaTelegram.fxml");
+        // Show a loading indicator to the user
+        // e.g., progressIndicator.setVisible(true);
+
+        Task<RpcResponse<RequestCodeOutputModel>> otpTask = new Task<>() {
+            @Override
+            protected RpcResponse<RequestCodeOutputModel> call() throws Exception {
+                // This code runs in a separate thread
+                return rpcCaller.requestOTP(preCode + phoneNumber);
+            }
+        };
+
+        otpTask.setOnSucceeded(event -> {
+            // This code runs on the JavaFX application thread
+            try {
+                var otp = otpTask.getValue();
+                // Pass the OTP to the next controller
+                System.out.println("OTP received: " + otp.getPayload().getPendingId());
+                // Navigate to the next scene
+                changeSceneWithSameSize(root, "/Client/fxml/verificationViaTelegram.fxml");
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                // Handle exceptions that occurred in the Task
+                // e.g., showError("Failed to get OTP.");
+            } finally {
+                // Hide the loading indicator
+                // e.g., progressIndicator.setVisible(false);
+            }
+        });
+
+        otpTask.setOnFailed(event -> {
+            // Handle failure of the Task
+            // e.g., showError("An error occurred during the request.");
+            System.out.println("Task failed.");
+            otpTask.getException().printStackTrace();
+            // Hide the loading indicator
+            // e.g., progressIndicator.setVisible(false);
+        });
+
+        // Start the background task
+        new Thread(otpTask).start();
     }
 
     @FXML

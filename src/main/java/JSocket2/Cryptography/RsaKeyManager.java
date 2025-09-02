@@ -13,9 +13,6 @@ public class RsaKeyManager {
     public RsaKeyManager() {
         rsaKeyPair = EncryptionUtil.generateRSAkeyPair();
     }
-    public RsaKeyManager(KeyPair rsaKeyPair) {
-        this.rsaKeyPair = rsaKeyPair;
-    }
     public PublicKey getRSAPublicKey() {
         return rsaKeyPair.getPublic();
     }

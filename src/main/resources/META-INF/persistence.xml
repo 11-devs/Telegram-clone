@@ -29,7 +29,7 @@
         <class>Shared.Models.Setting.NotificationSetting</class>
         <class>Shared.Models.Setting.PrivacySetting</class>
         <class>Shared.Models.Setting.Setting</class>
-
+        <class>Shared.Models.PendingAuth.PendingAuth</class>
 
         <properties>
             <!-- Standard JPA properties -->

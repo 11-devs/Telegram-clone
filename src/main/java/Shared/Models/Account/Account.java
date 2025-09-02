@@ -17,6 +17,9 @@ public class Account extends BaseEntity {
     @Column(nullable = true)
     private String hashedPassword;
 
+    @Column(nullable = false)
+    private String phoneNumber;
+
     @Column(unique = true, nullable = false)
     private String username;
 

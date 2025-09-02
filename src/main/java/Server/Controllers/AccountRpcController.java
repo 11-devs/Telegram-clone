@@ -19,7 +19,7 @@ public class AccountRpcController extends RpcControllerBase {
     }
 
     public RpcResponse<RequestCodeOutputModel> requestOTP(String phoneNumber) {
-        var account = daoManager.getAccountDAO().findByField("phoneNumber",phoneNumber);
+        //var account = daoManager.getAccountDAO().findByField("phoneNumber",phoneNumber);
 
         PendingAuth pending = new PendingAuth();
         var otp = generateOTP();
@@ -104,7 +104,8 @@ public class AccountRpcController extends RpcControllerBase {
         account.setProfilePictureId(model.getProfilePictureId());
         daoManager.getAccountDAO().insert(account);
         String accessKey = generateAccessKey(account);
-        return Ok();
+        var output = new BasicRegisterOutputModel(accessKey);
+        return Ok(output);
     }
     public RpcResponse<Object> setPassword(String password){
         var account = daoManager.getAccountDAO().findById(getCurrentUser().getUserId());

@@ -97,8 +97,9 @@ public class ServiceProvider {
             for (int i = 0; i < paramTypes.length; i++) {
                 params[i] = GetService(paramTypes[i]);
             }
-
-            return implementationType.cast(constructor.newInstance(params));
+            var instance = constructor.newInstance(params);
+            var castedInstance = implementationType.cast(instance);
+            return castedInstance;
         }
         catch(CircularDependencyException e){
             throw e;

@@ -16,7 +16,7 @@ public class ServerApplicationBuilder {
         services = new ServiceCollection();
         rpcControllerCollection = new RpcControllerCollection();
         services.AddSingleton(ServerSessionManager.class);
-        services.AddSingleton(RsaKeyManager.class);
+        services.AddSingletonWithInstance(RsaKeyManager.class,new RsaKeyManager());
     }
     public ServerApplicationBuilder setPort(int port) {
         this.port = port;
