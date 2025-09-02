@@ -2,6 +2,7 @@ package Server;
 import Shared.Database.DAO.GenericDAO;
 import Shared.Models.Account.Account;
 import Shared.Models.Chat.Chat;
+import Shared.Models.Chat.*;
 import Shared.Models.Contact.Contact;
 import Shared.Models.Folder.Folder;
 import Shared.Models.Interaction.Interaction;
@@ -21,7 +22,10 @@ public class DaoManager {
     // Lazy-loaded DAOs
     private GenericDAO<Account> accountDAO;
     private GenericDAO<Chat> chatDAO;
-    private GenericDAO<Contact> contactDAO;
+    private GenericDAO<Channel> channelDAO;
+    private GenericDAO<GroupChat> groupChatDAO;
+    private GenericDAO<SavedMessages> savedMessagesDAO;
+    private GenericDAO<PrivateChat> privateChatDAO ;
     private GenericDAO<Folder> folderDAO;
     private GenericDAO<Interaction> interactionDAO;
     private GenericDAO<Media> mediaDAO;
@@ -32,6 +36,7 @@ public class DaoManager {
     private GenericDAO<Session> sessionDAO;
     private GenericDAO<Setting> settingDAO;
     private GenericDAO<PendingAuth> pendingAuthDAO;
+    private GenericDAO<Contact> contactDAO;
 
     public DaoManager(EntityManager entityManager) {
         this.entityManager = entityManager;
@@ -51,6 +56,36 @@ public class DaoManager {
             chatDAO = new GenericDAO<>(Chat.class, entityManager);
         }
         return chatDAO;
+    }
+
+    // Chat DAO
+    public GenericDAO<Channel> getChannelDAO() {
+        if (channelDAO == null) {
+            channelDAO = new GenericDAO<>(Channel.class, entityManager);
+        }
+        return channelDAO;
+    }
+
+    public GenericDAO<GroupChat> getGroupChatDAO() {
+        if (groupChatDAO == null) {
+            groupChatDAO = new GenericDAO<>(GroupChat.class, entityManager);
+
+        }
+        return groupChatDAO;
+    }
+
+    public GenericDAO<SavedMessages> getSavedMessagesDAO() {
+        if (savedMessagesDAO == null) {
+            savedMessagesDAO = new GenericDAO<>(SavedMessages.class, entityManager);
+        }
+        return savedMessagesDAO;
+    }
+
+    public GenericDAO<PrivateChat> getPrivateChatDAO() {
+        if (privateChatDAO == null) {
+            privateChatDAO = new GenericDAO<>(PrivateChat.class, entityManager);
+        }
+        return privateChatDAO;
     }
 
     // Contact DAO
