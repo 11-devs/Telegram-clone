@@ -1,9 +1,18 @@
 package Client.Controllers;
 
+import Client.AppConnectionManager;
+import Client.RpcCaller;
+import JSocket2.Core.Client.ConnectionManager;
+import JSocket2.Protocol.Rpc.RpcResponse;
+import JSocket2.Protocol.StatusCode;
+import Shared.Api.Models.AccountController.RequestCodeOutputModel;
+import Shared.Api.Models.AccountController.VerifyCodeInputModel;
+import Shared.Api.Models.AccountController.VerifyCodeOutputModel;
 import Shared.Utils.SceneUtil;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.animation.TranslateTransition;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
@@ -15,6 +24,13 @@ import javafx.util.Duration;
 import static Shared.Utils.SceneUtil.changeSceneWithSameSize;
 
 public class VerificationViaTelegramController {
+    private RequestCodeOutputModel requestCodeOutputModel;
+
+    public void setRequestCodeOutputModel(RequestCodeOutputModel requestCodeOutputModel) {
+        this.requestCodeOutputModel = requestCodeOutputModel;
+    }
+    private ConnectionManager connectionManager;
+    private RpcCaller rpcCaller;
     @FXML
     private VBox root;
 
@@ -38,7 +54,8 @@ public class VerificationViaTelegramController {
     @FXML
     private void initialize() {
 
-        // Animation of moving from a little further right to the main target
+        connectionManager = AppConnectionManager.getInstance().getConnectionManager();
+        rpcCaller = AppConnectionManager.getInstance().getRpcCaller();
         if (infoBox != null) {
             infoBox.setTranslateX(75);
             var transition = new javafx.animation.TranslateTransition(javafx.util.Duration.seconds(0.5), infoBox);
@@ -162,10 +179,37 @@ public class VerificationViaTelegramController {
         String code = code1.getText() + code2.getText() + code3.getText() + code4.getText() + code5.getText();
         if (code.length() == 5 && code.matches("[0-9]{5}")) {
             System.out.println("Verification code entered: " + code);
-            // TODO:
-            // Check conditions...
-            // Next scene
-            // SceneUtil.changeSceneWithSameSize(code1, "Client/fxml/---.fxml");
+            Task<RpcResponse<VerifyCodeOutputModel>> otpTask = new Task<>() {
+                @Override
+                protected RpcResponse<VerifyCodeOutputModel> call() throws Exception {
+                    return rpcCaller.verifyOTP(new VerifyCodeInputModel(requestCodeOutputModel.getPendingId(), requestCodeOutputModel.getPhoneNumber(), code));
+                }
+            };
+            otpTask.setOnSucceeded(event -> {
+                try {
+                    var response = otpTask.getValue();
+                    if(response.getStatusCode() == StatusCode.OK){
+                        switch (response.getPayload().getStatus()){
+                            case "need_register":
+                                changeSceneWithSameSize(root, "/Client/fxml/UserInfo.fxml",(UserInfoController controller) ->{
+                                    controller.setPhoneNumber(requestCodeOutputModel.getPhoneNumber());
+                                });
+                                break;
+                        }
+
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                }
+            });
+            otpTask.setOnFailed(event -> {
+                System.out.println("Task failed.");
+                otpTask.getException().printStackTrace();
+            });
+
+            // Start the background task
+            new Thread(otpTask).start();
         } else {
             System.out.println("Please enter a 5-digit code.");
         }

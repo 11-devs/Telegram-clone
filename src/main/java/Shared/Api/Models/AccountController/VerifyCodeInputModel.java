@@ -5,6 +5,12 @@ public class VerifyCodeInputModel {
     private String phoneNumber;
     private String pendingId;
 
+    public VerifyCodeInputModel(String pendingId, String phoneNumber,String otp) {
+        this.otp = otp;
+        this.phoneNumber = phoneNumber;
+        this.pendingId = pendingId;
+    }
+
     public String getOtp() { return otp; }
     public void setOtp(String otp) { this.otp = otp; }
 

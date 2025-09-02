@@ -18,27 +18,26 @@ public class AccountRpcController extends RpcControllerBase {
         this.daoManager = daoManager;
     }
 
-        public RpcResponse<RequestCodeOutputModel> requestOTP(String phoneNumber) {
-        var account = daoManager.getAccountDAO().findByField("phoneNumber",phoneNumber);
+    public RpcResponse<RequestCodeOutputModel> requestOTP(String phoneNumber) {
+        //var account = daoManager.getAccountDAO().findByField("phoneNumber",phoneNumber);
 
-        PendingAuth pending = new PendingAuth();
+        PendingAuth pending = daoManager.getPendingAuthDAO().findByField("phoneNumber",phoneNumber);
+        if(pending == null){
+            pending = new PendingAuth();
         var otp = generateOTP();
-        pending.setId(UUID.randomUUID());
         pending.setPhoneNumber(phoneNumber);
         pending.setHashedOtp(PasswordUtil.hash(otp));
         pending.setOtpExpiresAt(Instant.now().plusSeconds(120));
         pending.setAttempts(0);
         pending.setStage("initial");
-
         daoManager.getPendingAuthDAO().insert(pending);
-
-        // Send OTP to phoneNumber via SMS
         System.out.println("phoneNumber:"+phoneNumber + " OTP:"+otp);
-
+        }
+        // Send OTP to phoneNumber via SMS
         RequestCodeOutputModel model = new RequestCodeOutputModel();
         model.setStatus("code_sent");
         model.setPendingId(pending.getId().toString());
-
+        model.setPhoneNumber(phoneNumber);
         return Ok(model);
     }
 
@@ -102,9 +101,11 @@ public class AccountRpcController extends RpcControllerBase {
         account.setFirstName(model.getFirstName());
         account.setLastName(model.getLastName());
         account.setProfilePictureId(model.getProfilePictureId());
+        account.setPhoneNumber(model.getPhoneNumber());
         daoManager.getAccountDAO().insert(account);
         String accessKey = generateAccessKey(account);
-        return Ok();
+        var output = new BasicRegisterOutputModel(accessKey);
+        return Ok(output);
     }
     public RpcResponse<Object> setPassword(String password){
         var account = daoManager.getAccountDAO().findById(getCurrentUser().getUserId());
@@ -125,7 +126,7 @@ public class AccountRpcController extends RpcControllerBase {
         return Ok();
     }
     private String generateOTP() {
-        int otp = 100000 + (int)(Math.random() * 900000);
+        int otp = 10000 + (int)(Math.random() * 90000);
         return String.valueOf(otp);
     }
 

@@ -2,10 +2,11 @@ package Shared.Api.Models.AccountController;
 
 public class RequestCodeOutputModel {
     private String pendingId;
+    private String phoneNumber;
     private String Status;
     public RequestCodeOutputModel() {
     }
-    public RequestCodeOutputModel(String pendingId, String status) {
+    public RequestCodeOutputModel(String pendingId,String phoneNumber, String status) {
         this.pendingId = pendingId;
         Status = status;
     }
@@ -24,5 +25,12 @@ public class RequestCodeOutputModel {
 
     public void setStatus(String status) {
         Status = status;
+    }
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 }

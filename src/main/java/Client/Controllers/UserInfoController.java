@@ -1,5 +1,15 @@
 package Client.Controllers;
 
+import Client.AppConnectionManager;
+import Client.RpcCaller;
+import JSocket2.Core.Client.ConnectionManager;
+import JSocket2.Protocol.Rpc.RpcResponse;
+import JSocket2.Protocol.StatusCode;
+import Shared.Api.Models.AccountController.BasicRegisterInputModel;
+import Shared.Api.Models.AccountController.BasicRegisterOutputModel;
+import Shared.Api.Models.AccountController.VerifyCodeInputModel;
+import Shared.Api.Models.AccountController.VerifyCodeOutputModel;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
@@ -22,7 +32,13 @@ import java.util.ResourceBundle;
 import static Shared.Utils.SceneUtil.changeSceneWithSameSize;
 
 public class UserInfoController implements Initializable {
-
+    private String phoneNumber;
+    private String profilePhotoId;
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+    private ConnectionManager connectionManager;
+    private RpcCaller rpcCaller;
     @FXML
     private VBox root;
     @FXML
@@ -38,6 +54,8 @@ public class UserInfoController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        connectionManager = AppConnectionManager.getInstance().getConnectionManager();
+        rpcCaller = AppConnectionManager.getInstance().getRpcCaller();
         System.out.println("Controller initialized successfully");
         // Animation of moving from a little further right to the main target
         if (infoBox != null) {
@@ -78,6 +96,30 @@ public class UserInfoController implements Initializable {
             System.out.println("Sign Up details - First Name: " + firstName + ", Last Name: " + lastName);
             // TODO: Add sign-up logic (e.g., photo upload, validation)
             // Example: changeSceneWithSameSize(root, "Client/fxml/verificationViaSms.fxml");
+            Task<RpcResponse<BasicRegisterOutputModel>> basicRegisterTask = new Task<>() {
+                @Override
+                protected RpcResponse<BasicRegisterOutputModel> call() throws Exception {
+                    return rpcCaller.basicRegister(new BasicRegisterInputModel(phoneNumber,firstName,lastName,profilePhotoId));
+                }
+            };
+            basicRegisterTask.setOnSucceeded(event -> {
+                try {
+                    var response = basicRegisterTask.getValue();
+                    if(response.getStatusCode() == StatusCode.OK){
+                        System.out.println(response.getPayload().getAccessKey());
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                }
+            });
+            basicRegisterTask.setOnFailed(event -> {
+                System.out.println("Task failed.");
+                basicRegisterTask.getException().printStackTrace();
+            });
+
+            // Start the background task
+            new Thread(basicRegisterTask).start();
         } else {
             System.out.println("Please fill all fields.");
         }

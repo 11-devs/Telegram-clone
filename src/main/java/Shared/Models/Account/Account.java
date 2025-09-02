@@ -17,12 +17,11 @@ public class Account extends BaseEntity {
     @Column(nullable = true)
     private String hashedPassword;
 
-    @Column(unique = true, nullable = false)
-    private String username;
-
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private AccountStatus status;
+    private String phoneNumber;
+
+    @Column(unique = true)
+    private String username;
 
     @Column(name = "profile_picture_id")
     private String profilePictureId;
@@ -31,12 +30,11 @@ public class Account extends BaseEntity {
     private String bio;
 
 
-    public Account(String firstName,String lastName, String hashedPassword, String username, AccountStatus status, String profilePictureId, String bio) {
+    public Account(String firstName,String lastName, String hashedPassword, String username, String profilePictureId, String bio) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.hashedPassword = hashedPassword;
         this.username = username;
-        this.status = status;
         this.profilePictureId = profilePictureId;
         this.bio = bio;
     }
@@ -61,14 +59,6 @@ public class Account extends BaseEntity {
 
     public void setUsername(String username) {
         this.username = username;
-    }
-
-    public AccountStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(AccountStatus status) {
-        this.status = status;
     }
 
     public String getProfilePictureId() {
@@ -101,5 +91,13 @@ public class Account extends BaseEntity {
 
     public void setLastName(String lastName) {
         this.lastName = lastName;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 }

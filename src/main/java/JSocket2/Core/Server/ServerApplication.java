@@ -22,7 +22,7 @@ public class ServerApplication {
     private final int PORT;
     private final ServerSocket serverSocket;
     private final RpcDispatcher rpcDispatcher;
-    private final ServiceProvider serviceProvider;
+    public final ServiceProvider serviceProvider;
     public ServerSessionManager getServerSessionManager() {
         return serverSessionManager;
     }
@@ -48,10 +48,6 @@ public class ServerApplication {
                 Logger.get().info("A new client has connected");
                 ClientHandler clientHandler = new ClientHandler(serviceProvider,socket, rpcDispatcher, serverSessionManager,pendingRequests);
                 new Thread(clientHandler).start();
-                Scanner scanner = new Scanner(System.in);
-                    scanner.nextLine();
-                    getServerSessionManager().closeAll();
-
             }
         } catch (IOException e) {
             Logger.get().error("Error while listening for clients");

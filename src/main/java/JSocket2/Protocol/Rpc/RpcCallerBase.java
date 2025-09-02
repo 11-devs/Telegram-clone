@@ -49,6 +49,9 @@ public class RpcCallerBase {
         connectionManager.getClient().getMessageHandler().write(message);
         var responseMessage = future.join();
         var response = RpcHelper.convertMessageToRpcResponse(responseMessage,responseClass);
+        if(response.getStatusCode() != StatusCode.OK){
+            System.out.println("Error Code: "+response.getStatusCode() + " "+response.getMessage());
+        }
         return response;
     }
     protected <T> RpcResponse<List<T>> callRpcAndGetListResponse(String controllerName, String actionName,Class<T> responseClass, Object... payloadObjects) throws IOException {
@@ -59,6 +62,9 @@ public class RpcCallerBase {
         connectionManager.getClient().getMessageHandler().write(message);
         var responseMessage = future.join();
         var response = RpcHelper.convertMessageToRpcListResponse(responseMessage,responseClass);
+        if(response.getStatusCode() != StatusCode.OK){
+            System.out.println("Error Code: "+response.getStatusCode() + " "+response.getMessage());
+        }
         return response;
     }
 }

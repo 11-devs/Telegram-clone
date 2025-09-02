@@ -8,10 +8,16 @@ public class AppConnectionManager {
     private static AppConnectionManager instance;
     private ConnectionManager connectionManager;
 
+    public RpcCaller getRpcCaller() {
+        return rpcCaller;
+    }
+
+    private RpcCaller rpcCaller;
     private AppConnectionManager() {
         ClientApplicationBuilder builder = new ClientApplicationBuilder();
-        builder.setEndpoint("localhost",8585);
+        builder.setEndpoint("localhost",8586);
         this.connectionManager = new ConnectionManager(options -> {},builder);
+        this.rpcCaller = new RpcCaller(this.connectionManager);
     }
 
     public static AppConnectionManager getInstance() {

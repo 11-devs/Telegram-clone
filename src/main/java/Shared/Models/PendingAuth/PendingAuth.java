@@ -1,20 +1,55 @@
 package Shared.Models.PendingAuth;
 
+import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UuidGenerator;
+
 import java.time.Instant;
 import java.util.UUID;
 
+@Entity
+@Table(name = "pending_auth")
 public class PendingAuth {
+
+    @Id
+    @UuidGenerator
+    @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
+
+    @Column(name = "phone_number")
     private String phoneNumber;
+
+    @Column(name = "hashed_otp")
     private String hashedOtp;
+
+    @Column(name = "otp_expires_at")
     private Instant otpExpiresAt;
+
+    @Column(name = "attempts")
     private int attempts;
+
+    @Column(name = "max_attempts")
     private int maxAttempts = 5;
+
+    @Column(name = "stage")
     private String stage;
+
+    @Column(name = "temp_token_id")
     private String tempTokenId;
+
+    @Column(name = "last_ip")
     private String lastIp;
+
+    @Column(name = "device_info")
     private String deviceInfo;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
     private Instant createdAt;
+
+    // Hibernate requires a no-arg constructor
+    public PendingAuth() {
+    }
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
