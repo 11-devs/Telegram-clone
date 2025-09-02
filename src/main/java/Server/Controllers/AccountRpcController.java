@@ -18,7 +18,7 @@ public class AccountRpcController extends RpcControllerBase {
         this.daoManager = daoManager;
     }
 
-    public RpcResponse<RequestCodeOutputModel> requestOTP(String phoneNumber) {
+        public RpcResponse<RequestCodeOutputModel> requestOTP(String phoneNumber) {
         var account = daoManager.getAccountDAO().findByField("phoneNumber",phoneNumber);
 
         PendingAuth pending = new PendingAuth();

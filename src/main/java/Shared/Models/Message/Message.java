@@ -27,4 +27,47 @@ public abstract class Message extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private MessageType type;
+
+    // --- Start of added setters ---
+    public void setSender(Account sender) {
+        this.sender = sender;
+    }
+
+    public void setChat(Chat chat) {
+        this.chat = chat;
+    }
+
+    public void setTimestamp(LocalDateTime timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public void setEdited(boolean edited) {
+        isEdited = edited;
+    }
+
+    public void setType(MessageType type) {
+        this.type = type;
+    }
+    // --- End of added setters ---
+
+    // --- Getters ---
+    public Account getSender() {
+        return sender;
+    }
+
+    public Chat getChat() {
+        return chat;
+    }
+
+    public LocalDateTime getTimestamp() {
+        return timestamp;
+    }
+
+    public boolean isEdited() {
+        return isEdited;
+    }
+
+    public MessageType getType() {
+        return type;
+    }
 }

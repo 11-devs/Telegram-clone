@@ -18,7 +18,6 @@ public abstract class Chat extends BaseEntity {
     @Column(name = "profile_picture_id")
     private String profilePictureId;
 
-
     protected Chat() {
     }
 
