@@ -19,7 +19,7 @@ public class RpcHelper {
         return (RpcResponse<List<T>>) convertMessageToRpcResponse(message, listType);
     }
     public static  <T> RpcResponse<T> convertMessageToRpcResponse(Message message, Class<T> responseClass){
-        return  (RpcResponse<T>) convertMessageToRpcResponse(message, responseClass);
+        return  (RpcResponse<T>) convertMessageToRpcResponse(message, (Type)responseClass);
     }
     private static RpcResponse<?> convertMessageToRpcResponse(Message message, Type responseClass){
         if(message.header.type != MessageType.RPC_RESPONSE)

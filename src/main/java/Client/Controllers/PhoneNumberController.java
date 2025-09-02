@@ -4,6 +4,7 @@ import Client.AppConnectionManager;
 import Client.RpcCaller;
 import JSocket2.Core.Client.ConnectionManager;
 import JSocket2.Protocol.Rpc.RpcResponse;
+import JSocket2.Protocol.StatusCode;
 import Shared.Api.Models.AccountController.RequestCodeOutputModel;
 import Shared.Models.CountryCode;
 import com.google.gson.Gson;
@@ -68,7 +69,7 @@ public class PhoneNumberController {
     public void initialize() {
         // Animation for infoBox (moving from right to center)
         connectionManager = AppConnectionManager.getInstance().getConnectionManager();
-        rpcCaller = new RpcCaller(connectionManager);
+        rpcCaller = AppConnectionManager.getInstance().getRpcCaller();
         if (infoBox != null) {
             infoBox.setTranslateX(75);
             TranslateTransition transition = new TranslateTransition(Duration.seconds(0.5), infoBox);
@@ -184,37 +185,27 @@ public class PhoneNumberController {
         Task<RpcResponse<RequestCodeOutputModel>> otpTask = new Task<>() {
             @Override
             protected RpcResponse<RequestCodeOutputModel> call() throws Exception {
-                // This code runs in a separate thread
                 return rpcCaller.requestOTP(preCode + phoneNumber);
             }
         };
-
         otpTask.setOnSucceeded(event -> {
-            // This code runs on the JavaFX application thread
             try {
-                var otp = otpTask.getValue();
-                // Pass the OTP to the next controller
-                System.out.println("OTP received: " + otp.getPayload().getPendingId());
-                // Navigate to the next scene
-                changeSceneWithSameSize(root, "/Client/fxml/verificationViaTelegram.fxml");
+                var response = otpTask.getValue();
+                if(response.getStatusCode() == StatusCode.OK){
+                    changeSceneWithSameSize(root, "/Client/fxml/verificationViaTelegram.fxml",(VerificationViaTelegramController controller) -> {
+                        controller.setRequestCodeOutputModel(response.getPayload());
+                    });
+                }
+
 
             } catch (Exception e) {
                 e.printStackTrace();
-                // Handle exceptions that occurred in the Task
-                // e.g., showError("Failed to get OTP.");
             } finally {
-                // Hide the loading indicator
-                // e.g., progressIndicator.setVisible(false);
             }
         });
-
         otpTask.setOnFailed(event -> {
-            // Handle failure of the Task
-            // e.g., showError("An error occurred during the request.");
             System.out.println("Task failed.");
             otpTask.getException().printStackTrace();
-            // Hide the loading indicator
-            // e.g., progressIndicator.setVisible(false);
         });
 
         // Start the background task

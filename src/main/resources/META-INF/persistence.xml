@@ -41,7 +41,7 @@
             <property name="jakarta.persistence.jdbc.user" value="postgres"/>
             <property name="jakarta.persistence.jdbc.password" value="12345678"/>
             <property name="jakarta.persistence.jdbc.driver" value="org.postgresql.Driver"/>
-
+            <!-- <property name="jakarta.persistence.schema-generation.database.action" value="drop-and-create"/>-->
             <!-- Hibernate properties -->
             <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQLDialect"/>
             <property name="hibernate.hbm2ddl.auto" value="update"/>

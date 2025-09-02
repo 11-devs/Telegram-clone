@@ -6,6 +6,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
+import java.util.function.Consumer;
 import java.io.IOException;
 
 public class SceneUtil {
@@ -33,6 +34,29 @@ public class SceneUtil {
             double width = currentScene.getWidth();
             double height = currentScene.getHeight();
             Scene newScene = new Scene(root, width, height);
+            stage.setScene(newScene);
+            stage.show();
+        } catch (IOException e) {
+            System.err.println("Error loading scene with same size: " + fxmlPath);
+            throw new RuntimeException("Error loading scene with same size: " + fxmlPath, e);
+        }
+    }
+    public static <T> void changeSceneWithSameSize(Node node, String fxmlPath, Consumer<T> dataUpdater) {
+        try {
+            FXMLLoader loader = new FXMLLoader(SceneUtil.class.getResource(fxmlPath));
+            Parent root = loader.load();
+            T controller = loader.getController();
+
+            if (dataUpdater != null) {
+                dataUpdater.accept(controller);
+            }
+
+            Stage stage = (Stage) node.getScene().getWindow();
+            Scene currentScene = node.getScene();
+            double width = currentScene.getWidth();
+            double height = currentScene.getHeight();
+            Scene newScene = new Scene(root, width, height);
+
             stage.setScene(newScene);
             stage.show();
         } catch (IOException e) {
