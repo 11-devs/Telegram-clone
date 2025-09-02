@@ -2,6 +2,7 @@ package Shared.Models.Chat;
 
 import Shared.Models.BaseEntity;
 import jakarta.persistence.*;
+
 @Entity
 @Table(name = "chats")
 @Inheritance(strategy = InheritanceType.JOINED)
@@ -11,30 +12,20 @@ public abstract class Chat extends BaseEntity {
     @Column(nullable = false)
     private ChatType type;
 
+    @Column
     private String title;
 
-    @Column(name = "profile_picture_url")
-    private String profilePictureUrl;
+    @Column(name = "profile_picture_id")
+    private String profilePictureId;
 
 
-    /**
-     * Default constructor required by JPA.
-     */
     protected Chat() {
     }
 
-    /**
-     * Constructor for creating a new Chat instance.
-     * Subclasses will typically call this using `super(...)`.
-     *
-     * @param type The type of the chat (e.g., PRIVATE, GROUP, CHANNEL).
-     * @param title The title of the chat. Can be null for private chats initially.
-     * @param profilePictureUrl The URL to the chat's profile picture. Can be null.
-     */
-    protected Chat(ChatType type, String title, String profilePictureUrl) {
+    protected Chat(ChatType type, String title, String profilePictureId) {
         this.type = type;
         this.title = title;
-        this.profilePictureUrl = profilePictureUrl;
+        this.profilePictureId = profilePictureId;
     }
 
     // --- Getters ---
@@ -47,15 +38,13 @@ public abstract class Chat extends BaseEntity {
         return title;
     }
 
-    public String getProfilePictureUrl() {
-        return profilePictureUrl;
+    public String getProfilePictureId() {
+        return profilePictureId;
     }
 
     // --- Setters ---
 
     public void setType(ChatType type) {
-        // You might want to add validation here, e.g., disallowing changing type after creation.
-        // For now, a simple setter is fine.
         this.type = type;
     }
 
@@ -63,7 +52,7 @@ public abstract class Chat extends BaseEntity {
         this.title = title;
     }
 
-    public void setProfilePictureUrl(String profilePictureUrl) {
-        this.profilePictureUrl = profilePictureUrl;
+    public void setProfilePictureId(String profilePictureId) {
+        this.profilePictureId = profilePictureId;
     }
 }

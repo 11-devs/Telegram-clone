@@ -8,6 +8,10 @@
 
         <class>Shared.Models.Account.Account</class>
         <class>Shared.Models.Chat.Chat</class>
+        <class>Shared.Models.Chat.PrivateChat</class>
+        <class>Shared.Models.Chat.GroupChat</class>
+        <class>Shared.Models.Chat.Channel</class>
+        <class>Shared.Models.Chat.SavedMessages</class>
         <class>Shared.Models.Interaction.Interaction</class>
         <class>Shared.Models.Interaction.Reaction</class>
         <class>Shared.Models.Interaction.View</class>
