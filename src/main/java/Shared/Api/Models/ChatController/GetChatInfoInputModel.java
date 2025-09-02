@@ -2,17 +2,8 @@ package Shared.Api.Models.ChatController;
 
 import java.util.UUID;
 
-public class chatOutputModel {
-
+public class GetChatInfoInputModel {
     private UUID chatId;
-    private String chatTitle;
-
-    public chatOutputModel(){
-
-    }
-    public chatOutputModel(UUID chatId){
-        this.chatId = chatId;
-    }
 
     public UUID getChatId() {
         return chatId;

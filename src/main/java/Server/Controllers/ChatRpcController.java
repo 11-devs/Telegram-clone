@@ -97,4 +97,44 @@ public class ChatRpcController extends RpcControllerBase {
 
         return Ok(newGroup);
     }
+
+    public RpcResponse<Object> getChatInfo(GetChatInfoInputModel model){
+        Chat chat = daoManager.getChatDAO().findById(model.getChatId());
+        if (chat == null) {
+            return BadRequest("Chat not found.");
+        }
+
+        GetChatInfoOutputModel output = new GetChatInfoOutputModel();
+        output.setId(chat.getId());
+        output.setType(chat.getType());
+        output.setTitle(chat.getTitle());
+        output.setProfilePictureId(chat.getProfilePictureId());
+
+        return Ok(output);
+    }
+
+    public RpcResponse<Object> updateChatInfo(UpdateChatInfoInputModel model){
+        Chat chat = daoManager.getChatDAO().findById(model.getChatId());
+        if (chat == null) {
+            return BadRequest("Chat not found.");
+        }
+
+        if (model.getTitle() != null) {
+            chat.setTitle(model.getTitle());
+        }
+
+        if (model.getProfilePictureId() != null) {
+            chat.setProfilePictureId(model.getProfilePictureId());
+        }
+
+        daoManager.getChatDAO().update(chat);
+
+        UpdateChatInfoOutputModel output = new UpdateChatInfoOutputModel();
+        output.setId(chat.getId());
+        output.setType(chat.getType());
+        output.setTitle(chat.getTitle());
+        output.setProfilePictureId(chat.getProfilePictureId());
+
+        return Ok(output);
+    }
 }
