@@ -4,6 +4,11 @@ public class LoginInputModel {
     private String password;
     private String phoneNumber;
     private String deviceInfo;
+    public LoginInputModel(String password,String phoneNumber,String deviceInfo){
+        this.password = password;
+        this.phoneNumber = phoneNumber;
+        this.deviceInfo = deviceInfo;
+    }
     public String getDeviceInfo() {
         return deviceInfo;
     }

@@ -19,7 +19,6 @@ public class Server {
         builder.getServices().AddSingleton(DaoManager.class);
         builder.addController(AccountRpcController.class);
         ServerApplication app = builder.build();
-        var a = app.serviceProvider.GetService(RsaKeyManager.class);
         app.Run();
     }
 }
