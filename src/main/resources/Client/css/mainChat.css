@@ -2,7 +2,7 @@
 
 .main-chat-container {
     -fx-background-color: #17212B;
-    -fx-border-color: transparent;
+    -fx-border-color: #17212B;
     -fx-font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 
@@ -363,7 +363,7 @@
 }
 
 .message-input-area {
-    -fx-background-color: #17212B;
+    -fx-background-color: #202B36;
     -fx-alignment: bottom-center;
 }
 
@@ -387,10 +387,17 @@
     -fx-background-color: transparent;
 }
 
+.input-field-container:selected {
+    -fx-background-color: #202B36;
+}
+
+.input-field-container:focused  {
+    -fx-background-color: #202B36;
+}
+
 .message-input-field {
     -fx-background-color: #202B36;
     -fx-border-color: transparent;
-    -fx-background-radius: 20px;
     -fx-text-fill: #FFFFFF;
     -fx-prompt-text-fill: #92A3AF;
     -fx-font-size: 14px;
@@ -404,10 +411,12 @@
     -fx-faint-focus-color: transparent;
 }
 
+.message-input-field:selected {
+    -fx-background-color: #202B36;
+}
+
 .message-input-field:focused {
-    -fx-border-color: #4FC3F7;
-    -fx-border-width: 1px;
-    -fx-border-radius: 20px;
+    -fx-background-color: #202B36;
 }
 
 .message-input-field .content {
@@ -538,12 +547,6 @@
     -fx-font-size: 12px;
     -fx-font-weight: 500;
 }
-
-.profile-separator {
-    -fx-background-color: #2C3E50;
-    -fx-pref-height: 1px;
-}
-
 /* Profile Settings */
 .profile-settings-section {
     -fx-background-color: #17212B;

@@ -7,7 +7,6 @@
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.control.ScrollPane?>
-<?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ToggleButton?>
@@ -85,17 +84,6 @@
                         </graphic>
                     </Button>
 
-                    <!-- Night Mode Toggle -->
-                    <Button fx:id="nightModeButton" styleClass="footer-button, icon-button">
-                        <graphic>
-                            <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
-                                <image>
-                                    <Image url="@../images/night-mode-icon.png" />
-                                </image>
-                            </ImageView>
-                        </graphic>
-                    </Button>
-
                     <Region HBox.hgrow="ALWAYS" />
 
                     <!-- Connection Status -->
@@ -124,7 +112,7 @@
                         <children>
                             <ImageView fx:id="headerAvatarImage" fitHeight="40.0" fitWidth="40.0" pickOnBounds="true" preserveRatio="true" styleClass="header-avatar">
                                 <image>
-                                    <Image url="@../images/default-avatar.png" />
+                                    <Image url="@../images/11Devs-black.png" />
                                 </image>
                                 <clip>
                                     <Circle centerX="20" centerY="20" radius="20" />
@@ -145,11 +133,6 @@
                             <HBox alignment="CENTER_LEFT" spacing="6.0">
                                 <children>
                                     <Label fx:id="chatTitleLabel" styleClass="chat-title" text="Select a chat" />
-                                    <ImageView fx:id="verifiedBadge" fitHeight="14.0" fitWidth="14.0" styleClass="verified-badge" visible="false">
-                                        <image>
-                                            <Image url="@../images/verified-icon.png" />
-                                        </image>
-                                    </ImageView>
                                     <ImageView fx:id="mutedIcon" fitHeight="14.0" fitWidth="14.0" styleClass="muted-icon" visible="false">
                                         <image>
                                             <Image url="@../images/mute-icon.png" />
@@ -243,12 +226,11 @@
                     </ScrollPane>
 
                     <!-- Welcome State -->
-                    <VBox fx:id="welcomeStateContainer" alignment="CENTER" spacing="24.0" styleClass="welcome-state" visible="false">
+                    <VBox fx:id="welcomeStateContainer" alignment="CENTER" spacing="24.0" styleClass="welcome-state">
                         <children>
                             <StackPane styleClass="telegram-logo-container">
                                 <children>
-                                    <Circle radius="60.0" styleClass="logo-circle" />
-                                    <ImageView fitHeight="80.0" fitWidth="80.0" styleClass="telegram-logo">
+                                    <ImageView fitHeight="120.0" fitWidth="120.0" styleClass="telegram-logo">
                                         <image>
                                             <Image url="@../images/telegram-logo.png" />
                                         </image>
@@ -267,11 +249,6 @@
                     <!-- Empty Chat State -->
                     <VBox fx:id="emptyChatStateContainer" alignment="CENTER" spacing="20.0" styleClass="empty-chat-state" visible="false">
                         <children>
-                            <ImageView fitHeight="60.0" fitWidth="60.0" opacity="0.4">
-                                <image>
-                                    <Image url="@../images/no-messages-icon.png" />
-                                </image>
-                            </ImageView>
                             <VBox alignment="CENTER" spacing="6.0">
                                 <children>
                                     <Label styleClass="empty-chat-title" text="No messages here yet..." />
@@ -296,12 +273,6 @@
                                     </ImageView>
                                 </graphic>
                             </Button>
-                            <!-- Unread Messages Badge -->
-                            <Label fx:id="unreadBadge" styleClass="unread-badge" text="5" visible="false" StackPane.alignment="TOP_RIGHT">
-                                <StackPane.margin>
-                                    <Insets right="-8.0" top="-8.0" />
-                                </StackPane.margin>
-                            </Label>
                         </children>
                     </StackPane>
                 </children>
@@ -322,7 +293,7 @@
                                 <Label fx:id="replyMessageLabel" styleClass="reply-message-label" text="Original message text..." />
                             </children>
                         </VBox>
-                        <Button fx:id="closeReplyButton" styleClass="close-reply-button" onAction="#closeReplyPreview">
+                        <Button fx:id="closeReplyButton" onAction="#closeReplyPreview" styleClass="close-reply-button">
                             <graphic>
                                 <SVGPath content="M18 18L12 12M12 12L6 6M12 12L18 6M12 12L6 18" fill="#666666" stroke="#666666" strokeLineCap="ROUND" strokeLineJoin="ROUND" strokeWidth="2">
                                     <StackPane.margin>
@@ -335,13 +306,13 @@
                 </HBox>
 
                 <!-- Main Input Row -->
-                <HBox alignment="BOTTOM_CENTER" spacing="8.0" styleClass="message-input-area">
+                <HBox alignment="CENTER" spacing="8.0" styleClass="message-input-area">
                     <padding>
                         <Insets bottom="16.0" left="20.0" right="20.0" top="12.0" />
                     </padding>
                     <children>
                         <!-- Attachment Menu Button -->
-                        <Button fx:id="attachmentButton" styleClass="attachment-button, icon-button">
+                        <Button fx:id="attachmentButton" minHeight="23.0" prefHeight="23.0" prefWidth="27.0" styleClass="attachment-button, icon-button">
                             <graphic>
                                 <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
                                     <image>
@@ -412,6 +383,9 @@
                                 <clip>
                                     <Circle centerX="50" centerY="50" radius="50" />
                                 </clip>
+                        <image>
+                           <Image url="@../images/11Devs-black.png" />
+                        </image>
                             </ImageView>
                             <Circle fx:id="profileOnlineIndicator" radius="8.0" styleClass="profile-online-indicator" visible="false" StackPane.alignment="BOTTOM_RIGHT">
                                 <StackPane.margin>
@@ -426,15 +400,10 @@
                         <children>
                             <HBox alignment="CENTER" spacing="8.0">
                                 <children>
-                                    <Label fx:id="profileNameLabel" styleClass="profile-name" text="User Name" />
-                                    <ImageView fx:id="profileVerifiedBadge" fitHeight="18.0" fitWidth="18.0" styleClass="profile-verified-badge" visible="false">
-                                        <image>
-                                            <Image url="@../images/verified-icon.png" />
-                                        </image>
-                                    </ImageView>
+                                    <Label fx:id="profileNameLabel" alignment="CENTER" prefHeight="24.0" prefWidth="127.0" styleClass="profile-name" text="User Name" />
                                 </children>
                             </HBox>
-                            <Label fx:id="profileUsernameLabel" styleClass="profile-username" text="@username" visible="false" />
+                            <Label fx:id="profileUsernameLabel" styleClass="profile-username" text="\@ID" visible="false" />
                             <Label fx:id="profileStatusLabel" styleClass="profile-status" text="last seen recently" />
                             <Label fx:id="profilePhoneLabel" styleClass="profile-phone" text="+1 234 567 8900" visible="false" />
                         </children>
@@ -449,7 +418,7 @@
                                         <graphic>
                                             <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
                                                 <image>
-                                                    <Image url="@../images/call-icon.png" />
+                                                    <Image url="@../images/calls-icon.png" />
                                                 </image>
                                             </ImageView>
                                         </graphic>
@@ -489,8 +458,6 @@
                     </HBox>
                 </children>
             </VBox>
-
-            <Separator styleClass="profile-separator" />
 
             <!-- Settings Section -->
             <VBox styleClass="profile-settings-section">
@@ -557,8 +524,6 @@
                     </HBox>
                 </children>
             </VBox>
-
-            <Separator styleClass="profile-separator" />
 
             <!-- Media and Files Section -->
             <VBox styleClass="media-files-section" VBox.vgrow="ALWAYS">

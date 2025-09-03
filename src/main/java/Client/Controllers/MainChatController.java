@@ -70,10 +70,6 @@ public class MainChatController implements Initializable {
      */
     @FXML private Button settingsButton;
     /**
-     * Button to toggle between light and dark themes.
-     */
-    @FXML private Button nightModeButton;
-    /**
      * Circle indicator for connection status.
      */
     @FXML private Circle connectionIndicator;
@@ -103,10 +99,6 @@ public class MainChatController implements Initializable {
      * Label showing the number of members in a group chat.
      */
     @FXML private Label membersCountLabel;
-    /**
-     * ImageView for the verified badge in the chat header.
-     */
-    @FXML private ImageView verifiedBadge;
     /**
      * ImageView for the muted icon in the chat header.
      */
@@ -153,10 +145,6 @@ public class MainChatController implements Initializable {
      * Button to scroll to the bottom of the messages list.
      */
     @FXML private Button scrollToBottomButton;
-    /**
-     * Label showing the unread message count.
-     */
-    @FXML private Label unreadBadge;
 
     // Reply preview
     /**
@@ -227,10 +215,6 @@ public class MainChatController implements Initializable {
      * Label showing the user's phone number in the right panel.
      */
     @FXML private Label profilePhoneLabel;
-    /**
-     * ImageView for the verified badge in the right panel.
-     */
-    @FXML private ImageView profileVerifiedBadge;
     /**
      * Button to initiate a voice call from the right panel.
      */
@@ -525,7 +509,7 @@ public class MainChatController implements Initializable {
         // Sidebar buttons
         menuButton.setOnAction(e -> showSideBar());
         settingsButton.setOnAction(e -> openSettings());
-        nightModeButton.setOnAction(e -> toggleTheme());
+        // nightModeButton.setOnAction(e -> toggleTheme()); TODO UI
 
         // Search functionality
         searchField.textProperty().addListener((obs, oldText, newText) -> performSearch(newText));
@@ -611,7 +595,7 @@ public class MainChatController implements Initializable {
      */
     private void loadInitialState() {
         // Set initial theme
-        updateThemeClasses();
+        // updateThemeClasses(); TODO UI
 
         // Update connection status
         updateConnectionStatus(true); // TODO: Connect to the server for real status.
@@ -679,7 +663,6 @@ public class MainChatController implements Initializable {
         updateHeaderAvatar(user);
 
         // Update badges and indicators
-        verifiedBadge.setVisible(user.isVerified());
         mutedIcon.setVisible(user.isMuted());
         onlineIndicator.setVisible(user.isOnline() && user.getType() == UserType.USER);
 
@@ -1157,13 +1140,13 @@ public class MainChatController implements Initializable {
         try {
             if (text.isEmpty()) {
                 // Show microphone for voice messages
-                Image micIcon = new Image(Objects.requireNonNull(getClass().getResource("../images/microphone-icon.png")).toExternalForm()); // TODO UI
+                Image micIcon = new Image(Objects.requireNonNull(getClass().getResource("/Client/images/microphone-icon.png")).toExternalForm());
                 // TODO: Verify image path and handle server-side icon loading if needed.
                 sendButtonIcon.setImage(micIcon);
                 sendButton.getStyleClass().add("voice-mode");
             } else {
                 // Show send icon for text messages
-                Image sendIcon = new Image(Objects.requireNonNull(getClass().getResource("../images/send-icon.png")).toExternalForm()); // TODO UI
+                Image sendIcon = new Image(Objects.requireNonNull(getClass().getResource("/Client/images/send-icon.png")).toExternalForm());
                 // TODO: Verify image path and handle server-side icon loading if needed.
                 sendButtonIcon.setImage(sendIcon);
                 sendButton.getStyleClass().remove("voice-mode");
@@ -1363,7 +1346,6 @@ public class MainChatController implements Initializable {
         updateProfileAvatar(user);
 
         // Update badges and indicators
-        profileVerifiedBadge.setVisible(user.isVerified());
         profileOnlineIndicator.setVisible(user.isOnline());
 
         // Update notification status
@@ -1559,13 +1541,6 @@ public class MainChatController implements Initializable {
      */
     private void showScrollToBottomButton() {
         scrollToBottomContainer.setVisible(true);
-
-        // Update unread count
-        if (unreadScrollCount > 0) {
-            unreadBadge.setText(String.valueOf(unreadScrollCount));
-            unreadBadge.setVisible(true);
-        }
-
         TelegramCellUtils.animateNotificationBadge(scrollToBottomContainer, true);
     }
 
@@ -1574,7 +1549,6 @@ public class MainChatController implements Initializable {
      */
     private void hideScrollToBottomButton() {
         unreadScrollCount = 0;
-        unreadBadge.setVisible(false);
         TelegramCellUtils.animateNotificationBadge(scrollToBottomContainer, false);
     }
 
@@ -1622,44 +1596,44 @@ public class MainChatController implements Initializable {
 //        }
 //    }
 
-    // ============ THEME MANAGEMENT ============
+    // ============ THEME MANAGEMENT ============ // TODO UI
 
-    /**
-     * Toggles between dark and light themes.
-     */
-    private void toggleTheme() {
-        isDarkTheme = !isDarkTheme;
-        updateThemeClasses();
-
-        // Animate theme transition
-        animateThemeChange();
-
-        // Update night mode button icon
-        updateNightModeIcon();
-    }
-
-    /**
-     * Updates the theme classes on the main container.
-     * TODO: Add other themes in the future for more variety.
-     */
-    private void updateThemeClasses() {
-        mainChatContainer.getStyleClass().removeAll("light-theme", "dark-theme");
-        mainChatContainer.getStyleClass().add(isDarkTheme ? "dark-theme" : "light-theme");
-    }
-
-    /**
-     * Updates the night mode button icon based on the current theme.
-     */
-    private void updateNightModeIcon() {
-        try {
-            String iconPath = isDarkTheme ? "../images/sun-icon.png" : "../images/moon-icon.png"; // TODO UI
-            // TODO: Verify image paths and handle server-side icon loading if needed.
-            Image themeIcon = new Image(Objects.requireNonNull(getClass().getResource(iconPath)).toExternalForm());
-            ((ImageView) nightModeButton.getGraphic()).setImage(themeIcon);
-        } catch (Exception e) {
-            System.err.println("Error updating night mode icon: " + e.getMessage());
-        }
-    }
+//    /**
+//     * Toggles between dark and light themes.
+//     */
+//    private void toggleTheme() {
+//        isDarkTheme = !isDarkTheme;
+//        updateThemeClasses();
+//
+//        // Animate theme transition
+//        animateThemeChange();
+//
+//        // Update night mode button icon
+//        updateNightModeIcon();
+//    }
+//
+//    /**
+//     * Updates the theme classes on the main container.
+//     * TODO: Add other themes in the future for more variety.
+//     */
+//    private void updateThemeClasses() {
+//        mainChatContainer.getStyleClass().removeAll("light-theme", "dark-theme");
+//        mainChatContainer.getStyleClass().add(isDarkTheme ? "dark-theme" : "light-theme");
+//    }
+//
+//    /**
+//     * Updates the night mode button icon based on the current theme.
+//     */
+//    private void updateNightModeIcon() {
+//        try {
+//            String iconPath = isDarkTheme ? "../images/sun-icon.png" : "../images/moon-icon.png"; // TODO UI
+//            // TODO: Verify image paths and handle server-side icon loading if needed.
+//            Image themeIcon = new Image(Objects.requireNonNull(getClass().getResource(iconPath)).toExternalForm());
+//            ((ImageView) nightModeButton.getGraphic()).setImage(themeIcon);
+//        } catch (Exception e) {
+//            System.err.println("Error updating night mode icon: " + e.getMessage());
+//        }
+//    }
 
     // ============ CONNECTION STATUS ============
 
@@ -2445,8 +2419,8 @@ public class MainChatController implements Initializable {
      */
     public void setTheme(boolean darkTheme) {
         this.isDarkTheme = darkTheme;
-        updateThemeClasses();
-        updateNightModeIcon();
+        // updateThemeClasses(); TODO UI
+        // updateNightModeIcon(); TODO UI
         // TODO (Server): Send theme preference to server for persistence.
         // TODO (UI): Add transition animation for theme switch.
     }
