@@ -88,6 +88,21 @@ public class UserViewModelBuilder {
         return this;
     }
 
+    public UserViewModelBuilder bio(String bio) {
+        user.setBio(bio);
+        return this;
+    }
+
+    public UserViewModelBuilder phoneNumber(String phoneNumber) {
+        user.setPhoneNumber(phoneNumber);
+        return this;
+    }
+
+    public UserViewModelBuilder membersCount(int membersCount) {
+        user.setMembersCount(membersCount);
+        return this;
+    }
+
     public UserViewModel build() {
         return user;
     }

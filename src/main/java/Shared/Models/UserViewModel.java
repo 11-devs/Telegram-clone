@@ -22,6 +22,9 @@ public class UserViewModel {
     private final StringProperty userId = new SimpleStringProperty();
     private final ReadOnlyBooleanWrapper isMessageSentByCurrentUser = new ReadOnlyBooleanWrapper(false);
     private final BooleanProperty isDraft = new SimpleBooleanProperty(false);
+    private final StringProperty bio = new SimpleStringProperty();
+    private final StringProperty phoneNumber = new SimpleStringProperty();
+    private final IntegerProperty membersCount = new SimpleIntegerProperty(0);
 
     public UserViewModel() {
         userId.addListener((obs, oldVal, newVal) -> updateIsMessageSentByCurrentUser());
@@ -46,6 +49,9 @@ public class UserViewModel {
     public StringProperty userIdProperty() { return userId; }
     public ReadOnlyBooleanProperty isMessageSentByCurrentUserProperty() { return isMessageSentByCurrentUser.getReadOnlyProperty(); }
     public BooleanProperty isDraftProperty() { return isDraft; }
+    public StringProperty bioProperty() { return bio; }
+    public StringProperty phoneNumberProperty() { return phoneNumber; }
+    public IntegerProperty membersCountProperty() { return membersCount; }
 
     // Getters
     public String getUserName() { return userName.get(); }
@@ -66,6 +72,9 @@ public class UserViewModel {
     public String getUserId() { return userId.get(); }
     public boolean isMessageSentByCurrentUser() { return isMessageSentByCurrentUser.get(); }
     public boolean isDraft() { return isDraft.get(); }
+    public String getBio() { return bio.get(); }
+    public String getPhoneNumber() { return phoneNumber.get(); }
+    public int getMembersCount() { return membersCount.get(); }
 
     // Setters
     public void setUserName(String userName) { this.userName.set(userName); }
@@ -82,12 +91,13 @@ public class UserViewModel {
     public void setTyping(boolean isTyping) { this.isTyping.set(isTyping); }
     public void setLastSeen(String lastSeen) { this.lastSeen.set(lastSeen); }
     public void setType(UserType type) { this.type.set(type); }
-    public void setType(String typeString) { // Convert string to enum
-        this.type.set(UserType.fromString(typeString));
-    }
+    public void setType(String typeString) { this.type.set(UserType.fromString(typeString)); }
     public void setMessagePreview(String messagePreview) { this.messagePreview.set(messagePreview); }
     public void setUserId(String userId) { this.userId.set(userId); updateIsMessageSentByCurrentUser(); }
     public void setDraft(boolean isDraft) { this.isDraft.set(isDraft); }
+    public void setBio(String bio) { this.bio.set(bio); }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber.set(phoneNumber); }
+    public void setMembersCount(int membersCount) { this.membersCount.set(membersCount); }
 
     // Utility methods
     private void updateIsMessageSentByCurrentUser() {
@@ -95,7 +105,7 @@ public class UserViewModel {
         isMessageSentByCurrentUser.set(currentUserId.equals(getUserId()));
     }
 
-    public void incrementNotifications() {
+    public void incrementUnreadCount() {
         try {
             int count = Integer.parseInt(getNotificationsNumber());
             setNotificationsNumber(String.valueOf(count + 1));
@@ -104,8 +114,17 @@ public class UserViewModel {
         }
     }
 
-    public void clearNotifications() {
+    public void clearUnreadCount() {
         setNotificationsNumber("0");
+    }
+
+    public boolean hasUnreadMessages() {
+        try {
+            int count = Integer.parseInt(getNotificationsNumber());
+            return count > 0;
+        } catch (NumberFormatException e) {
+            return false; // In case of error, we assume there is no unread message.
+        }
     }
 
     @Override
@@ -124,6 +143,9 @@ public class UserViewModel {
     public String toString() {
         return "UserViewModel{" +
                 "userName=" + getUserName() +
+                ", userId=" + getUserId() +
+                ", phoneNumber=" + getPhoneNumber() +
+                ", bio=" + getBio() +
                 ", lastMessage=" + getLastMessage() +
                 ", time=" + getTime() +
                 ", notificationsNumber=" + getNotificationsNumber() +
@@ -137,8 +159,8 @@ public class UserViewModel {
                 ", lastSeen=" + getLastSeen() +
                 ", type=" + getType() +
                 ", messagePreview=" + getMessagePreview() +
-                ", userId=" + getUserId() +
                 ", isDraft=" + isDraft() +
+                ", membersCount=" + getMembersCount() +
                 '}';
     }
 }
