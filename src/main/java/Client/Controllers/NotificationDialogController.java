@@ -23,6 +23,14 @@ public class NotificationDialogController {
         this.dialogStage = dialogStage;
     }
 
+    public void setData(Object data) {
+        if (data instanceof String message) {
+            setMessage(message); // Call the existing setMessage method
+        } else {
+            System.err.println("Data is not a String: " + data);
+        }
+    }
+
     public void setMessage(String message) {
         messageText.setText(message); // Use the input message directly
 
