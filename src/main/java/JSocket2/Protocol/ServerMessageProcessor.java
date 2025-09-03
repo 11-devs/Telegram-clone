@@ -109,7 +109,7 @@ public class ServerMessageProcessor implements IMessageProcessor {
         var payloadJson = new String(message.getPayload(), StandardCharsets.UTF_8);
         var response = rpcDispatcher.dispatch(metadata, payloadJson,serverSession.getActiveUser());
 
-        var responseMetadata = gson.toJson(new RpcResponseMetadata(response.getStatusCode().code, ""));
+        var responseMetadata = gson.toJson(new RpcResponseMetadata(response.getStatusCode().code, response.getMessage()));
         var responsePayload = gson.toJson(response.getPayload());
 
         var msg = new Message(

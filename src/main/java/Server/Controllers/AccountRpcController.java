@@ -9,62 +9,110 @@ import Shared.Models.PendingAuth.PendingAuth;
 import Shared.Models.Session.Session;
 import Shared.Utils.PasswordUtil;
 
+import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 public class AccountRpcController extends RpcControllerBase {
     private final DaoManager daoManager;
-
+    private final Duration OTP_EXPIRY_DURATION = Duration.ofMinutes(2);
+    private final Duration OTP_RESEND_COOLDOWN = Duration.ofSeconds(60);
+    private final int MAX_OTP_ATTEMPTS = 5;
+    private final Duration LOCKOUT_DURATION = Duration.ofMinutes(5);
     public AccountRpcController(DaoManager daoManager) {
         this.daoManager = daoManager;
     }
 
-    public RpcResponse<RequestCodeOutputModel> requestOTP(String phoneNumber) {
-        //var account = daoManager.getAccountDAO().findByField("phoneNumber",phoneNumber);
-
-        PendingAuth pending = daoManager.getPendingAuthDAO().findByField("phoneNumber",phoneNumber);
-        if(pending == null){
+    public RpcResponse<Object> requestOTP(RequestCodePhoneNumberInputModel model) {
+        boolean cooldown = false;
+        var pendings = daoManager.getPendingAuthDAO().findAllByField("phoneNumber", model.getPhoneNumber());
+        Optional<PendingAuth> optionalPending = pendings.stream()
+                .filter(p -> p.getDeviceInfo() != null && p.getDeviceInfo().equals(model.getDeviceInfo()))
+                .findFirst();
+        PendingAuth pending = optionalPending.orElse(null);
+        if (pending != null) {
+            if (Instant.now().isBefore(pending.getLastRequestAt().plus(OTP_RESEND_COOLDOWN))) {
+                cooldown = true;
+            }
+            if (pending.getAttempts() >= MAX_OTP_ATTEMPTS && Instant.now().isBefore(pending.getLockoutUntil())) {
+                return BadRequest("too_many_attempts_try_later");
+            }
+        } else {
             pending = new PendingAuth();
-        var otp = generateOTP();
-        pending.setPhoneNumber(phoneNumber);
-        pending.setHashedOtp(PasswordUtil.hash(otp));
-        pending.setOtpExpiresAt(Instant.now().plusSeconds(120));
-        pending.setAttempts(0);
-        pending.setStage("initial");
-        daoManager.getPendingAuthDAO().insert(pending);
-        System.out.println("phoneNumber:"+phoneNumber + " OTP:"+otp);
+            pending.setPhoneNumber(model.getPhoneNumber());
+            pending.setStage("initial");
+            pending.setDeviceInfo(model.getDeviceInfo());
         }
-        // Send OTP to phoneNumber via SMS
-        RequestCodeOutputModel model = new RequestCodeOutputModel();
-        model.setStatus("code_sent");
-        model.setPendingId(pending.getId().toString());
-        model.setPhoneNumber(phoneNumber);
-        return Ok(model);
+if(!cooldown) {
+    var otp = generateOTP();
+    pending.setOtp(otp);
+    pending.setOtpExpiresAt(Instant.now().plus(OTP_EXPIRY_DURATION));
+    pending.setLastRequestAt(Instant.now());
+    pending.setAttempts(0);
+    pending.setLockoutUntil(null);
+
+    if (pending.getId() == null) {
+        daoManager.getPendingAuthDAO().insert(pending);
+    } else {
+        daoManager.getPendingAuthDAO().update(pending);
+    }
+
+    // Send OTP via the specified channel (telegram/sms)
+    switch (model.getVia()) {
+        case "telegram":
+            // Logic to send telegram message
+            System.out.println("Telegram message sent to phoneNumber:" + model.getPhoneNumber() + " OTP:" + pending.getOtp());
+            break;
+        case "sms":
+            // Logic to send SMS
+            System.out.println("SMS sent to phoneNumber:" + model.getPhoneNumber() + " OTP:" + pending.getOtp());
+            break;
+        default:
+            return BadRequest("invalid_via_channel");
+    }
+}
+        RequestCodePhoneNumberOutputModel outputModel = new RequestCodePhoneNumberOutputModel();
+        outputModel.setStatus( !cooldown ? "code_sent" : "cooldown");
+        outputModel.setPendingId(pending.getId().toString());
+        outputModel.setPhoneNumber(model.getPhoneNumber());
+        return Ok(outputModel);
     }
 
     public RpcResponse<Object> verifyOTP(VerifyCodeInputModel model) {
-        PendingAuth pending = daoManager.getPendingAuthDAO()
-                .findById(UUID.fromString(model.getPendingId()));
+        PendingAuth pending = daoManager.getPendingAuthDAO().findById(UUID.fromString(model.getPendingId()));
 
-        if (pending == null || Instant.now().isAfter(pending.getOtpExpiresAt())) {
+        if (pending == null) {
+            return BadRequest("invalid_pending_id");
+        }
+
+        if (Instant.now().isAfter(pending.getOtpExpiresAt())) {
+            daoManager.getPendingAuthDAO().delete(pending);
             return BadRequest("otp_expired");
         }
-        if (!PasswordUtil.verify(model.getOtp(),pending.getHashedOtp())) {
+        if (pending.getLockoutUntil() != null && Instant.now().isBefore(pending.getLockoutUntil())) {
+            return BadRequest("too_many_attempts_try_later");
+        }
+
+        if (!model.getOtp().equals(pending.getOtp())) {
             pending.setAttempts(pending.getAttempts() + 1);
-            daoManager.getPendingAuthDAO().update(pending);
-
-            if (pending.getAttempts() >= 5) {
-                return BadRequest("too_many_attempts");
+            if (pending.getAttempts() >= MAX_OTP_ATTEMPTS) {
+                pending.setLockoutUntil(Instant.now().plus(LOCKOUT_DURATION));
+                daoManager.getPendingAuthDAO().update(pending);
+                return BadRequest("too_many_attempts_try_later");
             }
-
+            daoManager.getPendingAuthDAO().update(pending);
             return BadRequest("invalid_otp");
         }
+
         daoManager.getPendingAuthDAO().delete(pending);
-        var account = daoManager.getAccountDAO().findByField("phoneNumber",model.getPhoneNumber());
+
+        var account = daoManager.getAccountDAO().findByField("phoneNumber", model.getPhoneNumber());
         VerifyCodeOutputModel output = new VerifyCodeOutputModel();
+
         if (account == null) {
             output.setStatus("need_register");
-        } else if (account.getHashedPassword() != null && account.getHashedPassword().isEmpty()) {
+        } else if (account.getHashedPassword() == null || account.getHashedPassword().isEmpty()) {
             output.setStatus("need_password");
         } else {
             var accessKey = generateAccessKey(account, model.getDeviceInfo());
@@ -123,6 +171,68 @@ public class AccountRpcController extends RpcControllerBase {
         String accessKey = generateAccessKey(account,model.getDeviceInfo());
         var output = new BasicRegisterOutputModel(accessKey);
         return Ok(output);
+    }
+    public RpcResponse<Object> setEmail(String email){
+        var account = daoManager.getAccountDAO().findById(getCurrentUser().getUserId());
+        if (account == null) {
+            return BadRequest("account_not_found");
+        }
+        var existingAccountWithEmail = daoManager.getAccountDAO().findByField("email", email);
+        if (existingAccountWithEmail != null) {
+            return BadRequest("email_already_in_use");
+        }
+        PendingAuth pending = daoManager.getPendingAuthDAO().findByField("email", email);
+        if (pending == null) {
+            pending = new PendingAuth();
+            pending.setEmail(email);
+            pending.setStage("email_verification");
+        }
+
+        var otp = generateOTP();
+        pending.setOtp(otp);
+        pending.setOtpExpiresAt(Instant.now().plus(OTP_EXPIRY_DURATION));
+        pending.setAttempts(0);
+
+        if (pending.getId() == null) {
+            daoManager.getPendingAuthDAO().insert(pending);
+        } else {
+            daoManager.getPendingAuthDAO().update(pending);
+        }
+
+        // Send OTP to email
+        System.out.println("email:" + email + " OTP:" + otp);
+        RequestCodeEmailOutputModel model = new RequestCodeEmailOutputModel();
+        model.setStatus("code_sent");
+        model.setPendingId(pending.getId().toString());
+        model.setEmail(email);
+        return Ok(model);
+    }
+    public RpcResponse<Object> verifyEmailOtp(VerifyCodeEmailInputModel model){
+        var account = daoManager.getAccountDAO().findById(getCurrentUser().getUserId());
+        if (account == null) {
+            return BadRequest("account_not_found");
+        }
+        PendingAuth pending = daoManager.getPendingAuthDAO().findById(UUID.fromString(model.getPendingId()));
+        if (pending == null) {
+            return BadRequest("invalid_pending_id");
+        }
+        if (Instant.now().isAfter(pending.getOtpExpiresAt())) {
+            daoManager.getPendingAuthDAO().delete(pending);
+            return BadRequest("otp_expired");
+        }
+        if (!model.getOtp().equals(pending.getOtp())) {
+            pending.setAttempts(pending.getAttempts() + 1);
+            if (pending.getAttempts() >= MAX_OTP_ATTEMPTS) {
+                daoManager.getPendingAuthDAO().delete(pending);
+                return BadRequest("too_many_attempts");
+            }
+            daoManager.getPendingAuthDAO().update(pending);
+            return BadRequest("invalid_otp");
+        }
+        daoManager.getPendingAuthDAO().delete(pending);
+        account.setEmail(model.getEmail());
+        daoManager.getAccountDAO().update(account);
+        return Ok();
     }
     public RpcResponse<Object> setPassword(String password){
         var account = daoManager.getAccountDAO().findById(getCurrentUser().getUserId());

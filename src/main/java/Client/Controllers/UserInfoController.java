@@ -1,5 +1,6 @@
 package Client.Controllers;
 
+import Client.AccessKeyManager;
 import Client.AppConnectionManager;
 import Client.RpcCaller;
 import JSocket2.Core.Client.ConnectionManager;
@@ -108,7 +109,8 @@ public class UserInfoController implements Initializable {
                 try {
                     var response = basicRegisterTask.getValue();
                     if(response.getStatusCode() == StatusCode.OK){
-                        System.out.println(response.getPayload().getAccessKey());
+                        var resultCode = AccessKeyManager.LoginWithAccessKey(response.getPayload().getAccessKey(),connectionManager.getClient());
+                        if(resultCode == StatusCode.OK) System.out.println("Successful login");
                     }
                 } catch (Exception e) {
                     e.printStackTrace();

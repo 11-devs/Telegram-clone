@@ -1,6 +1,8 @@
 package Client;
 
+import JSocket2.Core.Client.ClientApplication;
 import JSocket2.Protocol.Authentication.AuthModel;
+import JSocket2.Protocol.StatusCode;
 import com.google.gson.Gson;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -122,5 +124,11 @@ public class AccessKeyManager {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("SHA-256 algorithm not available.", e);
         }
+    }
+    public static StatusCode LoginWithAccessKey(String accessKey, ClientApplication client) throws IOException {
+        AccessKeyManager.saveAccessKey(accessKey);
+        AuthModel authModel = new AuthModel(new String[]{accessKey}, 1);
+        var resultCode = client.sendAuthModel(authModel);
+        return resultCode;
     }
 }

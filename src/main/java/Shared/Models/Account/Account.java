@@ -15,6 +15,8 @@ public class Account extends BaseEntity {
     private String lastName;
 
     @Column(nullable = true)
+    private String email;
+    @Column(nullable = true)
     private String hashedPassword;
 
     @Column(nullable = false)
@@ -38,13 +40,9 @@ public class Account extends BaseEntity {
         this.profilePictureId = profilePictureId;
         this.bio = bio;
     }
-
-
     public Account() {
 
     }
-
-
     public String getHashedPassword() {
         return hashedPassword;
     }
@@ -99,5 +97,13 @@ public class Account extends BaseEntity {
 
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 }

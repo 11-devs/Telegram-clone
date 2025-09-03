@@ -1,9 +1,20 @@
 package Client.Controllers;
 
+import Client.AccessKeyManager;
+import Client.AppConnectionManager;
+import Client.RpcCaller;
+import JSocket2.Core.Client.ConnectionManager;
+import JSocket2.Protocol.Rpc.RpcResponse;
+import JSocket2.Protocol.StatusCode;
+import Shared.Api.Models.AccountController.RequestCodePhoneNumberOutputModel;
+import Shared.Api.Models.AccountController.VerifyCodeInputModel;
+import Shared.Api.Models.AccountController.VerifyCodeOutputModel;
+import Shared.Utils.DeviceUtil;
 import Shared.Utils.SceneUtil;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.animation.TranslateTransition;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
@@ -15,6 +26,12 @@ import javafx.util.Duration;
 import static Shared.Utils.SceneUtil.changeSceneWithSameSize;
 
 public class VerificationViaSmsController {
+    private ConnectionManager connectionManager;
+    private RpcCaller rpcCaller;
+    private RequestCodePhoneNumberOutputModel requestCodePhoneNumberOutputModel;
+    public void setRequestCodeOutputModel(RequestCodePhoneNumberOutputModel requestCodePhoneNumberOutputModel) {
+        this.requestCodePhoneNumberOutputModel = requestCodePhoneNumberOutputModel;
+    }
     @FXML
     private VBox root;
 
@@ -38,6 +55,8 @@ public class VerificationViaSmsController {
     @FXML
     private void initialize() {
         // Animation of moving from a little further right to the main target
+        connectionManager = AppConnectionManager.getInstance().getConnectionManager();
+        rpcCaller = AppConnectionManager.getInstance().getRpcCaller();
         if (infoBox != null) {
             infoBox.setTranslateX(75);
             var transition = new javafx.animation.TranslateTransition(javafx.util.Duration.seconds(0.5), infoBox);
@@ -161,15 +180,61 @@ public class VerificationViaSmsController {
         String code = code1.getText() + code2.getText() + code3.getText() + code4.getText() + code5.getText();
         if (code.length() == 5 && code.matches("[0-9]{5}")) {
             System.out.println("Verification code entered: " + code);
-            // TODO:
-            // Check conditions...
-            // Next scene
-            // SceneUtil.changeSceneWithSameSize(code1, "Client/fxml/---.fxml");
+            Task<RpcResponse<VerifyCodeOutputModel>> otpTask = new Task<>() {
+                @Override
+                protected RpcResponse<VerifyCodeOutputModel> call() throws Exception {
+                    var deviceInfo = DeviceUtil.getDeviceInfo();
+                    return rpcCaller.verifyOTP(new VerifyCodeInputModel(requestCodePhoneNumberOutputModel.getPendingId(), requestCodePhoneNumberOutputModel.getPhoneNumber(), code, deviceInfo));
+                }
+            };
+            otpTask.setOnSucceeded(event -> {
+                try {
+                    var response = otpTask.getValue();
+                    if(response.getStatusCode() == StatusCode.OK){
+                        switch (response.getPayload().getStatus()){
+                            case "need_register":
+                                changeSceneWithSameSize(root, "/Client/fxml/UserInfo.fxml",(UserInfoController controller) ->{
+                                    controller.setPhoneNumber(requestCodePhoneNumberOutputModel.getPhoneNumber());
+                                });
+                                break;
+                            case "need_password":
+                                changeSceneWithSameSize(root, "/Client/fxml/CloudPasswordCheck.fxml",(CloudPasswordCheckController controller) ->{
+                                    //controller.setPhoneNumber(requestCodeOutputModel.getPhoneNumber());
+                                });
+                                break;
+                            case "logged_in":
+                                /*changeSceneWithSameSize(root, "/Client/fxml/UserInfo.fxml",(CloudPasswordCheckController controller) ->{
+                                    //controller.setPhoneNumber(requestCodeOutputModel.getPhoneNumber());
+                                });*/
+                                var resultCode = AccessKeyManager.LoginWithAccessKey(response.getPayload().getAccessKey(),connectionManager.getClient());
+                                if(resultCode == StatusCode.OK) System.out.println("Successful login");
+                                break;
+                        }
+
+                    }else if(response.getStatusCode() == StatusCode.BAD_REQUEST){
+                        turnFieldsBlank();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                }
+            });
+            otpTask.setOnFailed(event -> {
+                System.out.println("Task failed.");
+                otpTask.getException().printStackTrace();
+            });
+            new Thread(otpTask).start();
         } else {
             System.out.println("Please enter a 5-digit code.");
         }
     }
-
+    private void turnFieldsBlank() {
+        TextField[] fields = {code1, code2, code3, code4, code5};
+        for (TextField field : fields) {
+            field.setText("");
+            shakeField(field);
+        }
+    }
     @FXML
     private void handleTelegramLinkClick() {
         // Switch to Telegram login page

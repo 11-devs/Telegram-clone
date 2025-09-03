@@ -14,9 +14,15 @@ public class RpcCaller extends RpcCallerBase {
     public RpcCaller(ConnectionManager connectionManager) {
         super(connectionManager);
     }
+    public RpcResponse<Object> verifyEmailOtp(VerifyCodeEmailInputModel model) throws IOException {
+        return callRpcAndGetResponse("AccountRpcController", "verifyEmailOtp", Object.class, model);
+    }
+    public RpcResponse<RequestCodeEmailOutputModel> setEmail(String email) throws IOException {
+        return callRpcAndGetResponse("AccountRpcController", "setEmail", RequestCodeEmailOutputModel.class, email);
+    }
 
-    public RpcResponse<RequestCodeOutputModel> requestOTP(String phoneNumber) throws IOException {
-        return callRpcAndGetResponse("AccountRpcController", "requestOTP",RequestCodeOutputModel.class, phoneNumber);
+    public RpcResponse<RequestCodePhoneNumberOutputModel> requestOTP(RequestCodePhoneNumberInputModel model) throws IOException {
+        return callRpcAndGetResponse("AccountRpcController", "requestOTP", RequestCodePhoneNumberOutputModel.class, model);
     }
 
     public RpcResponse<VerifyCodeOutputModel> verifyOTP(VerifyCodeInputModel model) throws IOException {

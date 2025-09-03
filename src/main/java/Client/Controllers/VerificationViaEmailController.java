@@ -1,9 +1,21 @@
 package Client.Controllers;
 
+import Client.AccessKeyManager;
+import Client.AppConnectionManager;
+import Client.RpcCaller;
+import JSocket2.Core.Client.ConnectionManager;
+import JSocket2.Protocol.Rpc.RpcResponse;
+import JSocket2.Protocol.StatusCode;
+import Shared.Api.Models.AccountController.RequestCodeEmailOutputModel;
+import Shared.Api.Models.AccountController.VerifyCodeEmailInputModel;
+import Shared.Api.Models.AccountController.VerifyCodeInputModel;
+import Shared.Api.Models.AccountController.VerifyCodeOutputModel;
+import Shared.Utils.DeviceUtil;
 import Shared.Utils.SceneUtil;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.animation.TranslateTransition;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
@@ -15,6 +27,10 @@ import javafx.util.Duration;
 import static Shared.Utils.SceneUtil.changeSceneWithSameSize;
 
 public class VerificationViaEmailController {
+    private ConnectionManager connectionManager;
+    private RpcCaller rpcCaller;
+    private RequestCodeEmailOutputModel requestCodeEmailOutputModel;
+
     @FXML
     private VBox root;
     @FXML
@@ -37,6 +53,8 @@ public class VerificationViaEmailController {
     @FXML
     private void initialize() {
 
+        connectionManager = AppConnectionManager.getInstance().getConnectionManager();
+        rpcCaller = AppConnectionManager.getInstance().getRpcCaller();
         // Animation of moving from a little further right to the main target
         if (infoBox != null) {
             infoBox.setTranslateX(75);
@@ -162,12 +180,44 @@ public class VerificationViaEmailController {
         if (code.length() == 5 && code.matches("[0-9]{5}")) {
             System.out.println("Verification code entered: " + code);
             // TODO:
-            // Check conditions...
-            // Next scene
-            // SceneUtil.changeSceneWithSameSize(code1, "Client/fxml/---.fxml");
+            Task<RpcResponse<Object>> otpTask = new Task<>() {
+                @Override
+                protected RpcResponse<Object> call() throws Exception {
+                    return rpcCaller.verifyEmailOtp(new VerifyCodeEmailInputModel(requestCodeEmailOutputModel.getPendingId(), requestCodeEmailOutputModel.getEmail(), code));
+                }
+            };
+            otpTask.setOnSucceeded(event -> {
+                try {
+                    var response = otpTask.getValue();
+                    if(response.getStatusCode() == StatusCode.OK){
+                        System.out.println("Email Confirmed");
+                    }else if(response.getStatusCode() == StatusCode.BAD_REQUEST){
+                        turnFieldsBlank();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                }
+            });
+            otpTask.setOnFailed(event -> {
+                System.out.println("Task failed.");
+                otpTask.getException().printStackTrace();
+            });
+            new Thread(otpTask).start();
         } else {
             System.out.println("Please enter a 5-digit code.");
         }
+    }
+    private void turnFieldsBlank() {
+        TextField[] fields = {code1, code2, code3, code4, code5};
+        for (TextField field : fields) {
+            field.setText("");
+            shakeField(field);
+        }
+    }
+
+    public void setRequestCodeEmailOutputModel(RequestCodeEmailOutputModel requestCodeEmailOutputModel) {
+        this.requestCodeEmailOutputModel = requestCodeEmailOutputModel;
     }
 
 //    @FXML

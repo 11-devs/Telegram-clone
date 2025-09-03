@@ -5,8 +5,10 @@ import Client.RpcCaller;
 import JSocket2.Core.Client.ConnectionManager;
 import JSocket2.Protocol.Rpc.RpcResponse;
 import JSocket2.Protocol.StatusCode;
-import Shared.Api.Models.AccountController.RequestCodeOutputModel;
+import Shared.Api.Models.AccountController.RequestCodePhoneNumberInputModel;
+import Shared.Api.Models.AccountController.RequestCodePhoneNumberOutputModel;
 import Shared.Models.CountryCode;
+import Shared.Utils.DeviceUtil;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import javafx.animation.Interpolator;
@@ -182,10 +184,10 @@ public class PhoneNumberController {
         // Show a loading indicator to the user
         // e.g., progressIndicator.setVisible(true);
 
-        Task<RpcResponse<RequestCodeOutputModel>> otpTask = new Task<>() {
+        Task<RpcResponse<RequestCodePhoneNumberOutputModel>> otpTask = new Task<>() {
             @Override
-            protected RpcResponse<RequestCodeOutputModel> call() throws Exception {
-                return rpcCaller.requestOTP(preCode + phoneNumber);
+            protected RpcResponse<RequestCodePhoneNumberOutputModel> call() throws Exception {
+                return rpcCaller.requestOTP(new RequestCodePhoneNumberInputModel(preCode + phoneNumber, "telegram", DeviceUtil.getDeviceInfo()));
             }
         };
         otpTask.setOnSucceeded(event -> {

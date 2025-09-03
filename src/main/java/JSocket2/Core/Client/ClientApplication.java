@@ -90,7 +90,7 @@ public class ClientApplication {
         Platform.runLater(() -> {
             connectedProperty.set(true);
         });
-        connectedListeners.forEach(listener -> listener.accept(this));
+        //connectedListeners.forEach(listener -> listener.accept(this));
 
     }
 

@@ -1,13 +1,13 @@
 package Client.Controllers;
 
-import Client.AppConnectionManager;
 import Client.AccessKeyManager;
+import Client.AppConnectionManager;
 import Client.RpcCaller;
 import JSocket2.Core.Client.ConnectionManager;
-import JSocket2.Protocol.Authentication.AuthModel;
 import JSocket2.Protocol.Rpc.RpcResponse;
 import JSocket2.Protocol.StatusCode;
-import Shared.Api.Models.AccountController.RequestCodeOutputModel;
+import Shared.Api.Models.AccountController.RequestCodePhoneNumberInputModel;
+import Shared.Api.Models.AccountController.RequestCodePhoneNumberOutputModel;
 import Shared.Api.Models.AccountController.VerifyCodeInputModel;
 import Shared.Api.Models.AccountController.VerifyCodeOutputModel;
 import Shared.Utils.DeviceUtil;
@@ -27,10 +27,10 @@ import javafx.util.Duration;
 import static Shared.Utils.SceneUtil.changeSceneWithSameSize;
 
 public class VerificationViaTelegramController {
-    private RequestCodeOutputModel requestCodeOutputModel;
+    private RequestCodePhoneNumberOutputModel requestCodePhoneNumberOutputModel;
 
-    public void setRequestCodeOutputModel(RequestCodeOutputModel requestCodeOutputModel) {
-        this.requestCodeOutputModel = requestCodeOutputModel;
+    public void setRequestCodeOutputModel(RequestCodePhoneNumberOutputModel requestCodePhoneNumberOutputModel) {
+        this.requestCodePhoneNumberOutputModel = requestCodePhoneNumberOutputModel;
     }
     private ConnectionManager connectionManager;
     private RpcCaller rpcCaller;
@@ -186,7 +186,7 @@ public class VerificationViaTelegramController {
                 @Override
                 protected RpcResponse<VerifyCodeOutputModel> call() throws Exception {
                     var deviceInfo = DeviceUtil.getDeviceInfo();
-                    return rpcCaller.verifyOTP(new VerifyCodeInputModel(requestCodeOutputModel.getPendingId(), requestCodeOutputModel.getPhoneNumber(), code, deviceInfo));
+                    return rpcCaller.verifyOTP(new VerifyCodeInputModel(requestCodePhoneNumberOutputModel.getPendingId(), requestCodePhoneNumberOutputModel.getPhoneNumber(), code, deviceInfo));
                 }
             };
             otpTask.setOnSucceeded(event -> {
@@ -196,23 +196,25 @@ public class VerificationViaTelegramController {
                         switch (response.getPayload().getStatus()){
                             case "need_register":
                                 changeSceneWithSameSize(root, "/Client/fxml/UserInfo.fxml",(UserInfoController controller) ->{
-                                    controller.setPhoneNumber(requestCodeOutputModel.getPhoneNumber());
+                                    controller.setPhoneNumber(requestCodePhoneNumberOutputModel.getPhoneNumber());
                                 });
+                                break;
                             case "need_password":
-                                changeSceneWithSameSize(root, "/Client/fxml/UserInfo.fxml",(CloudPasswordCheckController controller) ->{
+                                changeSceneWithSameSize(root, "/Client/fxml/CloudPasswordCheck.fxml",(CloudPasswordCheckController controller) ->{
                                     //controller.setPhoneNumber(requestCodeOutputModel.getPhoneNumber());
                                 });
+                                break;
                             case "logged_in":
                                 /*changeSceneWithSameSize(root, "/Client/fxml/UserInfo.fxml",(CloudPasswordCheckController controller) ->{
                                     //controller.setPhoneNumber(requestCodeOutputModel.getPhoneNumber());
                                 });*/
-                                AccessKeyManager.saveAccessKey(response.getPayload().getAccessKey());
-                                AuthModel authModel = new AuthModel(new String[]{response.getPayload().getAccessKey()}, 1);
-                                var resultCode = connectionManager.getClient().sendAuthModel(authModel);
+                                var resultCode = AccessKeyManager.LoginWithAccessKey(response.getPayload().getAccessKey(),connectionManager.getClient());
                                 if(resultCode == StatusCode.OK) System.out.println("Successful login");
                             break;
                         }
 
+                    }else if(response.getStatusCode() == StatusCode.BAD_REQUEST){
+                        turnFieldsBlank();
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -231,9 +233,45 @@ public class VerificationViaTelegramController {
         }
     }
 
+    private void turnFieldsBlank() {
+        TextField[] fields = {code1, code2, code3, code4, code5};
+        for (TextField field : fields) {
+            field.setText("");
+            shakeField(field);
+        }
+    }
+
     @FXML
     private void handleSmsLinkClick() {
         // Switch to SMS login page
-        SceneUtil.changeSceneWithSameSize(code1, "/Client/fxml/VerificationViaSms.fxml");
+        Task<RpcResponse<RequestCodePhoneNumberOutputModel>> otpTask = new Task<>() {
+            @Override
+            protected RpcResponse<RequestCodePhoneNumberOutputModel> call() throws Exception {
+                return rpcCaller.requestOTP(new RequestCodePhoneNumberInputModel(requestCodePhoneNumberOutputModel.getPhoneNumber(), "sms", DeviceUtil.getDeviceInfo()));
+            }
+        };
+        otpTask.setOnSucceeded(event -> {
+            try {
+                var response = otpTask.getValue();
+                if(response.getStatusCode() == StatusCode.OK){
+                    SceneUtil.changeSceneWithSameSize(code1, "/Client/fxml/VerificationViaSms.fxml",(VerificationViaSmsController controller) ->{
+                        controller.setRequestCodeOutputModel(response.getPayload());
+                    });
+                }
+
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+            }
+        });
+        otpTask.setOnFailed(event -> {
+            System.out.println("Task failed.");
+            otpTask.getException().printStackTrace();
+        });
+
+        // Start the background task
+        new Thread(otpTask).start();
+
     }
 }
