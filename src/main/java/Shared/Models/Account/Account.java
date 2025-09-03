@@ -1,6 +1,7 @@
 package Shared.Models.Account;
 
 import Shared.Models.BaseEntity;
+import Shared.Models.Chat.ChatType;
 import jakarta.persistence.*;
 
 @Entity
@@ -30,6 +31,10 @@ public class Account extends BaseEntity {
 
     @Column(name = "bio", length = 160)
     private String bio;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = true)
+    private AccountStatus status;
 
 
     public Account(String firstName,String lastName, String hashedPassword, String username, String profilePictureId, String bio) {
@@ -105,5 +110,13 @@ public class Account extends BaseEntity {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public AccountStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(AccountStatus status) {
+        this.status = status;
     }
 }
