@@ -18,6 +18,7 @@ import javafx.animation.TranslateTransition;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -31,6 +32,7 @@ public class VerificationViaTelegramController {
 
     public void setRequestCodeOutputModel(RequestCodePhoneNumberOutputModel requestCodePhoneNumberOutputModel) {
         this.requestCodePhoneNumberOutputModel = requestCodePhoneNumberOutputModel;
+        phoneLabel.setText(requestCodePhoneNumberOutputModel.getPhoneNumber());
     }
     private ConnectionManager connectionManager;
     private RpcCaller rpcCaller;
@@ -55,10 +57,16 @@ public class VerificationViaTelegramController {
     public Button nextButton;
 
     @FXML
+    public Label TelegramValidationMessage;
+    @FXML
+    public Label phoneLabel;
+
+    @FXML
     private void initialize() {
 
         connectionManager = AppConnectionManager.getInstance().getConnectionManager();
         rpcCaller = AppConnectionManager.getInstance().getRpcCaller();
+
         if (infoBox != null) {
             infoBox.setTranslateX(75);
             var transition = new javafx.animation.TranslateTransition(javafx.util.Duration.seconds(0.5), infoBox);
@@ -214,6 +222,20 @@ public class VerificationViaTelegramController {
                         }
 
                     }else if(response.getStatusCode() == StatusCode.BAD_REQUEST){
+                        switch (response.getMessage()){
+                            case "otp_expired":
+                                TelegramValidationMessage.setText("otp expired");
+                                break;
+                            case "too_many_attempts_try_later":
+                                TelegramValidationMessage.setText("Too many attempts try later");
+                                break;
+                            case "invalid_otp":
+                                TelegramValidationMessage.setText("invalid otp");
+                                break;
+                            default:
+                                TelegramValidationMessage.setText("Something is wrong");
+                                break;
+                        }
                         turnFieldsBlank();
                     }
                 } catch (Exception e) {

@@ -23,7 +23,9 @@ public class AccountRpcController extends RpcControllerBase {
     public AccountRpcController(DaoManager daoManager) {
         this.daoManager = daoManager;
     }
-
+public RpcResponse<Boolean> isPhoneNumberRegistered(String phoneNumber){
+   return Ok(daoManager.getAccountDAO().findByField("phoneNumber",phoneNumber) != null);
+}
     public RpcResponse<Object> requestOTP(RequestCodePhoneNumberInputModel model) {
         boolean cooldown = false;
         var pendings = daoManager.getPendingAuthDAO().findAllByField("phoneNumber", model.getPhoneNumber());

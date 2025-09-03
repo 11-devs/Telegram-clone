@@ -53,22 +53,22 @@
                               <TextField fx:id="code5" prefHeight="50.0" prefWidth="40.0" styleClass="code-field" />
                            </children>
                            <VBox.margin>
-                              <Insets top="50.0" />
+                              <Insets top="35.0" />
                            </VBox.margin>
                         </HBox>
-                        <Label fx:id="TelegramLink" onMouseClicked="#handleTelegramLinkClick" styleClass="Telegram-link" text="Resend code via Telegram">
+                        <Label fx:id="TelegramValidationMessage" styleClass="info-label">
                            <font>
                               <Font name="System" size="12.0" />
                            </font>
                            <VBox.margin>
-                              <Insets top="20.0" />
+                              <Insets top="10.0" />
                            </VBox.margin>
                         </Label>
                      </children>
                   </VBox>
                   <Button fx:id="nextButton" onMouseClicked="#handleNext" prefHeight="42.0" prefWidth="294.0" styleClass="next-button" text="Next">
                      <VBox.margin>
-                        <Insets top="30.0" />
+                        <Insets top="5.0" />
                      </VBox.margin>
                      <cursor>
                         <Cursor fx:constant="HAND" />

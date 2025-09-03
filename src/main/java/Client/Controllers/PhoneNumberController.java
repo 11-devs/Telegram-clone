@@ -183,20 +183,28 @@ public class PhoneNumberController {
 
         // Show a loading indicator to the user
         // e.g., progressIndicator.setVisible(true);
-
+        final boolean[] isRegistered = new boolean[1];
         Task<RpcResponse<RequestCodePhoneNumberOutputModel>> otpTask = new Task<>() {
             @Override
             protected RpcResponse<RequestCodePhoneNumberOutputModel> call() throws Exception {
-                return rpcCaller.requestOTP(new RequestCodePhoneNumberInputModel(preCode + phoneNumber, "telegram", DeviceUtil.getDeviceInfo()));
+                isRegistered[0] = rpcCaller.isPhoneNumberRegistered(preCode + phoneNumber).getPayload();
+                return rpcCaller.requestOTP(new RequestCodePhoneNumberInputModel(preCode + phoneNumber, isRegistered[0] ? "telegram" : "sms", DeviceUtil.getDeviceInfo()));
             }
         };
         otpTask.setOnSucceeded(event -> {
             try {
                 var response = otpTask.getValue();
                 if(response.getStatusCode() == StatusCode.OK){
-                    changeSceneWithSameSize(root, "/Client/fxml/verificationViaTelegram.fxml",(VerificationViaTelegramController controller) -> {
-                        controller.setRequestCodeOutputModel(response.getPayload());
-                    });
+                    if(isRegistered[0]){
+                        changeSceneWithSameSize(root, "/Client/fxml/verificationViaTelegram.fxml",(VerificationViaTelegramController controller) -> {
+                            controller.setRequestCodeOutputModel(response.getPayload());
+                        });
+                    }else{
+                        changeSceneWithSameSize(root, "/Client/fxml/verificationViaSms.fxml",(VerificationViaSmsController controller) -> {
+                            controller.setRequestCodeOutputModel(response.getPayload());
+                        });
+                    }
+
                 }
 
 

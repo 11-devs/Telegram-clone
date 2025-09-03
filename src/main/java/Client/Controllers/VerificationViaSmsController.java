@@ -17,6 +17,7 @@ import javafx.animation.TranslateTransition;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -31,6 +32,7 @@ public class VerificationViaSmsController {
     private RequestCodePhoneNumberOutputModel requestCodePhoneNumberOutputModel;
     public void setRequestCodeOutputModel(RequestCodePhoneNumberOutputModel requestCodePhoneNumberOutputModel) {
         this.requestCodePhoneNumberOutputModel = requestCodePhoneNumberOutputModel;
+        phoneLabel.setText(requestCodePhoneNumberOutputModel.getPhoneNumber());
     }
     @FXML
     private VBox root;
@@ -51,6 +53,12 @@ public class VerificationViaSmsController {
 
     @FXML
     public Button nextButton;
+
+    @FXML
+    private Label TelegramValidationMessage;
+
+    @FXML
+    private Label phoneLabel;
 
     @FXML
     private void initialize() {
@@ -212,6 +220,20 @@ public class VerificationViaSmsController {
                         }
 
                     }else if(response.getStatusCode() == StatusCode.BAD_REQUEST){
+                        switch (response.getMessage()){
+                            case "otp_expired":
+                                TelegramValidationMessage.setText("otp expired");
+                                break;
+                                case "too_many_attempts_try_later":
+                                TelegramValidationMessage.setText("Too many attempts try later");
+                                break;
+                            case "invalid_otp":
+                                TelegramValidationMessage.setText("invalid otp");
+                                break;
+                            default:
+                                TelegramValidationMessage.setText("Something is wrong");
+                                break;
+                        }
                         turnFieldsBlank();
                     }
                 } catch (Exception e) {
@@ -235,9 +257,9 @@ public class VerificationViaSmsController {
             shakeField(field);
         }
     }
-    @FXML
-    private void handleTelegramLinkClick() {
-        // Switch to Telegram login page
-        SceneUtil.changeSceneWithSameSize(code1, "/Client/fxml/VerificationViaTelegram.fxml");
-    }
+//    @FXML
+//    private void handleTelegramLinkClick() {
+//        // Switch to Telegram login page
+//        SceneUtil.changeSceneWithSameSize(code1, "/Client/fxml/VerificationViaTelegram.fxml");
+//    }
 }

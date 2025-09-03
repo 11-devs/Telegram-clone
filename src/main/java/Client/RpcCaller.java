@@ -14,6 +14,9 @@ public class RpcCaller extends RpcCallerBase {
     public RpcCaller(ConnectionManager connectionManager) {
         super(connectionManager);
     }
+    public RpcResponse<Boolean> isPhoneNumberRegistered(String phoneNumber) throws IOException {
+        return callRpcAndGetResponse("AccountRpcController", "isPhoneNumberRegistered", Boolean.class, phoneNumber);
+    }
     public RpcResponse<Object> verifyEmailOtp(VerifyCodeEmailInputModel model) throws IOException {
         return callRpcAndGetResponse("AccountRpcController", "verifyEmailOtp", Object.class, model);
     }

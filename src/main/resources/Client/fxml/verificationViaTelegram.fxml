@@ -53,7 +53,7 @@
                               <TextField fx:id="code5" prefHeight="50.0" prefWidth="40.0" styleClass="code-field" />
                            </children>
                            <VBox.margin>
-                              <Insets top="50.0" />
+                              <Insets top="30.0" />
                            </VBox.margin>
                         </HBox>
                         <Label fx:id="smsLink" onMouseClicked="#handleSmsLinkClick" styleClass="sms-link" text="Send code via SMS">
@@ -61,14 +61,22 @@
                               <Font name="System" size="12.0" />
                            </font>
                            <VBox.margin>
-                              <Insets top="20.0" />
+                              <Insets top="15.0" />
+                           </VBox.margin>
+                        </Label>
+                        <Label fx:id="TelegramValidationMessage" styleClass="info-label" text="Test">
+                           <font>
+                              <Font name="System" size="12.0" />
+                           </font>
+                           <VBox.margin>
+                              <Insets top="2.0" />
                            </VBox.margin>
                         </Label>
                      </children>
                   </VBox>
                   <Button fx:id="nextButton" onMouseClicked="#handleNext" prefHeight="42.0" prefWidth="294.0" styleClass="next-button" text="Next">
                      <VBox.margin>
-                        <Insets top="30.0" />
+                        <Insets top="5.0" />
                      </VBox.margin>
                      <cursor>
                         <Cursor fx:constant="HAND" />
