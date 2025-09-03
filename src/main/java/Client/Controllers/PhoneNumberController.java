@@ -13,17 +13,12 @@ import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.effect.ColorAdjust;
 import javafx.scene.layout.VBox;
-import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 import javafx.util.Duration;
 import javafx.util.converter.NumberStringConverter;
 
@@ -35,6 +30,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static Shared.Utils.SceneUtil.changeSceneWithSameSize;
+import static Shared.Utils.SceneUtil.createDialog;
 
 public class PhoneNumberController {
     @FXML
@@ -186,38 +182,10 @@ public class PhoneNumberController {
             );
             fadeIn.play();
 
-            // Load the FXML file
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/Client/fxml/countrySelection.fxml"));
-            Parent root = loader.load();
-
-            // Create and configure the dialog stage
-            Stage dialogStage = new Stage();
-            dialogStage.initStyle(StageStyle.TRANSPARENT);
-            Scene scene = new Scene(root);
-            scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
-            dialogStage.setScene(scene);
-            dialogStage.initOwner(parentStage);
-            dialogStage.initModality(Modality.WINDOW_MODAL);
-            dialogStage.setResizable(false);
-            dialogStage.setTitle("Select Country");
-
-            // Set the dialog stage to the controller
-            CountrySelectionController controller = loader.getController();
-            controller.setDialogStage(dialogStage);
-            controller.setParentController(this);
-            controller.setAllCountries(allCountries); // Pass the loaded countries
+            // Use SceneUtil.createDialog to load and configure the dialog
+            Stage dialogStage = createDialog("/Client/fxml/countrySelection.fxml", parentStage, this, allCountries, "Select Country");
 
             // Adjust height dynamically after layout is fully computed
-            Platform.runLater(() -> {
-                controller.countryList.applyCss();
-                double listHeight = controller.countryList.getHeight() > 0 ? controller.countryList.getHeight() : 200;
-                double marginTotal = 20.0;
-                double searchHeight = controller.searchField.getHeight() > 0 ? controller.searchField.getHeight() : 30.0;
-                double newVBoxHeight = listHeight + marginTotal + searchHeight;
-                controller.rootVBox.setPrefHeight(newVBoxHeight);
-                dialogStage.sizeToScene();
-            });
-
             // Center the dialog stage with an offset downward
             Platform.runLater(() -> {
                 double centerX = parentStage.getX() + (parentStage.getWidth() - dialogStage.getWidth()) / 2;
