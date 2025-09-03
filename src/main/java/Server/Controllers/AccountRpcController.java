@@ -123,7 +123,6 @@ if(!cooldown) {
         }
         return Ok(output);
     }
-
     public RpcResponse<Object> login(LoginInputModel model) {
 
         var account = daoManager.getAccountDAO().findByField("phoneNumber",model.getPhoneNumber());
