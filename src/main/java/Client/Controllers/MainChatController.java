@@ -30,110 +30,342 @@ import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 import java.util.ResourceBundle;
 
+/**
+ * The MainChatController class manages the main chat interface of the application.
+ * It handles UI initialization, chat selection, message handling, and user interactions.
+ * This controller is tied to the main chat FXML layout.
+ */
 public class MainChatController implements Initializable {
 
     // ============ FXML INJECTED COMPONENTS ============
 
-    // Main container
+    /**
+     * The main container for the chat interface, a BorderPane.
+     */
     @FXML private BorderPane mainChatContainer;
 
     // Sidebar elements
+    /**
+     * The left sidebar containing the chat list and controls.
+     */
     @FXML private VBox leftSidebar;
+    /**
+     * Button to toggle the sidebar menu.
+     */
     @FXML private Button menuButton;
+    /**
+     * Container for the search field in the sidebar.
+     */
     @FXML private HBox searchContainer;
+    /**
+     * Text field for searching chats.
+     */
     @FXML private TextField searchField;
+    /**
+     * ListView displaying the chat list with UserViewModel items.
+     */
     @FXML private ListView<UserViewModel> chatListView;
+    /**
+     * Button to open settings.
+     */
     @FXML private Button settingsButton;
+    /**
+     * Button to toggle between light and dark themes.
+     */
     @FXML private Button nightModeButton;
+    /**
+     * Circle indicator for connection status.
+     */
     @FXML private Circle connectionIndicator;
+    /**
+     * Label showing the connection status text.
+     */
     @FXML private Label connectionLabel;
 
     // Chat header elements
+    /**
+     * ImageView for the user's avatar in the chat header.
+     */
     @FXML private ImageView headerAvatarImage;
+    /**
+     * Circle indicating the online status of the user in the chat header.
+     */
     @FXML private Circle onlineIndicator;
+    /**
+     * Label displaying the chat title (user or group name).
+     */
     @FXML private Label chatTitleLabel;
+    /**
+     * Label displaying the chat subtitle (e.g., online status or last seen).
+     */
     @FXML private Label chatSubtitleLabel;
+    /**
+     * Label showing the number of members in a group chat.
+     */
     @FXML private Label membersCountLabel;
+    /**
+     * ImageView for the verified badge in the chat header.
+     */
     @FXML private ImageView verifiedBadge;
+    /**
+     * ImageView for the muted icon in the chat header.
+     */
     @FXML private ImageView mutedIcon;
+    /**
+     * Button to search within the current chat.
+     */
     @FXML private Button searchInChatButton;
+    /**
+     * Button to initiate a voice call.
+     */
     @FXML private Button callButton;
+    /**
+     * Button to initiate a video call.
+     */
     @FXML private Button videoCallButton;
+    /**
+     * Button to show more options for the chat.
+     */
     @FXML private Button moreOptionsButton;
 
     // Messages area
+    /**
+     * ScrollPane containing the messages list.
+     */
     @FXML private ScrollPane messagesScrollPane;
+    /**
+     * VBox containing all message bubbles.
+     */
     @FXML private VBox messagesContainer;
+    /**
+     * VBox for the welcome state when no chat is selected.
+     */
     @FXML private VBox welcomeStateContainer;
+    /**
+     * VBox for the empty chat state when no messages are present.
+     */
     @FXML private VBox emptyChatStateContainer;
+    /**
+     * StackPane containing the scroll-to-bottom button.
+     */
     @FXML private StackPane scrollToBottomContainer;
+    /**
+     * Button to scroll to the bottom of the messages list.
+     */
     @FXML private Button scrollToBottomButton;
+    /**
+     * Label showing the unread message count.
+     */
     @FXML private Label unreadBadge;
 
-
     // Reply preview
+    /**
+     * HBox containing the reply preview area.
+     */
     @FXML private HBox replyPreviewContainer;
+    /**
+     * Label showing the user or entity being replied to.
+     */
     @FXML private Label replyToLabel;
+    /**
+     * Label showing the text of the message being replied to.
+     */
     @FXML private Label replyMessageLabel;
+    /**
+     * Button to close the reply preview.
+     */
     @FXML private Button closeReplyButton;
 
     // Message input area
+    /**
+     * Button to open attachment options.
+     */
     @FXML private Button attachmentButton;
+    /**
+     * TextArea for composing messages.
+     */
     @FXML private TextArea messageInputField;
+    /**
+     * Button to open the emoji picker.
+     */
     @FXML private Button emojiButton;
+    /**
+     * Button to send messages or start voice recording.
+     */
     @FXML private Button sendButton;
+    /**
+     * ImageView for the send button icon (e.g., send or microphone).
+     */
     @FXML private ImageView sendButtonIcon;
 
     // Right panel elements
+    /**
+     * VBox containing the right panel for user profile and media.
+     */
     @FXML private VBox rightPanel;
+    /**
+     * ImageView for the user's avatar in the right panel.
+     */
     @FXML private ImageView profileAvatarImage;
+    /**
+     * Circle indicating the online status in the right panel.
+     */
     @FXML private Circle profileOnlineIndicator;
+    /**
+     * Label showing the user's name in the right panel.
+     */
     @FXML private Label profileNameLabel;
+    /**
+     * Label showing the user's username in the right panel.
+     */
     @FXML private Label profileUsernameLabel;
+    /**
+     * Label showing the user's status (e.g., online or last seen).
+     */
     @FXML private Label profileStatusLabel;
+    /**
+     * Label showing the user's phone number in the right panel.
+     */
     @FXML private Label profilePhoneLabel;
+    /**
+     * ImageView for the verified badge in the right panel.
+     */
     @FXML private ImageView profileVerifiedBadge;
+    /**
+     * Button to initiate a voice call from the right panel.
+     */
     @FXML private Button profileCallButton;
+    /**
+     * Button to initiate a video call from the right panel.
+     */
     @FXML private Button profileVideoButton;
+    /**
+     * Button to search within the chat from the right panel.
+     */
     @FXML private Button profileSearchButton;
+    /**
+     * Label showing the notification status in the right panel.
+     */
     @FXML private Label notificationStatusLabel;
+    /**
+     * Button to toggle notifications in the right panel.
+     */
     @FXML private Button notificationsToggle;
+    /**
+     * Button to show all media in the right panel.
+     */
     @FXML private Button showAllMediaButton;
+    /**
+     * ToggleButton for the media tab in the right panel.
+     */
     @FXML private ToggleButton mediaTab;
+    /**
+     * ToggleButton for the files tab in the right panel.
+     */
     @FXML private ToggleButton filesTab;
+    /**
+     * ToggleButton for the links tab in the right panel.
+     */
     @FXML private ToggleButton linksTab;
+    /**
+     * ToggleButton for the music tab in the right panel.
+     */
     @FXML private ToggleButton musicTab;
+    /**
+     * ScrollPane for the media grid in the right panel.
+     */
     @FXML private ScrollPane mediaScrollPane;
+    /**
+     * GridPane displaying media items in the right panel.
+     */
     @FXML private GridPane mediaGrid;
+    /**
+     * VBox for the empty media state in the right panel.
+     */
     @FXML private VBox emptyMediaState;
 
     // ============ DATA AND STATE ============
 
+    /**
+     * ObservableList of all chat users.
+     */
     private ObservableList<UserViewModel> allChatUsers;
+    /**
+     * ObservableList of filtered chat users based on search.
+     */
     private ObservableList<UserViewModel> filteredChatUsers;
+    /**
+     * The currently selected user or chat.
+     */
     private UserViewModel currentSelectedUser;
+    /**
+     * ObservableList of current messages in the chat.
+     */
     private ObservableList<MessageViewModel> currentMessages;
+    /**
+     * The message being replied to, if any.
+     */
     private MessageViewModel replyToMessage;
 
     // Animation timelines
+    /**
+     * Timeline for typing animation.
+     */
     private Timeline typingAnimationTimeline;
+    /**
+     * Timeline for online status animation.
+     */
     private Timeline onlineStatusTimeline;
+    /**
+     * Timeline for connection status animation.
+     */
     private Timeline connectionStatusTimeline;
 
     // State flags
+    /**
+     * Flag indicating if dark theme is active.
+     */
     private boolean isDarkTheme = true;
+    /**
+     * Flag indicating if the right panel is visible.
+     */
     private boolean isRightPanelVisible = false;
+    /**
+     * Flag indicating if the typing indicator is visible.
+     */
     private boolean isTypingIndicatorVisible = false;
+    /**
+     * Current media filter type (e.g., "media", "files").
+     */
     private String currentMediaFilter = "media";
+    /**
+     * Count of unread messages when scrolled up.
+     */
     private int unreadScrollCount = 0;
 
     // Sidebars settings
+    /**
+     * Initial X position of the left sidebar.
+     */
     private double leftInitialX;
+    /**
+     * Initial X position of the right sidebar.
+     */
     private double rightInitialX;
 
     // Sidebar Menu
+    /**
+     * Controller for the sidebar menu.
+     */
     private SidebarMenuController sidebarController;
 
+    /**
+     * Initializes the controller after the FXML file is loaded.
+     * Sets up the UI components, data, event handlers, and initial state.
+     *
+     * @param location  The location used to resolve relative paths for the root object, or null if unknown.
+     * @param resources The resources used to localize the root object, or null if not localized.
+     */
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         initializeSidebarsSplitPane();
@@ -142,14 +374,17 @@ public class MainChatController implements Initializable {
         setupMessageInput();
         setupEventHandlers();
         setupAnimations();
-        // setupKeyboardShortcuts(); // TODO
+        // TODO: Implement keyboard shortcut setup for enhanced navigation.
         loadInitialState();
     }
 
     // ============ INITIALIZATION METHODS ============
 
+    /**
+     * Initializes the sidebar layout by converting the BorderPane to a SplitPane
+     * for draggable panel resizing. Sets minimum and maximum widths and divider positions.
+     */
     private void initializeSidebarsSplitPane() {
-        // Convert BorderPane to SplitPane to support dragging
         SplitPane splitPane = new SplitPane();
         splitPane.getItems().addAll(leftSidebar, mainChatContainer.getCenter(), rightPanel);
         mainChatContainer.setCenter(splitPane);
@@ -162,7 +397,7 @@ public class MainChatController implements Initializable {
         rightPanel.setMinWidth(300.0);
         rightPanel.setMaxWidth(420.0);
 
-        // Ensuring that panels don't take up the entire screen
+        // Ensuring panels don't take up the entire screen
         splitPane.setDividerPositions(0.25, 0.75); // 25% left, 50% center, 25% right
         splitPane.getDividers().get(0).positionProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal.doubleValue() < 0.2 || newVal.doubleValue() > 0.4) {
@@ -176,6 +411,10 @@ public class MainChatController implements Initializable {
         });
     }
 
+    /**
+     * Initializes the data structures for chats, messages, and users.
+     * Currently loads sample data.
+     */
     private void initializeData() {
         allChatUsers = FXCollections.observableArrayList();
         filteredChatUsers = FXCollections.observableArrayList();
@@ -183,9 +422,13 @@ public class MainChatController implements Initializable {
 
         // Load sample data for demonstration
         loadSampleChats();
-        // TODO: Get data from data base
+        // TODO: Implement fetching data from the server or database.
     }
 
+    /**
+     * Loads sample chat data for demonstration purposes.
+     * This method will be replaced with real data fetching.
+     */
     // TODO: Replace with real data
     // TODO: This section will be deleted (This is an example)
     private void loadSampleChats() {
@@ -229,6 +472,9 @@ public class MainChatController implements Initializable {
         filteredChatUsers.setAll(allChatUsers);
     }
 
+    /**
+     * Sets up the chat list with a custom cell factory and selection listener.
+     */
     private void setupChatList() {
         chatListView.setItems(filteredChatUsers);
         chatListView.setCellFactory(listView -> new UserCustomCell());
@@ -244,6 +490,9 @@ public class MainChatController implements Initializable {
         showWelcomeState();
     }
 
+    /**
+     * Sets up the message input area with auto-resize, key handling, and focus listeners.
+     */
     private void setupMessageInput() {
         // Auto-resize text area
         messageInputField.textProperty().addListener((obs, oldText, newText) -> {
@@ -269,6 +518,9 @@ public class MainChatController implements Initializable {
         disableChatControls();
     }
 
+    /**
+     * Sets up event handlers for all interactive UI components.
+     */
     private void setupEventHandlers() {
         // Sidebar buttons
         menuButton.setOnAction(e -> showSideBar());
@@ -315,9 +567,11 @@ public class MainChatController implements Initializable {
         });
     }
 
-    // TODO: Connect to the server
+    /**
+     * Sets up animations for connection status and online indicators.
+     * TODO: Connect to the server to fetch real-time status updates.
+     */
     private void setupAnimations() {
-
         // Connection status pulse
         connectionStatusTimeline = TelegramCellUtils.createOnlineStatusPulse(connectionIndicator);
         connectionStatusTimeline.play();
@@ -326,6 +580,10 @@ public class MainChatController implements Initializable {
         onlineStatusTimeline = TelegramCellUtils.createOnlineStatusPulse(onlineIndicator);
     }
 
+    /**
+     * Sets up keyboard shortcuts for navigation and actions.
+     * TODO: Develop this section in the future for enhanced usability.
+     */
     // TODO: Dev in the future
 //    private void setupKeyboardShortcuts() {
 //        mainChatContainer.setOnKeyPressed(event -> {
@@ -348,12 +606,15 @@ public class MainChatController implements Initializable {
 //        });
 //    }
 
+    /**
+     * Loads the initial state of the UI, including theme and connection status.
+     */
     private void loadInitialState() {
         // Set initial theme
         updateThemeClasses();
 
         // Update connection status
-        updateConnectionStatus(true); // TODO: connect to the server
+        updateConnectionStatus(true); // TODO: Connect to the server for real status.
 
         // Show welcome state
         showWelcomeState();
@@ -362,12 +623,22 @@ public class MainChatController implements Initializable {
         hideRightPanel();
     }
 
+    /**
+     * Sets the SidebarMenuController for sidebar management.
+     *
+     * @param controller The SidebarMenuController instance.
+     */
     public void setSidebarController(SidebarMenuController controller) {
         this.sidebarController = controller;
     }
 
     // ============ CHAT MANAGEMENT ============
 
+    /**
+     * Selects a chat based on the provided UserViewModel and updates the UI.
+     *
+     * @param user The UserViewModel representing the selected chat.
+     */
     private void selectChat(UserViewModel user) {
         if (user == null) return;
 
@@ -392,6 +663,11 @@ public class MainChatController implements Initializable {
         animateChatSelection();
     }
 
+    /**
+     * Updates the chat header with the selected user's information.
+     *
+     * @param user The UserViewModel to update the header with.
+     */
     private void updateChatHeader(UserViewModel user) {
         // Update chat title
         chatTitleLabel.setText(user.getUserName());
@@ -421,26 +697,40 @@ public class MainChatController implements Initializable {
         }
     }
 
+    /**
+     * Updates the chat subtitle based on the user's online status or typing state.
+     *
+     * @param user The UserViewModel to update the subtitle for.
+     */
     private void updateChatSubtitle(UserViewModel user) {
         if (user.isTyping()) {
             chatSubtitleLabel.setText("typing...");
             chatSubtitleLabel.getStyleClass().setAll("chat-subtitle", "typing-indicator");
-            // showTypingIndicator(user.getUserName()); // TODO: optional
+            // TODO: Optional - Implement showing typing indicator with user name.
+            // showTypingIndicator(user.getUserName());
         } else if (user.isOnline() && user.getType() == UserType.USER) {
             chatSubtitleLabel.setText("online");
             chatSubtitleLabel.getStyleClass().setAll("chat-subtitle");
-            // hideTypingIndicator(); // TODO: optional
+            // TODO: Optional - Implement hiding typing indicator.
+            // hideTypingIndicator();
         } else if (user.getLastSeen() != null && !user.getLastSeen().isEmpty()) {
             chatSubtitleLabel.setText(user.getLastSeen());
             chatSubtitleLabel.getStyleClass().setAll("chat-subtitle");
-            // hideTypingIndicator(); // TODO: optional
+            // TODO: Optional - Implement hiding typing indicator.
+            // hideTypingIndicator();
         } else {
             chatSubtitleLabel.setText("offline");
             chatSubtitleLabel.getStyleClass().setAll("chat-subtitle");
+            // TODO: Optional - Implement hiding typing indicator.
             // hideTypingIndicator();
         }
     }
 
+    /**
+     * Updates the header avatar with the user's image or a default one.
+     *
+     * @param user The UserViewModel to update the avatar for.
+     */
     private void updateHeaderAvatar(UserViewModel user) {
         if (user.getAvatarPath() != null && !user.getAvatarPath().isEmpty()) {
             try {
@@ -454,6 +744,11 @@ public class MainChatController implements Initializable {
         }
     }
 
+    /**
+     * Loads messages for the selected user based on their type.
+     *
+     * @param user The UserViewModel to load messages for.
+     */
     private void loadMessages(UserViewModel user) {
         messagesContainer.getChildren().clear();
 
@@ -469,8 +764,13 @@ public class MainChatController implements Initializable {
         Platform.runLater(this::scrollToBottom);
     }
 
-    // TODO: Replace with real data
-    // TODO: This section will be deleted (This is an example)
+    /**
+     * Loads sample user messages for demonstration.
+     * TODO: Replace with real data from the server.
+     * TODO: This section will be deleted (This is an example).
+     *
+     * @param user The UserViewModel for the user chat.
+     */
     private void loadUserMessages(UserViewModel user) {
         // Sample private chat messages
         addMessageBubble("Hey! How's your day going?", false, "10:30", "read", user.getUserName());
@@ -483,8 +783,13 @@ public class MainChatController implements Initializable {
         }
     }
 
-    // TODO: Replace with real data
-    // TODO: This section will be deleted (This is an example)
+    /**
+     * Loads sample group messages for demonstration.
+     * TODO: Replace with real data from the server.
+     * TODO: This section will be deleted (This is an example).
+     *
+     * @param group The UserViewModel for the group chat.
+     */
     private void loadGroupMessages(UserViewModel group) {
         // Sample group chat messages
         addMessageBubble("Hey everyone! Meeting at 3 PM today", false, "09:15", "read", "John");
@@ -494,8 +799,13 @@ public class MainChatController implements Initializable {
         addMessageBubble("Perfect! See you all then 👍", true, "09:21", "delivered", null);
     }
 
-    // TODO: Replace with real data
-    // TODO: This section will be deleted (This is an example)
+    /**
+     * Loads sample channel messages for demonstration.
+     * TODO: Replace with real data from the server.
+     * TODO: This section will be deleted (This is an example).
+     *
+     * @param channel The UserViewModel for the channel.
+     */
     private void loadChannelMessages(UserViewModel channel) {
         // Sample channel messages
         addMessageBubble("📢 New update available! Check out the latest features in version 2.1", false, "08:00", "read", channel.getUserName());
@@ -505,6 +815,15 @@ public class MainChatController implements Initializable {
 
     // ============ MESSAGE HANDLING ============
 
+    /**
+     * Adds a message bubble to the messages container with the specified details.
+     *
+     * @param text       The message text.
+     * @param isOutgoing True if the message is outgoing, false if incoming.
+     * @param time       The time of the message.
+     * @param status     The delivery status (e.g., "sent", "delivered", "read").
+     * @param senderName The name of the sender (null for outgoing).
+     */
     private void addMessageBubble(String text, boolean isOutgoing, String time, String status, String senderName) {
         HBox messageContainer = new HBox();
         messageContainer.setSpacing(12);
@@ -534,6 +853,16 @@ public class MainChatController implements Initializable {
         TelegramCellUtils.animateNewMessage(messageContainer);
     }
 
+    /**
+     * Creates a message bubble VBox with text, time, and status.
+     *
+     * @param text       The message text.
+     * @param time       The time of the message.
+     * @param status     The delivery status.
+     * @param isOutgoing True if the message is outgoing.
+     * @param senderName The name of the sender (null for outgoing).
+     * @return The constructed VBox for the message bubble.
+     */
     private VBox createMessageBubble(String text, String time, String status, boolean isOutgoing, String senderName) {
         VBox bubble = new VBox();
         bubble.setSpacing(4);
@@ -577,6 +906,12 @@ public class MainChatController implements Initializable {
         return bubble;
     }
 
+    /**
+     * Creates an ImageView for a sender's avatar with a circular clip.
+     *
+     * @param senderName The name of the sender (used for avatar lookup).
+     * @return The ImageView for the sender's avatar.
+     */
     private ImageView createSenderAvatar(String senderName) {
         ImageView avatar = new ImageView();
         avatar.setFitWidth(32);
@@ -589,7 +924,7 @@ public class MainChatController implements Initializable {
 
         // Load default or sender-specific avatar
         try {
-            // In a real app, you'd load the actual sender's avatar
+            // TODO: In a real app, load the actual sender's avatar from the server.
             Image defaultAvatar = new Image(Objects.requireNonNull(getClass().getResource("/Client/images/11Devs-black.png")).toExternalForm());
             avatar.setImage(defaultAvatar);
         } catch (Exception e) {
@@ -600,6 +935,11 @@ public class MainChatController implements Initializable {
         return avatar;
     }
 
+    /**
+     * Handles mouse clicks on a message bubble (e.g., double-click to reply, right-click for menu).
+     *
+     * @param event The MouseEvent triggering the action.
+     */
     private void handleMessageClick(MouseEvent event) {
         if (event.getClickCount() == 2) {
             // Double-click to reply
@@ -611,6 +951,11 @@ public class MainChatController implements Initializable {
         }
     }
 
+    /**
+     * Displays a reply preview for the selected message bubble.
+     *
+     * @param messageBubble The VBox representing the message to reply to.
+     */
     private void showReplyPreview(VBox messageBubble) {
         if (replyPreviewContainer == null) return;
 
@@ -642,6 +987,10 @@ public class MainChatController implements Initializable {
         messageInputField.requestFocus();
     }
 
+    /**
+     * Closes the reply preview with an animation.
+     * Triggered by the closeReplyButton action.
+     */
     @FXML
     private void closeReplyPreview() {
         if (replyPreviewContainer == null || !replyPreviewContainer.isVisible()) return;
@@ -663,6 +1012,11 @@ public class MainChatController implements Initializable {
 
     // ============ FILTER AND SEARCH ============
 
+    /**
+     * Performs a search on the chat list based on the input text.
+     *
+     * @param searchText The text to search for.
+     */
     private void performSearch(String searchText) {
         if (searchText == null || searchText.trim().isEmpty()) {
             return;
@@ -683,7 +1037,12 @@ public class MainChatController implements Initializable {
 
     // ============ MESSAGE INPUT HANDLING ============
 
-    // TODO
+    /**
+     * Handles key press events in the message input field.
+     * TODO: Implement full keyboard functionality.
+     *
+     * @param event The KeyEvent triggering the action.
+     */
     private void handleKeyPressed(KeyEvent event) {
         if (event.getCode() == KeyCode.ENTER) {
             if (event.isShiftDown()) {
@@ -704,7 +1063,10 @@ public class MainChatController implements Initializable {
         }
     }
 
-    // TODO
+    /**
+     * Handles the send button action based on input state.
+     * TODO: Implement full send action logic.
+     */
     private void handleSendAction() {
         String text = messageInputField.getText().trim();
         if (!text.isEmpty()) {
@@ -715,6 +1077,9 @@ public class MainChatController implements Initializable {
         }
     }
 
+    /**
+     * Sends the current message and updates the UI.
+     */
     private void sendMessage() {
         String text = messageInputField.getText().trim();
         if (text.isEmpty() || currentSelectedUser == null) return;
@@ -745,6 +1110,9 @@ public class MainChatController implements Initializable {
         Platform.runLater(() -> messageInputField.requestFocus());
     }
 
+    /**
+     * Simulates the delivery process of a sent message with timed status updates.
+     */
     private void simulateMessageDelivery() {
         // Simulate delivered status after 1 second
         Timeline deliveredTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
@@ -760,6 +1128,11 @@ public class MainChatController implements Initializable {
         readTimeline.play();
     }
 
+    /**
+     * Updates the status of the last sent message.
+     *
+     * @param status The new status (e.g., "delivered", "read").
+     */
     private void updateLastMessageStatus(String status) {
         if (messagesContainer.getChildren().isEmpty()) return;
 
@@ -775,18 +1148,23 @@ public class MainChatController implements Initializable {
         }
     }
 
+    /**
+     * Updates the send button icon based on the input state (send or voice mode).
+     */
     private void updateSendButtonState() {
         String text = messageInputField.getText().trim();
 
         try {
             if (text.isEmpty()) {
                 // Show microphone for voice messages
-                Image micIcon = new Image(Objects.requireNonNull(getClass().getResource("../images/microphone-icon.png")).toExternalForm()); // TODO
+                Image micIcon = new Image(Objects.requireNonNull(getClass().getResource("../images/microphone-icon.png")).toExternalForm()); // TODO UI
+                // TODO: Verify image path and handle server-side icon loading if needed.
                 sendButtonIcon.setImage(micIcon);
                 sendButton.getStyleClass().add("voice-mode");
             } else {
                 // Show send icon for text messages
-                Image sendIcon = new Image(Objects.requireNonNull(getClass().getResource("../images/send-icon.png")).toExternalForm()); // TODO
+                Image sendIcon = new Image(Objects.requireNonNull(getClass().getResource("../images/send-icon.png")).toExternalForm()); // TODO UI
+                // TODO: Verify image path and handle server-side icon loading if needed.
                 sendButtonIcon.setImage(sendIcon);
                 sendButton.getStyleClass().remove("voice-mode");
             }
@@ -795,6 +1173,9 @@ public class MainChatController implements Initializable {
         }
     }
 
+    /**
+     * Adjusts the height of the message input TextArea based on content.
+     */
     private void adjustTextAreaHeight() {
         Platform.runLater(() -> {
             Text measureText = new Text(messageInputField.getText());
@@ -817,18 +1198,24 @@ public class MainChatController implements Initializable {
         });
     }
 
-    // TODO (Server)
+    /**
+     * Handles typing detection and sends status updates.
+     * TODO (Server): Implement server-side typing status transmission.
+     */
     private void handleTypingDetection() {
         // Implement typing detection logic
         // This would typically send typing status to server
         if (currentSelectedUser != null && !messageInputField.getText().trim().isEmpty()) {
-            // Send typing indicator to other users
+            // TODO (Server): Send typing indicator to other users via server.
             sendTypingStatus(true);
         }
     }
 
     // ============ UI STATE MANAGEMENT ============
 
+    /**
+     * Displays the welcome state when no chat is selected.
+     */
     private void showWelcomeState() {
         if (welcomeStateContainer != null) {
             welcomeStateContainer.setVisible(true);
@@ -843,23 +1230,35 @@ public class MainChatController implements Initializable {
         hideRightPanel();
     }
 
+    /**
+     * Hides the welcome state.
+     */
     private void hideWelcomeState() {
         if (welcomeStateContainer != null) {
             welcomeStateContainer.setVisible(false);
         }
     }
 
+    /**
+     * Shows the chat area when a chat is selected.
+     */
     private void showChatArea() {
         messagesScrollPane.setVisible(true);
         emptyChatStateContainer.setVisible(false);
     }
 
+    /**
+     * Shows the empty chat state when no messages are present.
+     */
     private void showEmptyChatState() {
         emptyChatStateContainer.setVisible(true);
         messagesScrollPane.setVisible(false);
         welcomeStateContainer.setVisible(false);
     }
 
+    /**
+     * Enables chat controls when a chat is selected.
+     */
     private void enableChatControls() {
         messageInputField.setDisable(false);
         sendButton.setDisable(false);
@@ -870,6 +1269,9 @@ public class MainChatController implements Initializable {
         searchInChatButton.setDisable(false);
     }
 
+    /**
+     * Disables chat controls when no chat is selected.
+     */
     private void disableChatControls() {
         messageInputField.setDisable(true);
         sendButton.setDisable(true);
@@ -882,6 +1284,9 @@ public class MainChatController implements Initializable {
 
     // ============ RIGHT PANEL MANAGEMENT ============
 
+    /**
+     * Toggles the visibility of the right panel.
+     */
     private void toggleRightPanel() {
         if (currentSelectedUser == null) return;
 
@@ -892,6 +1297,9 @@ public class MainChatController implements Initializable {
         }
     }
 
+    /**
+     * Shows the right panel with an animation.
+     */
     private void showRightPanel() {
         if (rightPanel == null || currentSelectedUser == null) return;
 
@@ -907,6 +1315,9 @@ public class MainChatController implements Initializable {
         slideIn.play();
     }
 
+    /**
+     * Hides the right panel with an animation.
+     */
     private void hideRightPanel() {
         if (rightPanel == null) return;
 
@@ -920,6 +1331,11 @@ public class MainChatController implements Initializable {
         slideOut.play();
     }
 
+    /**
+     * Updates the right panel with the selected user's information.
+     *
+     * @param user The UserViewModel to update the panel with.
+     */
     private void updateRightPanel(UserViewModel user) {
         if (user == null) return;
 
@@ -958,6 +1374,11 @@ public class MainChatController implements Initializable {
         updateMediaSection(user);
     }
 
+    /**
+     * Updates the profile avatar with the user's image or a default one.
+     *
+     * @param user The UserViewModel to update the avatar for.
+     */
     private void updateProfileAvatar(UserViewModel user) {
         if (profileAvatarImage == null) return;
 
@@ -975,6 +1396,11 @@ public class MainChatController implements Initializable {
 
     // ============ MEDIA SECTION ============
 
+    /**
+     * Switches the media filter type and updates the UI.
+     *
+     * @param filterType The type of media to filter (e.g., "media", "files").
+     */
     private void switchMediaFilter(String filterType) {
         currentMediaFilter = filterType;
 
@@ -995,12 +1421,18 @@ public class MainChatController implements Initializable {
         updateMediaGrid(filterType);
     }
 
+    /**
+     * Updates the media grid based on the current filter type.
+     *
+     * @param filterType The type of media to display.
+     */
     private void updateMediaGrid(String filterType) {
         if (mediaGrid == null) return;
 
         mediaGrid.getChildren().clear();
 
-        // Simulate loading media items //TODO
+        // Simulate loading media items
+        // TODO: Implement server-side media loading.
         boolean hasMedia = simulateMediaLoading(filterType);
 
         if (hasMedia) {
@@ -1012,7 +1444,13 @@ public class MainChatController implements Initializable {
         }
     }
 
-    // TODO: (Get count from server)
+    /**
+     * Simulates loading media items based on the filter type.
+     * TODO: Get count from server for real data.
+     *
+     * @param filterType The type of media to simulate.
+     * @return True if media items were loaded, false otherwise.
+     */
     private boolean simulateMediaLoading(String filterType) {
         // Simulate different amounts of media for different types
         int itemCount = switch (filterType) {
@@ -1031,7 +1469,14 @@ public class MainChatController implements Initializable {
         return itemCount > 0;
     }
 
-    // TODO: replace with real server logic
+    /**
+     * Creates a media item StackPane with a placeholder image.
+     * TODO: Replace with real server logic for media items.
+     *
+     * @param type  The type of media (e.g., "media", "files").
+     * @param index The index of the media item.
+     * @return The constructed StackPane for the media item.
+     */
     private StackPane createMediaItem(String type, int index) {
         StackPane item = new StackPane();
         item.setPrefSize(80, 80);
@@ -1045,7 +1490,7 @@ public class MainChatController implements Initializable {
 
         try {
             String imagePath = switch (type) {
-                case "media" -> "../images/photo-placeholder.png"; // TODO
+                case "media" -> "../images/photo-placeholder.png"; // TODO: Verify image path and load from server.
                 case "files" -> "../images/file-placeholder.png";
                 case "links" -> "../images/link-placeholder.png";
                 case "music" -> "../images/music-placeholder.png";
@@ -1071,6 +1516,11 @@ public class MainChatController implements Initializable {
         return item;
     }
 
+    /**
+     * Updates the media section in the right panel.
+     *
+     * @param user The UserViewModel to update the media for.
+     */
     private void updateMediaSection(UserViewModel user) {
         if (user == null) return;
 
@@ -1080,6 +1530,9 @@ public class MainChatController implements Initializable {
 
     // ============ SCROLL MANAGEMENT ============
 
+    /**
+     * Scrolls the messages list to the bottom.
+     */
     private void scrollToBottom() {
         Platform.runLater(() -> {
             messagesScrollPane.setVvalue(1.0);
@@ -1087,6 +1540,9 @@ public class MainChatController implements Initializable {
         });
     }
 
+    /**
+     * Updates the visibility of the scroll-to-bottom button based on scroll position.
+     */
     private void updateScrollToBottomVisibility() {
         double scrollValue = messagesScrollPane.getVvalue();
         boolean shouldShow = scrollValue < 0.85 && !messagesContainer.getChildren().isEmpty();
@@ -1098,6 +1554,9 @@ public class MainChatController implements Initializable {
         }
     }
 
+    /**
+     * Shows the scroll-to-bottom button with animation and updates unread count.
+     */
     private void showScrollToBottomButton() {
         scrollToBottomContainer.setVisible(true);
 
@@ -1110,14 +1569,23 @@ public class MainChatController implements Initializable {
         TelegramCellUtils.animateNotificationBadge(scrollToBottomContainer, true);
     }
 
+    /**
+     * Hides the scroll-to-bottom button and resets unread count.
+     */
     private void hideScrollToBottomButton() {
         unreadScrollCount = 0;
         unreadBadge.setVisible(false);
         TelegramCellUtils.animateNotificationBadge(scrollToBottomContainer, false);
     }
 
+    /**
+     * Handles scroll position changes, triggering lazy loading if near the top.
+     *
+     * @param newValue The new scroll value.
+     */
     private void handleScrollPositionChange(double newValue) {
-        // Handle lazy loading of messages when scrolling to top // TODO: dev this section
+        // Handle lazy loading of messages when scrolling to top
+        // TODO UI: Develop this section for lazy loading implementation.
         if (newValue < 0.1) {
             loadMoreMessages();
         }
@@ -1156,6 +1624,9 @@ public class MainChatController implements Initializable {
 
     // ============ THEME MANAGEMENT ============
 
+    /**
+     * Toggles between dark and light themes.
+     */
     private void toggleTheme() {
         isDarkTheme = !isDarkTheme;
         updateThemeClasses();
@@ -1167,15 +1638,22 @@ public class MainChatController implements Initializable {
         updateNightModeIcon();
     }
 
-    // TODO: add other themes in the future
+    /**
+     * Updates the theme classes on the main container.
+     * TODO: Add other themes in the future for more variety.
+     */
     private void updateThemeClasses() {
         mainChatContainer.getStyleClass().removeAll("light-theme", "dark-theme");
         mainChatContainer.getStyleClass().add(isDarkTheme ? "dark-theme" : "light-theme");
     }
 
+    /**
+     * Updates the night mode button icon based on the current theme.
+     */
     private void updateNightModeIcon() {
         try {
-            String iconPath = isDarkTheme ? "../images/sun-icon.png" : "../images/moon-icon.png"; // TODO
+            String iconPath = isDarkTheme ? "../images/sun-icon.png" : "../images/moon-icon.png"; // TODO UI
+            // TODO: Verify image paths and handle server-side icon loading if needed.
             Image themeIcon = new Image(Objects.requireNonNull(getClass().getResource(iconPath)).toExternalForm());
             ((ImageView) nightModeButton.getGraphic()).setImage(themeIcon);
         } catch (Exception e) {
@@ -1185,7 +1663,12 @@ public class MainChatController implements Initializable {
 
     // ============ CONNECTION STATUS ============
 
-    // TODO: connect to the server
+    /**
+     * Updates the connection status UI.
+     * TODO: Connect to the server for real-time status updates.
+     *
+     * @param connected True if connected, false otherwise.
+     */
     private void updateConnectionStatus(boolean connected) {
         connectionIndicator.getStyleClass().removeAll("status-online", "status-offline");
         connectionIndicator.getStyleClass().add(connected ? "status-online" : "status-offline");
@@ -1201,6 +1684,9 @@ public class MainChatController implements Initializable {
 
     // ============ ANIMATIONS ============
 
+    /**
+     * Animates the transition when selecting a new chat.
+     */
     private void animateChatSelection() {
         // Animate the transition when selecting a new chat
         Timeline fadeOut = new Timeline(new KeyFrame(Duration.millis(150),
@@ -1215,6 +1701,9 @@ public class MainChatController implements Initializable {
         fadeOut.play();
     }
 
+    /**
+     * Animates the theme change transition.
+     */
     private void animateThemeChange() {
         // Smooth theme transition
         Timeline transition = new Timeline(new KeyFrame(Duration.millis(300),
@@ -1227,6 +1716,9 @@ public class MainChatController implements Initializable {
 
     // ============ EVENT HANDLERS ============
 
+    /**
+     * Shows the sidebar if the controller is initialized.
+     */
     private void showSideBar() {
         if (sidebarController != null) {
             sidebarController.toggleSidebar(true); // Show with Animation
@@ -1235,6 +1727,9 @@ public class MainChatController implements Initializable {
         }
     }
 
+    /**
+     * Initiates a voice call with the current selected user.
+     */
     private void startVoiceCall() {
         if (currentSelectedUser == null) return;
 
@@ -1242,6 +1737,9 @@ public class MainChatController implements Initializable {
         showCallDialog("Voice Call", currentSelectedUser.getUserName());
     }
 
+    /**
+     * Initiates a video call with the current selected user.
+     */
     private void startVideoCall() {
         if (currentSelectedUser == null) return;
 
@@ -1249,6 +1747,12 @@ public class MainChatController implements Initializable {
         showCallDialog("Video Call", currentSelectedUser.getUserName());
     }
 
+    /**
+     * Shows a dialog for a call with the specified type and user.
+     *
+     * @param callType The type of call (e.g., "Voice Call", "Video Call").
+     * @param userName The name of the user being called.
+     */
     private void showCallDialog(String callType, String userName) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(callType);
@@ -1261,6 +1765,9 @@ public class MainChatController implements Initializable {
         alert.showAndWait();
     }
 
+    /**
+     * Shows a context menu with options for the current chat.
+     */
     private void showMoreOptions() {
         ContextMenu menu = new ContextMenu();
 
@@ -1291,6 +1798,9 @@ public class MainChatController implements Initializable {
         menu.show(moreOptionsButton, moreOptionsButton.getLayoutX(), moreOptionsButton.getLayoutY() + moreOptionsButton.getHeight());
     }
 
+    /**
+     * Shows a context menu with attachment options.
+     */
     private void showAttachmentOptions() {
         ContextMenu menu = new ContextMenu();
 
@@ -1313,6 +1823,9 @@ public class MainChatController implements Initializable {
         menu.show(attachmentButton, attachmentButton.getLayoutX(), attachmentButton.getLayoutY() - 200);
     }
 
+    /**
+     * Shows a simple emoji picker context menu.
+     */
     private void showEmojiPicker() {
         // Create simple emoji picker for demonstration
         ContextMenu emojiMenu = new ContextMenu();
@@ -1328,6 +1841,11 @@ public class MainChatController implements Initializable {
         emojiMenu.show(emojiButton, emojiButton.getLayoutX(), emojiButton.getLayoutY() - 150);
     }
 
+    /**
+     * Inserts the selected emoji into the message input at the caret position.
+     *
+     * @param emoji The emoji to insert.
+     */
     private void insertEmoji(String emoji) {
         String currentText = messageInputField.getText();
         int caretPosition = messageInputField.getCaretPosition();
@@ -1339,8 +1857,14 @@ public class MainChatController implements Initializable {
 
     // ============ UTILITY METHODS ============
 
-    // TODO
-    private String getStatusIcon(String status) {
+    /**
+     * Returns a status icon based on the message status.
+     * TODO: Implement more status icons or server-side logic.
+     *
+     * @param status The status to get an icon for (e.g., "sent", "delivered", "read").
+     * @return The corresponding icon text.
+     */
+    private String getStatusIcon(String status) { // TODO UI
         return switch (status.toLowerCase()) {
             case "sent" -> "✓";
             case "delivered" -> "✓✓";
@@ -1349,16 +1873,27 @@ public class MainChatController implements Initializable {
         };
     }
 
+    /**
+     * Returns the current time in "HH:mm" format.
+     *
+     * @return The formatted current time.
+     */
     private String getCurrentTime() {
         return LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm"));
     }
 
+    /**
+     * Refreshes the chat list UI.
+     */
     private void refreshChatList() {
         Platform.runLater(() -> {
             chatListView.refresh();
         });
     }
 
+    /**
+     * Handles the ESCAPE key press for various UI actions.
+     */
     private void handleEscapeKey() {
         if (replyPreviewContainer.isVisible()) {
             closeReplyPreview();
@@ -1371,48 +1906,76 @@ public class MainChatController implements Initializable {
 
     // ============ PLACEHOLDER METHODS ============
 
+    /**
+     * Returns to the welcome state, clearing the current selection.
+     */
     private void goBackToWelcomeState() {
         currentSelectedUser = null;
         chatListView.getSelectionModel().clearSelection();
         showWelcomeState();
-        // hideTypingIndicator(); // TODO
+        // TODO: Implement hiding typing indicator if implemented.
+        // hideTypingIndicator(); // TODO UI
         closeReplyPreview();
     }
 
+    /**
+     * Closes the current chat and returns to the welcome state.
+     */
     private void closeCurrentChat() {
         goBackToWelcomeState();
     }
 
+    /**
+     * Shows the search-in-chat interface (placeholder).
+     */
     private void showSearchInChat() {
         System.out.println("Showing search in chat");
-        // TODO: Implement search in chat functionality
+        // TODO: Implement search in chat functionality (UI: Design search interface, Server: Fetch search results).
     }
 
+    /**
+     * Creates a new group chat (placeholder).
+     */
     private void createNewGroup() {
         System.out.println("Creating new group");
-        // TODO: Implement new group creation
+        // TODO: Implement new group creation (UI: Design group creation dialog, Server: Create group on server).
     }
 
+    /**
+     * Creates a new channel (placeholder).
+     */
     private void createNewChannel() {
         System.out.println("Creating new channel");
-        // TODO: Implement new channel creation
+        // TODO: Implement new channel creation (UI: Design channel creation dialog, Server: Create channel on server).
     }
 
+    /**
+     * Opens the contacts window (placeholder).
+     */
     private void openContacts() {
         System.out.println("Opening contacts");
-        // TODO: Implement contacts window
+        // TODO: Implement contacts window (UI: Design contacts UI, Server: Fetch contact list).
     }
 
+    /**
+     * Opens the saved messages view (placeholder).
+     */
     private void openSavedMessages() {
         System.out.println("Opening saved messages");
-        // TODO: Implement saved messages
+        // TODO: Implement saved messages (UI: Design saved messages UI, Server: Fetch saved messages).
     }
 
+    /**
+     * Opens the settings dialog (placeholder).
+     */
     private void openSettings() {
         System.out.println("Opening settings");
-        // TODO: Implement settings dialog
+        // TODO: Implement settings dialog (UI: Design settings UI, Server: Fetch user settings).
     }
 
+    /**
+     * Toggles the notification mute state for the current user.
+     */
     private void toggleNotifications() {
         if (currentSelectedUser == null) return;
 
@@ -1430,6 +1993,11 @@ public class MainChatController implements Initializable {
         showTemporaryNotification(message);
     }
 
+    /**
+     * Updates the notification toggle button's state.
+     *
+     * @param enabled True to enable, false to disable.
+     */
     private void updateNotificationToggle(boolean enabled) {
         if (notificationsToggle == null) return;
 
@@ -1439,10 +2007,16 @@ public class MainChatController implements Initializable {
         }
     }
 
+    /**
+     * Toggles the mute state of the current chat.
+     */
     private void toggleMute() {
         toggleNotifications();
     }
 
+    /**
+     * Toggles the pinned state of the current chat.
+     */
     private void togglePin() {
         if (currentSelectedUser == null) return;
 
@@ -1455,10 +2029,13 @@ public class MainChatController implements Initializable {
         refreshChatList();
     }
 
+    /**
+     * Clears the chat history with a confirmation dialog.
+     */
     private void clearChatHistory() {
         if (currentSelectedUser == null) return;
 
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION); // TODO
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION); // TODO UI
         alert.setTitle("Clear Chat History");
         alert.setHeaderText("Clear history with " + currentSelectedUser.getUserName() + "?");
         alert.setContentText("This will permanently delete all messages in this chat.");
@@ -1477,10 +2054,13 @@ public class MainChatController implements Initializable {
         });
     }
 
+    /**
+     * Blocks the current user with a confirmation dialog.
+     */
     private void blockUser() {
         if (currentSelectedUser == null) return;
 
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION); // TODO
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION); // TODO UI
         alert.setTitle("Block User");
         alert.setHeaderText("Block " + currentSelectedUser.getUserName() + "?");
         alert.setContentText("You will no longer receive messages from this user.");
@@ -1497,15 +2077,20 @@ public class MainChatController implements Initializable {
         });
     }
 
+    /**
+     * Starts voice recording (placeholder).
+     */
     private void startVoiceRecording() {
         System.out.println("Starting voice recording");
-        // TODO: Implement voice recording functionality
-
+        // TODO: Implement voice recording functionality (UI: Show recording UI, Server: Handle audio upload).
         // Visual feedback
         sendButton.getStyleClass().add("recording");
         showTemporaryNotification("Voice recording started");
     }
 
+    /**
+     * Edits the last outgoing message by loading it into the input field.
+     */
     private void editLastMessage() {
         // Find last outgoing message and allow editing
         for (int i = messagesContainer.getChildren().size() - 1; i >= 0; i--) {
@@ -1527,21 +2112,38 @@ public class MainChatController implements Initializable {
         }
     }
 
+    /**
+     * Loads more messages when scrolling to the top (placeholder).
+     */
     private void loadMoreMessages() {
-        // TODO: Implement lazy loading of older messages
+        // TODO: Implement lazy loading of older messages (Server: Fetch older messages, UI: Append to messagesContainer).
         System.out.println("Loading more messages...");
     }
 
+    /**
+     * Opens a media item for viewing (placeholder).
+     *
+     * @param type  The type of media.
+     * @param index The index of the media item.
+     */
     private void openMediaItem(String type, int index) {
         System.out.println("Opening " + type + " item " + index);
-        // TODO: Implement media viewer
+        // TODO: Implement media viewer (UI: Design media viewer, Server: Fetch media content).
     }
 
+    /**
+     * Shows all media in a full browser (placeholder).
+     */
     private void showAllMedia() {
         System.out.println("Showing all media");
-        // TODO: Implement full media browser
+        // TODO: Implement full media browser (UI: Design media browser, Server: Fetch all media).
     }
 
+    /**
+     * Shows a context menu for a message with various actions.
+     *
+     * @param event The MouseEvent triggering the menu.
+     */
     private void showMessageContextMenu(MouseEvent event) {
         ContextMenu menu = new ContextMenu();
 
@@ -1566,56 +2168,86 @@ public class MainChatController implements Initializable {
 
     // ============ ATTACHMENT METHODS ============
 
+    /**
+     * Attaches a photo or video (placeholder).
+     */
     private void attachPhoto() {
         System.out.println("Attaching photo/video");
-        // TODO: Implement file chooser for media
+        // TODO: Implement file chooser for media (UI: Design file chooser, Server: Upload media).
     }
 
+    /**
+     * Attaches a document (placeholder).
+     */
     private void attachDocument() {
         System.out.println("Attaching document");
-        // TODO: Implement file chooser for documents
+        // TODO: Implement file chooser for documents (UI: Design file chooser, Server: Upload document).
     }
 
+    /**
+     * Creates a poll (placeholder).
+     */
     private void createPoll() {
         System.out.println("Creating poll");
-        // TODO: Implement poll creation dialog
+        // TODO: Implement poll creation dialog (UI: Design poll creation UI, Server: Create poll on server).
     }
 
+    /**
+     * Attaches a contact (placeholder).
+     */
     private void attachContact() {
         System.out.println("Attaching contact");
-        // TODO: Implement contact picker
+        // TODO: Implement contact picker (UI: Design contact picker, Server: Fetch contacts).
     }
 
+    /**
+     * Attaches a location (placeholder).
+     */
     private void attachLocation() {
         System.out.println("Attaching location");
-        // TODO: Implement location picker
+        // TODO: Implement location picker (UI: Design location picker, Server: Handle location data).
     }
 
     // ============ MESSAGE ACTIONS ============
 
+    /**
+     * Forwards a message (placeholder).
+     */
     private void forwardMessage() {
         System.out.println("Forwarding message");
-        // TODO: Implement message forwarding
+        // TODO: Implement message forwarding (Server: Send message to new chat, UI: Update UI).
     }
 
+    /**
+     * Edits a message (placeholder).
+     */
     private void editMessage() {
         System.out.println("Editing message");
-        // TODO: Implement message editing
+        // TODO: Implement message editing (Server: Update message on server, UI: Reflect changes).
     }
 
+    /**
+     * Deletes a message (placeholder).
+     */
     private void deleteMessage() {
         System.out.println("Deleting message");
-        // TODO: Implement message deletion
+        // TODO: Implement message deletion (Server: Remove message from server, UI: Remove from UI).
     }
 
+    /**
+     * Copies the text of a message to the clipboard (placeholder).
+     */
     private void copyMessageText() {
         System.out.println("Copying message text");
-        // TODO: Implement text copying to clipboard
+        // TODO: Implement text copying to clipboard (UI: Use JavaFX Clipboard API).
     }
 
     // ============ UTILITY METHODS ============
 
-    // TODO(Server)
+    /**
+     * Loads the default header avatar image.
+     * TODO (Server): Fetch default avatar from server if needed.
+     */
     private void loadDefaultHeaderAvatar() {
         try {
             Image defaultAvatar = new Image(Objects.requireNonNull(getClass().getResource("/Client/images/11Devs-white.png")).toExternalForm());
@@ -1625,17 +2257,29 @@ public class MainChatController implements Initializable {
         }
     }
 
-    // TODO(Server)
+    /**
+     * Loads the default profile avatar image.
+     * TODO (Server): Fetch default avatar from server if needed or provide a dynamic default image.
+     */
     private void loadDefaultProfileAvatar() {
         try {
+            // Attempt to load the default avatar image from resources
             Image defaultAvatar = new Image(Objects.requireNonNull(getClass().getResource("/Client/images/11Devs-white.png")).toExternalForm());
             profileAvatarImage.setImage(defaultAvatar);
         } catch (Exception e) {
+            // Log error if loading fails
             System.err.println("Error loading default profile avatar: " + e.getMessage());
+            // TODO (Server): Notify server of failure and request fallback avatar if available.
+            // TODO (UI): Display a placeholder or error icon to the user.
         }
     }
 
-    // TODO: dev more
+    /**
+     * Displays a temporary notification overlay at the top of the screen.
+     * TODO: Enhance with more features like custom duration or styling.
+     *
+     * @param message The message to display in the notification.
+     */
     private void showTemporaryNotification(String message) {
         // Create temporary notification overlay
         Label notification = new Label(message);
@@ -1656,35 +2300,61 @@ public class MainChatController implements Initializable {
         // Auto-hide after 3 seconds
         Timeline autoHide = new Timeline(new KeyFrame(Duration.seconds(3), e -> {
             TelegramCellUtils.animateNotificationBadge(notification, false);
+            // TODO (UI): Remove notification from mainChatContainer after animation to prevent memory leaks.
         }));
         autoHide.play();
     }
 
-    // TODO (Server)
+    /**
+     * Sends the typing status to the server.
+     * TODO (Server): Implement server-side communication to update other users' interfaces.
+     *
+     * @param isTyping True if the user is typing, false otherwise.
+     */
     private void sendTypingStatus(boolean isTyping) {
         // In a real implementation, this would send typing status to server
         System.out.println("Typing status: " + isTyping);
+        // TODO (Server): Establish a WebSocket or REST call to send typing status to the server.
+        // TODO (UI): Update local UI to reflect typing state if needed (e.g., show indicator).
     }
 
     // ============ PUBLIC API METHODS ============
 
-    // TODO
+    /**
+     * Adds a new message to the chat interface.
+     * TODO: Enhance with server synchronization and error handling.
+     *
+     * @param text       The text content of the message.
+     * @param isOutgoing True if the message is from the current user, false otherwise.
+     * @param senderName The name of the sender (null for outgoing messages).
+     */
     public void addNewMessage(String text, boolean isOutgoing, String senderName) {
         Platform.runLater(() -> {
+            // Add the message bubble to the UI
             addMessageBubble(text, isOutgoing, getCurrentTime(), isOutgoing ? "sent" : "received", senderName);
 
             if (!isOutgoing) {
+                // Increment unread count for incoming messages
                 unreadScrollCount++;
                 updateScrollToBottomVisibility();
             }
 
+            // Auto-scroll if near the bottom
             if (messagesScrollPane.getVvalue() > 0.9) {
                 scrollToBottom();
             }
+            // TODO: Synchronize with server to ensure message persistence.
+            // TODO (UI): Add animation or visual cue for new messages.
         });
     }
 
-    // TODO
+    /**
+     * Updates the online status of a user in the chat list and UI.
+     * TODO: Implement server-driven status updates.
+     *
+     * @param userName The name of the user whose status is updated.
+     * @param isOnline True if the user is online, false otherwise.
+     */
     public void updateUserOnlineStatus(String userName, boolean isOnline) {
         Platform.runLater(() -> {
             for (UserViewModel user : allChatUsers) {
@@ -1693,6 +2363,7 @@ public class MainChatController implements Initializable {
                     user.setLastSeen(isOnline ? "online" : "last seen just now");
 
                     if (user == currentSelectedUser) {
+                        // Update chat header and right panel if visible
                         updateChatHeader(user);
                         if (isRightPanelVisible) {
                             updateRightPanel(user);
@@ -1703,17 +2374,31 @@ public class MainChatController implements Initializable {
                     break;
                 }
             }
+            // TODO (Server): Fetch real-time status from server instead of local update.
+            // TODO (UI): Add visual feedback for status change (e.g., animation).
         });
     }
 
-    // TODO
+    /**
+     * Adds a new user to the chat list.
+     * TODO: Synchronize with server to add user globally.
+     *
+     * @param user The UserViewModel to add.
+     */
     public void addUser(UserViewModel user) {
         Platform.runLater(() -> {
             allChatUsers.add(user);
+            // TODO (Server): Notify server to add user to the chat or group.
+            // TODO (UI): Update UI to reflect new user (e.g., sort or notify).
         });
     }
 
-    // TODO
+    /**
+     * Removes a user from the chat list.
+     * TODO: Synchronize with server to remove user globally.
+     *
+     * @param user The UserViewModel to remove.
+     */
     public void removeUser(UserViewModel user) {
         Platform.runLater(() -> {
             allChatUsers.remove(user);
@@ -1722,9 +2407,16 @@ public class MainChatController implements Initializable {
             if (currentSelectedUser == user) {
                 goBackToWelcomeState();
             }
+            // TODO (Server): Notify server to remove user from the chat or group.
+            // TODO (UI): Add confirmation dialog or notification for removal.
         });
     }
 
+    /**
+     * Selects a user by name from the chat list.
+     *
+     * @param userName The name of the user to select.
+     */
     public void selectUserByName(String userName) {
         for (UserViewModel user : allChatUsers) {
             if (user.getUserName().equals(userName)) {
@@ -1736,19 +2428,34 @@ public class MainChatController implements Initializable {
         }
     }
 
+    /**
+     * Returns the currently selected user.
+     *
+     * @return The current UserViewModel, or null if none selected.
+     */
     public UserViewModel getCurrentSelectedUser() {
         return currentSelectedUser;
     }
 
-    // TODO
+    /**
+     * Sets the theme of the application.
+     * TODO: Synchronize theme change with server if persistent.
+     *
+     * @param darkTheme True for dark theme, false for light theme.
+     */
     public void setTheme(boolean darkTheme) {
         this.isDarkTheme = darkTheme;
         updateThemeClasses();
         updateNightModeIcon();
+        // TODO (Server): Send theme preference to server for persistence.
+        // TODO (UI): Add transition animation for theme switch.
     }
 
     // ============ CLEANUP ============
 
+    /**
+     * Cleans up resources by stopping animations and clearing data.
+     */
     public void cleanup() {
         // Stop all animations
         if (typingAnimationTimeline != null) {
@@ -1766,5 +2473,7 @@ public class MainChatController implements Initializable {
         filteredChatUsers.clear();
         currentMessages.clear();
         messagesContainer.getChildren().clear();
+        // TODO (UI): Ensure all event listeners are removed to prevent memory leaks.
+        // TODO (Server): Notify server of cleanup or session end if applicable.
     }
 }

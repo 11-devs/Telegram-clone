@@ -13,10 +13,6 @@
     -fx-background-color: #232E3A;
 }
 
-.telegram-cell.selected {
-    -fx-background-color: #2B5278;
-}
-
 .telegram-cell.unread {
     -fx-background-color: #1A252F;
     -fx-font-weight: 600;

@@ -322,7 +322,6 @@
                                 <Label fx:id="replyMessageLabel" styleClass="reply-message-label" text="Original message text..." />
                             </children>
                         </VBox>
-                        <!-- تبدیل StackPane به Button با SVGPath داخلش -->
                         <Button fx:id="closeReplyButton" styleClass="close-reply-button" onAction="#closeReplyPreview">
                             <graphic>
                                 <SVGPath content="M18 18L12 12M12 12L6 6M12 12L18 6M12 12L6 18" fill="#666666" stroke="#666666" strokeLineCap="ROUND" strokeLineJoin="ROUND" strokeWidth="2">

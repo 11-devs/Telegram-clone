@@ -75,51 +75,17 @@
     -fx-faint-focus-color: transparent;
 }
 
-.filter-button {
-    -fx-background-color: transparent;
-    -fx-text-fill: #92A3AF;
-    -fx-border-color: transparent;
-    -fx-background-radius: 12px;
-    -fx-font-size: 13px;
-    -fx-font-weight: 500;
-    -fx-padding: 6 12 6 12;
-    -fx-cursor: hand;
-    -fx-margin: 0 2 0 2;
-}
-
-.filter-button:hover {
-    -fx-background-color: #1E2832;
-}
-
-.filter-button:selected {
-    -fx-background-color: #4FC3F7;
-    -fx-text-fill: white;
-}
-
 /* Chat List */
 .chat-list {
     -fx-background-color: transparent;
-    -fx-border-color: transparent;
-    -fx-focus-color: transparent;
-    -fx-faint-focus-color: transparent;
-    -fx-selection-bar-non-focused: transparent;
 }
 
 .chat-list .list-cell {
     -fx-background-color: transparent;
-    -fx-border-color: transparent;
     -fx-padding: 0;
-    -fx-focus-color: transparent;
     -fx-cell-size: 72px;
 }
 
-.chat-list .list-cell:hover {
-    -fx-background-color: #1E2832;
-}
-
-.chat-list .list-cell:selected {
-    -fx-background-color: #2B5278;
-}
 
 /* Sidebar Footer */
 .sidebar-footer {
