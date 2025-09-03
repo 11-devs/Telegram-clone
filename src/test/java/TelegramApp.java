@@ -25,7 +25,7 @@ public class TelegramApp extends Application {
 
         // Setting the scene
         Scene scene = new Scene(chatRoot);
-        scene.getStylesheets().add("/Client/css/chat_view.css"); // یا CSS مربوطه
+        scene.getStylesheets().add("/Client/css/mainChat.css");
         primaryStage.setScene(scene);
         primaryStage.setTitle("Telegram Clone");
         primaryStage.show();
