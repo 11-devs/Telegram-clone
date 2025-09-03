@@ -209,7 +209,7 @@ public class VerificationViaTelegramController {
                                 break;
                             case "need_password":
                                 changeSceneWithSameSize(root, "/Client/fxml/CloudPasswordCheck.fxml",(CloudPasswordCheckController controller) ->{
-                                    //controller.setPhoneNumber(requestCodeOutputModel.getPhoneNumber());
+                                    controller.setPhoneNumber(requestCodePhoneNumberOutputModel.getPhoneNumber());
                                 });
                                 break;
                             case "logged_in":

@@ -114,7 +114,7 @@ if(!cooldown) {
 
         if (account == null) {
             output.setStatus("need_register");
-        } else if (account.getHashedPassword() == null || account.getHashedPassword().isEmpty()) {
+        } else if (account.getHashedPassword() != null && !account.getHashedPassword().isEmpty()) {
             output.setStatus("need_password");
         } else {
             var accessKey = generateAccessKey(account, model.getDeviceInfo());
@@ -169,6 +169,7 @@ if(!cooldown) {
         account.setLastName(model.getLastName());
         account.setProfilePictureId(model.getProfilePictureId());
         account.setPhoneNumber(model.getPhoneNumber());
+        account.setHashedPassword(PasswordUtil.hash("12345678"));
         daoManager.getAccountDAO().insert(account);
         String accessKey = generateAccessKey(account,model.getDeviceInfo());
         var output = new BasicRegisterOutputModel(accessKey);
