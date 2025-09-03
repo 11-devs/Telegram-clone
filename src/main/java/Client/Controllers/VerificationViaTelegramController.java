@@ -20,28 +20,26 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.input.Clipboard;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
+import java.io.IOException;
+
 import static Shared.Utils.SceneUtil.changeSceneWithSameSize;
 
 public class VerificationViaTelegramController {
     private RequestCodePhoneNumberOutputModel requestCodePhoneNumberOutputModel;
-
-    public void setRequestCodeOutputModel(RequestCodePhoneNumberOutputModel requestCodePhoneNumberOutputModel) {
-        this.requestCodePhoneNumberOutputModel = requestCodePhoneNumberOutputModel;
-        phoneLabel.setText(requestCodePhoneNumberOutputModel.getPhoneNumber());
-    }
     private ConnectionManager connectionManager;
     private RpcCaller rpcCaller;
+    private TextField[] textFields;
+
     @FXML
     private VBox root;
-
     @FXML
     private VBox infoBox;
-
     @FXML
     private TextField code1;
     @FXML
@@ -52,104 +50,107 @@ public class VerificationViaTelegramController {
     private TextField code4;
     @FXML
     private TextField code5;
-
     @FXML
     public Button nextButton;
-
     @FXML
     public Label TelegramValidationMessage;
     @FXML
     public Label phoneLabel;
 
-    @FXML
-    private void initialize() {
-
-        connectionManager = AppConnectionManager.getInstance().getConnectionManager();
-        rpcCaller = AppConnectionManager.getInstance().getRpcCaller();
-
-        if (infoBox != null) {
-            infoBox.setTranslateX(75);
-            var transition = new javafx.animation.TranslateTransition(javafx.util.Duration.seconds(0.5), infoBox);
-            transition.setToX(0);
-            transition.setAutoReverse(false);
-            transition.setCycleCount(1);
-            transition.play();
-        }
-        // Animation of moving from a little further lower to the main target
-        if (nextButton != null) {
-            nextButton.setTranslateY(50);
-            var transition = new javafx.animation.TranslateTransition(javafx.util.Duration.seconds(0.5), nextButton);
-            transition.setToY(0);
-            transition.setAutoReverse(false);
-            transition.setCycleCount(1);
-            transition.play();
-        }
-
-        // Automatic switching between boxes with the press of a key
-        TextField[] fields = {code1, code2, code3, code4, code5};
-        for (int i = 0; i < fields.length; i++) {
-            final int index = i;
-            fields[i].setOnKeyTyped(event -> {
-                String input = fields[index].getText();
-                if (input.length() == 1) {
-                    // Only one numeric character is allowed.
-                    if (!input.matches("[0-9]")) {
-                        // Left and right scrolling animation to indicate error (only on TextField)
-                        shakeField(fields[index]);
-                        // Clears non-numeric input.
-                        fields[index].setText("");
-                    } else {
-                        // Animation of moving the number from bottom to center
-                        animateTextRise(fields[index]);
-                        if (index < 4) {
-                            fields[index + 1].requestFocus();
-                        }
-                    }
-                } else if (input.length() > 1) {
-                    // If more than one character is entered, keep only the first character.
-                    fields[index].setText(input.substring(0, 1));
-                    if (index < 4 && fields[index].getText().matches("[0-9]")) {
-                        animateTextRise(fields[index]);
-                        fields[index + 1].requestFocus();
-                    }
-                }
-            });
-            // Add navigation with keyboard arrow keys
-            fields[i].setOnKeyPressed(event -> {
-                if (event.getCode() == KeyCode.RIGHT) {
-                    if (index == 4) {
-                        fields[0].requestFocus(); // From last to first
-                    } else {
-                        fields[index + 1].requestFocus();
-                    }
-                    simulateDownKey(index == 4 ? 0 : index + 1); // Sending the correct index
-                } else if (event.getCode() == KeyCode.LEFT) {
-                    if (index == 0) {
-                        fields[4].requestFocus(); // From first to last
-                    } else {
-                        fields[index - 1].requestFocus();
-                    }
-                    simulateDownKey(index == 0 ? 4 : index - 1); // Sending the correct index
-                }
-            });
-        }
-        code1.requestFocus(); // Initial focus on the first box
+    public void setRequestCodeOutputModel(RequestCodePhoneNumberOutputModel requestCodePhoneNumberOutputModel) {
+        this.requestCodePhoneNumberOutputModel = requestCodePhoneNumberOutputModel;
+        phoneLabel.setText(requestCodePhoneNumberOutputModel.getPhoneNumber());
     }
 
-    // Method to simulate pressing the down arrow key to correct the position of the caret (typing bar)
-    private void simulateDownKey(int index) {
-        TextField[] fields = {code1, code2, code3, code4, code5};
-        KeyEvent keyDownPressed = new KeyEvent(
-                KeyEvent.KEY_PRESSED,
-                "",
-                "",
-                KeyCode.DOWN,
-                false,
-                false,
-                false,
-                false
-        );
-        fields[index].fireEvent(keyDownPressed);
+    @FXML
+    private void initialize() {
+        connectionManager = AppConnectionManager.getInstance().getConnectionManager();
+        rpcCaller = AppConnectionManager.getInstance().getRpcCaller();
+        textFields = new TextField[]{code1, code2, code3, code4, code5};
+
+        playIntroAnimations();
+        setupInputListeners();
+
+        code1.requestFocus();
+    }
+
+    private void playIntroAnimations() {
+        if (infoBox != null) {
+            infoBox.setTranslateX(75);
+            var transition = new TranslateTransition(Duration.seconds(0.5), infoBox);
+            transition.setToX(0);
+            transition.play();
+        }
+        if (nextButton != null) {
+            nextButton.setTranslateY(50);
+            var transition = new TranslateTransition(Duration.seconds(0.5), nextButton);
+            transition.setToY(0);
+            transition.play();
+        }
+    }
+
+    private void setupInputListeners() {
+        for (int i = 0; i < textFields.length; i++) {
+            final int index = i;
+            TextField currentField = textFields[index];
+
+            currentField.setOnKeyTyped(event -> {
+                TelegramValidationMessage.setText("");
+                String text = currentField.getText();
+
+                if (text.length() == 1 && text.matches("\\d")) {
+                    animateTextRise(currentField);
+                    if (index < textFields.length - 1) {
+                        textFields[index + 1].requestFocus();
+                    } else {
+                        handleNext();
+                    }
+                } else if (!text.isEmpty()){
+                    shakeField(currentField);
+                    javafx.application.Platform.runLater(currentField::clear);
+                }
+            });
+
+            currentField.setOnKeyPressed(event -> {
+                if (event.isControlDown() && event.getCode() == KeyCode.V) {
+                    String pastedText = Clipboard.getSystemClipboard().getString();
+                    if (pastedText != null) {
+                        String digits = pastedText.replaceAll("[^\\d]", "");
+                        if (digits.length() >= 5) {
+                            digits = digits.substring(0, 5);
+                            for (int j = 0; j < textFields.length; j++) {
+                                textFields[j].setText(String.valueOf(digits.charAt(j)));
+                            }
+                            textFields[4].requestFocus();
+                            handleNext();
+                            event.consume();
+                        }
+                    }
+                    return;
+                }
+
+                switch (event.getCode()) {
+                    case LEFT:
+                        if (index > 0) {
+                            textFields[index - 1].requestFocus();
+                        }
+                        break;
+                    case RIGHT:
+                        if (index < textFields.length - 1) {
+                            textFields[index + 1].requestFocus();
+                        }
+                        break;
+                    case BACK_SPACE:
+                        if (currentField.getText().isEmpty() && index > 0) {
+                            textFields[index - 1].requestFocus();
+                            textFields[index - 1].clear();
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            });
+        }
     }
 
     private void shakeField(TextField field) {
@@ -166,12 +167,9 @@ public class VerificationViaTelegramController {
     }
 
     private void animateTextRise(TextField field) {
-        // Adjust the initial text position (a little lower, e.g. 5 pixels for smoother movement)
         field.setTranslateY(5);
         TranslateTransition transition = new TranslateTransition(Duration.millis(150), field);
         transition.setToY(0);
-        transition.setCycleCount(1);
-        transition.setAutoReverse(false);
         transition.play();
     }
 
@@ -187,113 +185,142 @@ public class VerificationViaTelegramController {
 
     @FXML
     private void handleNext() {
+        if (nextButton.isDisabled()) return;
+
         String code = code1.getText() + code2.getText() + code3.getText() + code4.getText() + code5.getText();
-        if (code.length() == 5 && code.matches("[0-9]{5}")) {
-            System.out.println("Verification code entered: " + code);
+        if (code.length() == 5 && code.matches("\\d{5}")) {
+            setLoadingState(true);
+
             Task<RpcResponse<VerifyCodeOutputModel>> otpTask = new Task<>() {
                 @Override
-                protected RpcResponse<VerifyCodeOutputModel> call() throws Exception {
+                protected RpcResponse<VerifyCodeOutputModel> call() throws IOException {
                     var deviceInfo = DeviceUtil.getDeviceInfo();
                     return rpcCaller.verifyOTP(new VerifyCodeInputModel(requestCodePhoneNumberOutputModel.getPendingId(), requestCodePhoneNumberOutputModel.getPhoneNumber(), code, deviceInfo));
                 }
             };
+
             otpTask.setOnSucceeded(event -> {
-                try {
-                    var response = otpTask.getValue();
-                    if(response.getStatusCode() == StatusCode.OK){
-                        switch (response.getPayload().getStatus()){
-                            case "need_register":
-                                changeSceneWithSameSize(root, "/Client/fxml/UserInfo.fxml",(UserInfoController controller) ->{
-                                    controller.setPhoneNumber(requestCodePhoneNumberOutputModel.getPhoneNumber());
-                                });
-                                break;
-                            case "need_password":
-                                changeSceneWithSameSize(root, "/Client/fxml/CloudPasswordCheck.fxml",(CloudPasswordCheckController controller) ->{
-                                    controller.setPhoneNumber(requestCodePhoneNumberOutputModel.getPhoneNumber());
-                                });
-                                break;
-                            case "logged_in":
-                                /*changeSceneWithSameSize(root, "/Client/fxml/UserInfo.fxml",(CloudPasswordCheckController controller) ->{
-                                    //controller.setPhoneNumber(requestCodeOutputModel.getPhoneNumber());
-                                });*/
-                                var resultCode = AccessKeyManager.LoginWithAccessKey(response.getPayload().getAccessKey(),connectionManager.getClient());
-                                if(resultCode == StatusCode.OK) System.out.println("Successful login");
-                            break;
-                        }
-
-                    }else if(response.getStatusCode() == StatusCode.BAD_REQUEST){
-                        switch (response.getMessage()){
-                            case "otp_expired":
-                                TelegramValidationMessage.setText("otp expired");
-                                break;
-                            case "too_many_attempts_try_later":
-                                TelegramValidationMessage.setText("Too many attempts try later");
-                                break;
-                            case "invalid_otp":
-                                TelegramValidationMessage.setText("invalid otp");
-                                break;
-                            default:
-                                TelegramValidationMessage.setText("Something is wrong");
-                                break;
-                        }
-                        turnFieldsBlank();
+                var response = otpTask.getValue();
+                if (response.getStatusCode() == StatusCode.OK) {
+                    try {
+                        handleSuccessfulVerification(response.getPayload());
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
+                } else {
+                    handleFailedVerification(response.getMessage());
                 }
-            });
-            otpTask.setOnFailed(event -> {
-                System.out.println("Task failed.");
-                otpTask.getException().printStackTrace();
+                setLoadingState(false);
             });
 
-            // Start the background task
+            otpTask.setOnFailed(event -> {
+                otpTask.getException().printStackTrace();
+                TelegramValidationMessage.setText("An error occurred.");
+                setLoadingState(false);
+            });
+
             new Thread(otpTask).start();
         } else {
-            System.out.println("Please enter a 5-digit code.");
+            TelegramValidationMessage.setText("Please enter a valid 5-digit code.");
         }
     }
 
+    private void handleSuccessfulVerification(VerifyCodeOutputModel payload) throws IOException {
+        switch (payload.getStatus()) {
+            case "need_register":
+                changeSceneWithSameSize(root, "/Client/fxml/UserInfo.fxml", (UserInfoController controller) -> {
+                    controller.setPhoneNumber(requestCodePhoneNumberOutputModel.getPhoneNumber());
+                });
+                break;
+            case "need_password":
+                changeSceneWithSameSize(root, "/Client/fxml/CloudPasswordCheck.fxml", (CloudPasswordCheckController controller) -> {
+                    controller.setPhoneNumber(requestCodePhoneNumberOutputModel.getPhoneNumber());
+                });
+                break;
+            case "logged_in":
+                var resultCode = AccessKeyManager.LoginWithAccessKey(payload.getAccessKey(), connectionManager.getClient());
+                if (resultCode == StatusCode.OK) {
+                    System.out.println("Successful login");
+                    // TODO: Navigate to the main chat screen
+                }
+                break;
+        }
+    }
+
+    private void handleFailedVerification(String message) {
+        switch (message) {
+            case "otp_expired":
+                TelegramValidationMessage.setText("OTP expired. Please request a new one.");
+                break;
+            case "too_many_attempts_try_later":
+                TelegramValidationMessage.setText("Too many attempts. Please try again later.");
+                break;
+            case "invalid_otp":
+                TelegramValidationMessage.setText("Invalid OTP. Please check the code and try again.");
+                break;
+            default:
+                TelegramValidationMessage.setText("Something went wrong. Please try again.");
+                break;
+        }
+        turnFieldsBlank();
+    }
+
+
     private void turnFieldsBlank() {
-        TextField[] fields = {code1, code2, code3, code4, code5};
-        for (TextField field : fields) {
+        for (TextField field : textFields) {
             field.setText("");
             shakeField(field);
         }
+        textFields[0].requestFocus();
     }
+
+    private void setLoadingState(boolean isLoading) {
+        nextButton.setDisable(isLoading);
+        for(TextField field : textFields){
+            field.setDisable(isLoading);
+        }
+        if (isLoading) {
+            nextButton.setText("Verifying...");
+        } else {
+            nextButton.setText("Next");
+        }
+    }
+
 
     @FXML
     private void handleSmsLinkClick() {
-        // Switch to SMS login page
-        Task<RpcResponse<RequestCodePhoneNumberOutputModel>> otpTask = new Task<>() {
+        setFieldsDisabled(true);
+        Task<RpcResponse<RequestCodePhoneNumberOutputModel>> smsTask = new Task<>() {
             @Override
-            protected RpcResponse<RequestCodePhoneNumberOutputModel> call() throws Exception {
+            protected RpcResponse<RequestCodePhoneNumberOutputModel> call() throws IOException {
                 return rpcCaller.requestOTP(new RequestCodePhoneNumberInputModel(requestCodePhoneNumberOutputModel.getPhoneNumber(), "sms", DeviceUtil.getDeviceInfo()));
             }
         };
-        otpTask.setOnSucceeded(event -> {
-            try {
-                var response = otpTask.getValue();
-                if(response.getStatusCode() == StatusCode.OK){
-                    SceneUtil.changeSceneWithSameSize(code1, "/Client/fxml/VerificationViaSms.fxml",(VerificationViaSmsController controller) ->{
-                        controller.setRequestCodeOutputModel(response.getPayload());
-                    });
-                }
 
-
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
+        smsTask.setOnSucceeded(event -> {
+            var response = smsTask.getValue();
+            if (response.getStatusCode() == StatusCode.OK) {
+                SceneUtil.changeSceneWithSameSize(code1, "/Client/fxml/VerificationViaSms.fxml", (VerificationViaSmsController controller) -> {
+                    controller.setRequestCodeOutputModel(response.getPayload());
+                });
+            } else {
+                TelegramValidationMessage.setText("Failed to send SMS. Please try again.");
+                setFieldsDisabled(false);
             }
         });
-        otpTask.setOnFailed(event -> {
-            System.out.println("Task failed.");
-            otpTask.getException().printStackTrace();
+
+        smsTask.setOnFailed(event -> {
+            smsTask.getException().printStackTrace();
+            TelegramValidationMessage.setText("An error occurred while requesting SMS.");
+            setFieldsDisabled(false);
         });
 
-        // Start the background task
-        new Thread(otpTask).start();
+        new Thread(smsTask).start();
+    }
 
+    private void setFieldsDisabled(boolean disabled) {
+        for (TextField field : textFields) {
+            field.setDisable(disabled);
+        }
     }
 }

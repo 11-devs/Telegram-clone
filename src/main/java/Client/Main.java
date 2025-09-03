@@ -35,7 +35,7 @@ public class Main extends Application {
                 }
         );
         connectionManager.createAndStartClient();
-        Parent root = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("/Client/fxml/resetPassword.fxml")));
+        Parent root = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("/Client/fxml/welcome.fxml")));
 //        if(authModel!= null && authModel.getAccessKeyCount() != 0){
 //            root = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("/Client/fxml/CloudPasswordCheck.fxml")));
 //        }

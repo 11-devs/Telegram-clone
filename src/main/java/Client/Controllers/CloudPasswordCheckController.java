@@ -9,15 +9,18 @@ import JSocket2.Protocol.StatusCode;
 import Shared.Api.Models.AccountController.LoginInputModel;
 import Shared.Api.Models.AccountController.LoginOutputModel;
 import Shared.Utils.DeviceUtil;
+import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.css.PseudoClass;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.layout.VBox;
-
+import javafx.util.Duration;
+import Shared.Utils.AnimationUtil;
 import static Shared.Utils.SceneUtil.changeSceneWithSameSize;
 
 public class CloudPasswordCheckController {
@@ -66,10 +69,6 @@ public class CloudPasswordCheckController {
             transition.setCycleCount(1);
             transition.play();
         }
-        passwordField.textProperty().addListener((observable, oldValue, newValue) -> {
-            passwordField.pseudoClassStateChanged(errorPseudoClass, false);
-            passwordLabel.pseudoClassStateChanged(errorPseudoClass, false);
-        });
         passwordField.requestFocus(); // Initial focus on password field
     }
 
@@ -110,8 +109,8 @@ public class CloudPasswordCheckController {
                             case "invalid_password":
                                 Platform.runLater(() -> {
                                     passwordField.clear();
-                                    passwordField.pseudoClassStateChanged(errorPseudoClass, true);
-                                    passwordLabel.pseudoClassStateChanged(errorPseudoClass, true);
+                                    AnimationUtil.showErrorAnimation(passwordField,errorPseudoClass);
+                                    AnimationUtil.showErrorAnimation(passwordLabel,errorPseudoClass);
                                     System.out.println("Invalid password. Field cleared and bordered in red.");
                                 });
                                 break;
@@ -135,6 +134,7 @@ public class CloudPasswordCheckController {
             System.out.println("Please enter a password.");
         }
     }
+
 
     @FXML
     private void handleForgotPassword() {

@@ -81,3 +81,7 @@
 .text-field:focused {
     -fx-border-color: transparent transparent #2F6EA5 transparent; /* Up, Right, Down, Left */
 }
+.text-field:error{
+    -fx-border-color: transparent transparent #ee1111 transparent;
+    -fx-border-width: 0 0 1px 0;
+}

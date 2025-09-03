@@ -8,6 +8,7 @@ import JSocket2.Protocol.StatusCode;
 import Shared.Api.Models.AccountController.RequestCodePhoneNumberInputModel;
 import Shared.Api.Models.AccountController.RequestCodePhoneNumberOutputModel;
 import Shared.Models.CountryCode;
+import Shared.Utils.AnimationUtil;
 import Shared.Utils.DeviceUtil;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -16,13 +17,13 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
+import javafx.css.PseudoClass;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -34,14 +35,16 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.util.Duration;
-import javafx.util.converter.NumberStringConverter;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.lang.reflect.Type;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.function.UnaryOperator;
 
 import static Shared.Utils.SceneUtil.changeSceneWithSameSize;
 
@@ -50,67 +53,47 @@ public class PhoneNumberController {
     private RpcCaller rpcCaller;
     @FXML
     private VBox root;
-
     @FXML
     public VBox infoBox;
-
     @FXML
     private TextField countryPreCode;
-
     @FXML
     private TextField phoneNumberField;
-
     @FXML
     private Button continueButton;
-
     @FXML
     private Button selectCountryButton;
-
+    private final PseudoClass errorPseudoClass = PseudoClass.getPseudoClass("error");
     private ObservableList<CountryCode> allCountries;
+    private String currentFormatPattern = "############";
 
     public void initialize() {
-        // Animation for infoBox (moving from right to center)
         connectionManager = AppConnectionManager.getInstance().getConnectionManager();
         rpcCaller = AppConnectionManager.getInstance().getRpcCaller();
         if (infoBox != null) {
             infoBox.setTranslateX(75);
             TranslateTransition transition = new TranslateTransition(Duration.seconds(0.5), infoBox);
             transition.setToX(0);
-            transition.setAutoReverse(false);
-            transition.setCycleCount(1);
             transition.play();
-        } else {
-            System.err.println("infoBox is null! Check FXML binding.");
         }
 
-        // Animation for continueButton (moving from bottom to center)
         if (continueButton != null) {
             continueButton.setTranslateY(75);
             TranslateTransition transition = new TranslateTransition(Duration.seconds(0.5), continueButton);
             transition.setToY(0);
-            transition.setAutoReverse(false);
-            transition.setCycleCount(1);
             transition.play();
-        } else {
-            System.err.println("continueButton is null! Check FXML binding.");
         }
 
-        System.out.println("Initializing PhoneNumberController...");
         allCountries = loadCountryCodes();
-        System.out.println("Loaded " + allCountries.size() + " country codes.");
 
-        // Default
-        countryPreCode.setText("+");
-        selectCountryButton.setText("Country Code");
+        setDefaultCountry();
 
-        // Limit countryPreCode to "+[numbers]" format (max 6 digits after +), keeping "+" non-removable
         countryPreCode.setTextFormatter(new TextFormatter<>(change -> {
             String newText = change.getControlNewText();
-            System.out.println("TextFormatter - New text: " + newText);
-
             if (newText.startsWith("+") && newText.substring(1).matches("\\d{0,6}")) {
                 return change;
             } else if (!newText.startsWith("+")) {
+                // This logic prevents the user from deleting the "+" sign
                 change.setText("+");
                 change.setRange(0, change.getControlText().length());
                 change.setCaretPosition(1);
@@ -120,27 +103,114 @@ public class PhoneNumberController {
             return null;
         }));
 
-        // Add ChangeListener to dynamically update country name
-        countryPreCode.textProperty().addListener(new ChangeListener<String>() {
-            @Override
-            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-                if (newValue != null && newValue.startsWith("+")) {
-                    String code = newValue.replace("+", "").replace("-", "");
-                    System.out.println("ChangeListener - Updating for code: " + code);
-                    updateCountryName(code);
-                }
+        countryPreCode.textProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue != null && newValue.startsWith("+")) {
+                String code = newValue.substring(1);
+                updateCountryNameAndFormat(code);
             }
         });
-
-        // Limit phoneNumberField to numbers (max 12 digits)
-        phoneNumberField.setTextFormatter(new TextFormatter<>(new NumberStringConverter(), null, change -> {
-            String newText = change.getControlNewText();
-            if (newText.matches("\\d*") && newText.length() <= 12) {
-                return change;
-            }
-            return null;
-        }));
     }
+
+    private void setDefaultCountry() {
+        String systemCountryISO = Locale.getDefault().getCountry();
+        if (systemCountryISO != null && !systemCountryISO.isEmpty()) {
+            Optional<CountryCode> defaultCountry = allCountries.stream()
+                    .filter(c -> systemCountryISO.equalsIgnoreCase(c.getIso()))
+                    .findFirst();
+
+            if (defaultCountry.isPresent()) {
+                CountryCode country = defaultCountry.get();
+                setCountryCode(country.getCode(), country.getCountry());
+                return; // Exit after setting the specific default
+            }
+        }
+        countryPreCode.setText("+");
+        selectCountryButton.setText("Country Code");
+        applyPhoneNumberFormatting("############");
+    }
+    private void applyPhoneNumberFormatting(String formatPattern) {
+        this.currentFormatPattern = formatPattern;
+        phoneNumberField.setPromptText(formatPattern.replace('#', '-'));
+
+        UnaryOperator<TextFormatter.Change> filter = change -> {
+            String currentText = change.getControlText();
+            String currentDigits = currentText.replaceAll("[^\\d]", "");
+
+            int rangeStart = change.getRangeStart();
+            int rangeEnd = change.getRangeEnd();
+
+            int digitsBeforeStart = 0;
+            for (int i = 0; i < rangeStart; i++) {
+                if (Character.isDigit(currentText.charAt(i))) {
+                    digitsBeforeStart++;
+                }
+            }
+
+            int digitsInRange = 0;
+            for (int i = rangeStart; i < rangeEnd; i++) {
+                if (Character.isDigit(currentText.charAt(i))) {
+                    digitsInRange++;
+                }
+            }
+
+            String addedDigits = change.getText().replaceAll("[^\\d]", "");
+            String newDigitsString = currentDigits.substring(0, digitsBeforeStart) +
+                    addedDigits +
+                    currentDigits.substring(digitsBeforeStart + digitsInRange);
+
+            int maxLen = formatPattern.replaceAll("[^#]", "").length();
+            if (newDigitsString.length() > maxLen) {
+                newDigitsString = newDigitsString.substring(0, maxLen);
+            }
+
+            StringBuilder formatted = new StringBuilder();
+            int digitIndex = 0;
+            for (char p : formatPattern.toCharArray()) {
+                if (digitIndex >= newDigitsString.length()) {
+                    break;
+                }
+                if (p == '#') {
+                    formatted.append(newDigitsString.charAt(digitIndex++));
+                } else {
+                    formatted.append(p);
+                }
+            }
+
+            int newCaretPosition = 0;
+            int targetDigits = digitsBeforeStart + addedDigits.length();
+            int digitsCounted = 0;
+            for (int i = 0; i < formatted.length(); i++) {
+                if (Character.isDigit(formatted.charAt(i))) {
+                    digitsCounted++;
+                }
+                if (digitsCounted == targetDigits) {
+                    newCaretPosition = i + 1;
+                    break;
+                }
+            }
+
+            if (targetDigits == 0) {
+                newCaretPosition = 0;
+            } else if (newCaretPosition == 0) {
+                newCaretPosition = formatted.length();
+            }
+
+            while (newCaretPosition < formatted.length() && !Character.isDigit(formatted.charAt(newCaretPosition))) {
+                newCaretPosition++;
+            }
+
+            change.setText(formatted.toString());
+            change.setRange(0, change.getControlText().length());
+            change.setCaretPosition(newCaretPosition);
+            change.setAnchor(newCaretPosition);
+
+            return change;
+        };
+
+        phoneNumberField.setTextFormatter(new TextFormatter<>(filter));
+    }
+
+
 
     private ObservableList<CountryCode> loadCountryCodes() {
         ObservableList<CountryCode> codes = FXCollections.observableArrayList();
@@ -151,12 +221,9 @@ public class PhoneNumberController {
             List<CountryCode> countryList = gson.fromJson(reader, listType);
             if (countryList != null) {
                 codes.addAll(countryList);
-                countryList.forEach(c -> System.out.println("Loaded code: " + c.getCode() + ", Country: " + c.getCountry()));
-            } else {
-                System.err.println("Country list is null from JSON.");
             }
         } catch (Exception e) {
-            System.err.println("Failed to load country codes: " + e.getMessage());
+            e.printStackTrace();
         }
         return codes;
     }
@@ -174,21 +241,27 @@ public class PhoneNumberController {
     @FXML
     private void continueAction() {
         String preCode = countryPreCode.getText();
-        String phoneNumber = phoneNumberField.getText();
-
-        if (phoneNumber.isEmpty() || !preCode.startsWith("+")) {
-            System.out.println("Phone number or country code is invalid!");
+        String phoneNumberDigits = phoneNumberField.getText().replaceAll("[^\\d]", "");
+        int requiredLength = currentFormatPattern.replaceAll("[^#]", "").length();
+        if (phoneNumberDigits.length() < requiredLength) {
+            System.out.println("Phone number is too short!");
+            AnimationUtil.showErrorAnimation(phoneNumberField,errorPseudoClass);
             return;
         }
 
-        // Show a loading indicator to the user
-        // e.g., progressIndicator.setVisible(true);
+        if (preCode.length() < 2) {
+            System.out.println("Country code is invalid!");
+            AnimationUtil.showErrorAnimation(countryPreCode,errorPseudoClass);
+            return;
+        }
+
         final boolean[] isRegistered = new boolean[1];
         Task<RpcResponse<RequestCodePhoneNumberOutputModel>> otpTask = new Task<>() {
             @Override
             protected RpcResponse<RequestCodePhoneNumberOutputModel> call() throws Exception {
-                isRegistered[0] = rpcCaller.isPhoneNumberRegistered(preCode + phoneNumber).getPayload();
-                return rpcCaller.requestOTP(new RequestCodePhoneNumberInputModel(preCode + phoneNumber, isRegistered[0] ? "telegram" : "sms", DeviceUtil.getDeviceInfo()));
+                String fullPhoneNumber = preCode + phoneNumberDigits;
+                isRegistered[0] = rpcCaller.isPhoneNumberRegistered(fullPhoneNumber).getPayload();
+                return rpcCaller.requestOTP(new RequestCodePhoneNumberInputModel(fullPhoneNumber, isRegistered[0] ? "telegram" : "sms", DeviceUtil.getDeviceInfo()));
             }
         };
         otpTask.setOnSucceeded(event -> {
@@ -204,21 +277,13 @@ public class PhoneNumberController {
                             controller.setRequestCodeOutputModel(response.getPayload());
                         });
                     }
-
                 }
-
-
             } catch (Exception e) {
                 e.printStackTrace();
-            } finally {
             }
         });
-        otpTask.setOnFailed(event -> {
-            System.out.println("Task failed.");
-            otpTask.getException().printStackTrace();
-        });
+        otpTask.setOnFailed(event -> otpTask.getException().printStackTrace());
 
-        // Start the background task
         new Thread(otpTask).start();
     }
 
@@ -226,7 +291,6 @@ public class PhoneNumberController {
     private void showCountrySelection() {
         Stage parentStage = (Stage) root.getScene().getWindow();
         try {
-            // Apply dim effect to parent stage with animation
             ColorAdjust dimEffect = new ColorAdjust();
             parentStage.getScene().getRoot().setEffect(dimEffect);
 
@@ -236,50 +300,25 @@ public class PhoneNumberController {
             );
             fadeIn.play();
 
-            // Load the FXML file
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/Client/fxml/countrySelection.fxml"));
-            Parent root = loader.load();
+            Parent dialogRoot = loader.load();
 
-            // Create and configure the dialog stage
             Stage dialogStage = new Stage();
             dialogStage.initStyle(StageStyle.TRANSPARENT);
-            Scene scene = new Scene(root);
+            Scene scene = new Scene(dialogRoot);
             scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
             dialogStage.setScene(scene);
             dialogStage.initOwner(parentStage);
             dialogStage.initModality(Modality.WINDOW_MODAL);
             dialogStage.setResizable(false);
-            dialogStage.setTitle("Select Country");
 
-            // Set the dialog stage to the controller
             CountrySelectionController controller = loader.getController();
             controller.setDialogStage(dialogStage);
             controller.setParentController(this);
-            controller.setAllCountries(allCountries); // Pass the loaded countries
+            controller.setAllCountries(allCountries);
 
-            // Adjust height dynamically after layout is fully computed
-            Platform.runLater(() -> {
-                controller.countryList.applyCss();
-                double listHeight = controller.countryList.getHeight() > 0 ? controller.countryList.getHeight() : 200;
-                double marginTotal = 20.0;
-                double searchHeight = controller.searchField.getHeight() > 0 ? controller.searchField.getHeight() : 30.0;
-                double newVBoxHeight = listHeight + marginTotal + searchHeight;
-                controller.rootVBox.setPrefHeight(newVBoxHeight);
-                dialogStage.sizeToScene();
-            });
-
-            // Center the dialog stage with an offset downward
-            Platform.runLater(() -> {
-                double centerX = parentStage.getX() + (parentStage.getWidth() - dialogStage.getWidth()) / 2;
-                double centerY = parentStage.getY() + (parentStage.getHeight() - dialogStage.getHeight()) / 2;
-                dialogStage.setX(centerX);
-                dialogStage.setY(centerY);
-            });
-
-            // Show the dialog and handle closing with reverse animation
             dialogStage.showAndWait();
 
-            // Reverse animation for undimming
             Timeline fadeOut = new Timeline(
                     new KeyFrame(Duration.ZERO, new javafx.animation.KeyValue(dimEffect.brightnessProperty(), -0.3, Interpolator.EASE_BOTH)),
                     new KeyFrame(Duration.millis(300), new javafx.animation.KeyValue(dimEffect.brightnessProperty(), 0))
@@ -289,29 +328,24 @@ public class PhoneNumberController {
 
         } catch (IOException e) {
             e.printStackTrace();
-            System.err.println("Error loading country selection dialog: " + e.getMessage());
         }
     }
 
-    private void updateCountryName(String code) {
-        // Avoid creating a new instance, use the existing logic
+    private void updateCountryNameAndFormat(String code) {
         if (allCountries != null) {
-            String cleanCode = code.replace("-", "");
-            System.out.println("Processing code: " + cleanCode + ", allCountries size: " + allCountries.size());
-            String countryName = allCountries.stream()
-                    .filter(c -> c.getCode().replace("+", "").replace("-", "").equals(cleanCode))
-                    .findFirst()
-                    .map(CountryCode::getCountry)
-                    .orElse("Invalid Country Code");
-            System.out.println("Found country name: " + countryName);
-            if ("Invalid Country Code".equals(countryName)) {
-                selectCountryButton.setText("Invalid Country Code");
+            var countryOptional = allCountries.stream()
+                    .filter(c -> c.getCode().replace("+", "").equals(code))
+                    .findFirst();
+
+            if (countryOptional.isPresent()) {
+                CountryCode country = countryOptional.get();
+                selectCountryButton.setText(country.getCountry());
+                applyPhoneNumberFormatting(country.getFormat());
             } else {
-                countryPreCode.setText("+" + code);
-                selectCountryButton.setText(countryName);
+                selectCountryButton.setText("Invalid Country Code");
+                applyPhoneNumberFormatting("############"); // A generic default
             }
         } else {
-            System.err.println("allCountries is null in updateCountryName!");
             selectCountryButton.setText("Country Code");
         }
     }
@@ -320,6 +354,17 @@ public class PhoneNumberController {
         if (code != null && !code.isEmpty()) {
             countryPreCode.setText("+" + code);
             selectCountryButton.setText(countryName);
+
+            phoneNumberField.clear();
+            phoneNumberField.requestFocus();
+
+            String format = allCountries.stream()
+                    .filter(c -> c.getCode().replace("+", "").equals(code))
+                    .findFirst()
+                    .map(CountryCode::getFormat)
+                    .orElse("############");
+
+            applyPhoneNumberFormatting(format);
         }
     }
 }
