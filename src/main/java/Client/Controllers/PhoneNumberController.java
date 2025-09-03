@@ -20,7 +20,6 @@ import javafx.scene.effect.ColorAdjust;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-import javafx.util.converter.NumberStringConverter;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -115,8 +114,8 @@ public class PhoneNumberController {
             }
         });
 
-        // Limit phoneNumberField to numbers (max 12 digits)
-        phoneNumberField.setTextFormatter(new TextFormatter<>(new NumberStringConverter(), null, change -> {
+        // Limit phoneNumberField to numbers (max 12 digits) without formatting
+        phoneNumberField.setTextFormatter(new TextFormatter<>(change -> {
             String newText = change.getControlNewText();
             if (newText.matches("\\d*") && newText.length() <= 12) {
                 return change;
