@@ -3,14 +3,18 @@ package Client.Controllers;
 import Client.AccessKeyManager;
 import Client.AppConnectionManager;
 import Client.RpcCaller;
+import Client.Tasks.UploadTask;
 import JSocket2.Core.Client.ConnectionManager;
 import JSocket2.Protocol.Rpc.RpcResponse;
 import JSocket2.Protocol.StatusCode;
+import JSocket2.Protocol.Transfer.FileInfoModel;
+import JSocket2.Protocol.Transfer.IProgressListener;
 import Shared.Api.Models.AccountController.BasicRegisterInputModel;
 import Shared.Api.Models.AccountController.BasicRegisterOutputModel;
 import Shared.Api.Models.AccountController.VerifyCodeInputModel;
 import Shared.Api.Models.AccountController.VerifyCodeOutputModel;
 import Shared.Utils.DeviceUtil;
+import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -22,6 +26,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Circle;
 import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
@@ -30,6 +35,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
+import java.util.concurrent.ExecutorService;
 
 import static Shared.Utils.SceneUtil.changeSceneWithSameSize;
 
@@ -216,9 +222,70 @@ public class UserInfoController implements Initializable {
                         photoPreview.setPreserveRatio(false); // Allow fitting to fixed size
 
                         System.out.println("Image loaded successfully with zoom, centered crop, and fixed circular clip. Original Size: " + originalWidth + "x" + originalHeight + ", Cropped Size: " + cropWidth + "x" + cropHeight);
+
                     } else {
                         System.out.println("PixelReader is null, using original image without crop. Original Size: " + originalWidth + "x" + originalHeight);
                     }
+                    IProgressListener listener = (transferred, total) -> {
+                        double frac = (total > 0) ? ((double) transferred / total) : 0;
+                        int percentage = (int) (frac * 100);
+                        Platform.runLater(() -> {
+                            // Update the title bar to show upload progress
+                            if (root.getScene() != null && root.getScene().getWindow() instanceof Stage) {
+                                Stage stage = (Stage) root.getScene().getWindow();
+                                stage.setTitle("Uploading... " + percentage + "%");
+                            }
+                        });
+                    };
+                    var app = connectionManager.getClient();
+                    ExecutorService backgroundExecutor = app.getBackgroundExecutor();
+                    backgroundExecutor.submit(() -> {
+                        try {
+                            FileInfoModel info = app.getFileTransferManager().initiateUpload(selectedFile);
+                            String fileId = info.FileId;
+
+                            UploadTask uploadTask = new UploadTask(app.getFileTransferManager(), info, selectedFile, listener);
+                            app.registerTask(fileId, uploadTask);
+
+                            uploadTask.setOnSucceeded(e -> {
+                                Platform.runLater(() -> {
+                                    try {
+                                        photoPreview.setImage(originalImage);
+                                        profilePhotoId = fileId;
+                                        signUpButton.setDisable(false);
+                                        restoreUIOnSuccess();
+                                    } catch (Exception ex) {
+                                        System.err.println("Error updating UI after upload success: " + ex.getMessage());
+                                        restoreUIOnFailure();
+                                    } finally {
+                                        app.unregisterTask(fileId);
+                                    }
+                                });
+                            });
+
+                            uploadTask.setOnFailed(e -> {
+                                Platform.runLater(() -> {
+                                    app.unregisterTask(fileId);
+                                    restoreUIOnFailure();
+                                });
+                            });
+
+                            uploadTask.setOnCancelled(e -> {
+                                Platform.runLater(() -> {
+                                    app.unregisterTask(fileId);
+                                    restoreUIOnFailure();
+                                });
+                            });
+
+                            backgroundExecutor.submit(uploadTask);
+
+                        } catch (Exception e) {
+                            Platform.runLater(() -> {
+                                System.err.println("Error initiating upload: " + e.getMessage());
+                                restoreUIOnFailure();
+                            });
+                        }
+                    });
                 } catch (IOException e) {
                     System.err.println("Error loading or processing image: " + e.getMessage());
                 }
@@ -228,5 +295,22 @@ public class UserInfoController implements Initializable {
         } else {
             System.out.println("No file selected or dialog cancelled.");
         }
+    }
+    private void restoreUIOnSuccess() {
+        if (root.getScene() != null && root.getScene().getWindow() instanceof Stage) {
+            Stage stage = (Stage) root.getScene().getWindow();
+            stage.setTitle("Telegram Desktop");
+        }
+    }
+
+    private void restoreUIOnFailure() {
+        if (root.getScene() != null && root.getScene().getWindow() instanceof Stage) {
+            Stage stage = (Stage) root.getScene().getWindow();
+            stage.setTitle("Telegram Desktop");
+        }
+        Image defaultImage = new Image(getClass().getResourceAsStream("/Client/images/11Devs-white.png"));
+        photoPreview.setImage(defaultImage);
+        profilePhotoId = null;
+        signUpButton.setDisable(false);
     }
 }
