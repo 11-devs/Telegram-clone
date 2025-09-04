@@ -1,21 +1,20 @@
 package Shared.Utils;
 
-import Client.Controllers.NotificationDialogController;
+import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.effect.ColorAdjust;
-import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 import javafx.util.Duration;
-import javafx.animation.Interpolator;
 
 import java.io.IOException;
 
+import static Shared.Utils.SceneUtil.createDialog;
+
+/**
+ * Utility class for managing dialog windows in JavaFX applications.
+ */
 public class DialogUtil {
 
     // dim : [-1,1]
@@ -32,24 +31,8 @@ public class DialogUtil {
             );
             fadeIn.play();
 
-            // Load the FXML file
-            FXMLLoader loader = new FXMLLoader(DialogUtil.class.getResource("/Client/fxml/notificationDialog.fxml"));
-            Parent root = loader.load();
-
-            // Create and configure the dialog stage
-            Stage dialogStage = new Stage();
-            dialogStage.initStyle(StageStyle.TRANSPARENT); // Use transparent style
-            Scene scene = new Scene(root);
-            scene.setFill(javafx.scene.paint.Color.TRANSPARENT); // Round corners
-            dialogStage.setScene(scene);
-            dialogStage.initOwner(parentStage);
-            dialogStage.initModality(Modality.WINDOW_MODAL);
-            dialogStage.setResizable(false);
-
-            // Set the message and dialog stage to the controller
-            NotificationDialogController controller = loader.getController();
-            controller.setDialogStage(dialogStage);
-            controller.setMessage(message);
+            // Use SceneUtil.createDialog to load and configure the dialog
+            Stage dialogStage = createDialog("/Client/fxml/notificationDialog.fxml", parentStage, null, message, "Notification");
 
             // Center the dialog stage with an offset downward
             Platform.runLater(() -> {
