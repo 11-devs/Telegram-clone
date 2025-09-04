@@ -1,0 +1,189 @@
+/* ============ TELEGRAM PROFILE SECTION STYLING ============ */
+
+/* Main Profile Container */
+.profile-container {
+  -fx-background-color: #17212B;
+  -fx-background-radius: 10px;
+  -fx-padding: 10px;
+  -fx-font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* ============ PROFILE HEADER ============ */
+.profile-header {
+  -fx-background-color: #17212B;
+  -fx-border-color: transparent;
+  -fx-min-height: 60px;
+}
+
+.profile-header-title {
+  -fx-text-fill: #FFFFFF;
+  -fx-font-size: 20px;
+  -fx-font-weight: 500;
+}
+
+.header-icon-button {
+  -fx-background-color: transparent;
+  -fx-border-color: transparent;
+  -fx-cursor: hand;
+  -fx-min-width: 40px;
+  -fx-min-height: 40px;
+  -fx-pref-width: 40px;
+  -fx-pref-height: 40px;
+  -fx-background-radius: 50px;
+}
+
+/* ============ PROFILE SCROLL PANE ============ */
+.profile-scroll-pane {
+  -fx-background-color: transparent;
+  -fx-border-color: transparent;
+  -fx-focus-color: transparent;
+  -fx-faint-focus-color: transparent;
+}
+
+.profile-scroll-pane .viewport,
+.profile-scroll-pane .content {
+  -fx-background-color: transparent;
+}
+
+.profile-content-container {
+  -fx-background-color: transparent;
+}
+
+/* ============ PROFILE MAIN SECTION ============ */
+.profile-main-section {
+  -fx-background-color: transparent;
+}
+
+.profile-picture-container {
+  -fx-background-color: transparent;
+}
+
+.profile-picture {
+  -fx-smooth: true;
+  -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 8, 0.3, 0, 2);
+  -fx-cursor:hand;
+}
+
+.profile-name {
+  -fx-text-fill: #FFFFFF;
+  -fx-font-size: 24px;
+  -fx-font-weight: 500;
+  -fx-cursor:text;
+}
+
+.profile-status {
+  -fx-text-fill: #4FC3F7;
+  -fx-font-size: 14px;
+  -fx-font-weight: 400;
+}
+
+/* ============ PROFILE SEPARATOR ============ */
+.profile-separator {
+  -fx-background-color: #92A3AF;
+  -fx-pref-height: 0.5px;
+  -fx-opacity: 0.05;
+}
+
+/* ============ PROFILE FIELDS SECTION ============ */
+.profile-fields-section {
+  -fx-background-color: transparent;
+}
+
+.profile-field-row {
+  -fx-background-color: transparent;
+  -fx-min-height: 60px;
+}
+
+.field-icon {
+  -fx-opacity: 0.6;
+  -fx-smooth: true;
+}
+
+.field-value {
+  -fx-text-fill: #FFFFFF;
+  -fx-font-size: 16px;
+  -fx-font-weight: 400;
+  -fx-cursor:text;
+}
+
+.id-value {
+   -fx-text-fill: #4FC3F7;
+   -fx-font-size: 16px;
+   -fx-font-weight: 400;
+   -fx-cursor:hand;
+}
+
+.field-description {
+  -fx-text-fill: #92A3AF;
+  -fx-font-size: 13px;
+  -fx-font-weight: 400;
+}
+
+.field-separator {
+  -fx-background-color: rgba(146, 163, 175, 0.05);
+  -fx-pref-height: 1px;
+  -fx-padding: 0 20 0 20;
+}
+
+/* QR Code Button */
+.qr-code-button {
+  -fx-background-color: transparent;
+  -fx-border-color: transparent;
+  -fx-cursor: hand;
+  -fx-min-width: 40px;
+  -fx-min-height: 40px;
+  -fx-pref-width: 40px;
+  -fx-pref-height: 40px;
+  -fx-padding: 10;
+}
+
+/* ============ SCROLLBAR STYLING ============ */
+.profile-scroll-pane .scroll-bar:vertical {
+  -fx-background-color: transparent;
+  -fx-border-color: transparent;
+  -fx-pref-width: 6px;
+  -fx-max-width: 6px;
+  -fx-min-width: 6px;
+}
+
+.profile-scroll-pane .scroll-bar:vertical .track {
+  -fx-background-color: transparent;
+  -fx-border-color: transparent;
+  -fx-opacity: 0;
+}
+
+.profile-scroll-pane .scroll-bar:vertical .thumb {
+  -fx-background-color: rgba(146, 163, 175, 0.3);
+  -fx-background-radius: 3px;
+  -fx-border-radius: 3px;
+  -fx-border-color: transparent;
+}
+
+.profile-scroll-pane .scroll-bar:vertical .thumb:hover {
+  -fx-background-color: rgba(146, 163, 175, 0.5);
+}
+
+.profile-scroll-pane .scroll-bar:vertical .thumb:pressed {
+  -fx-background-color: rgba(146, 163, 175, 0.7);
+}
+
+.profile-scroll-pane .scroll-bar:vertical .increment-button,
+.profile-scroll-pane .scroll-bar:vertical .decrement-button {
+  -fx-background-color: transparent;
+  -fx-border-color: transparent;
+  -fx-pref-height: 0;
+  -fx-pref-width: 0;
+}
+
+/* ============ PLATFORM SPECIFIC ============ */
+.profile-container.windows {
+  -fx-font-family: "Segoe UI", sans-serif;
+}
+
+.profile-container.macos {
+  -fx-font-family: "SF Pro Display", "Helvetica Neue", sans-serif;
+}
+
+.profile-container.linux {
+  -fx-font-family: "Ubuntu", "Liberation Sans", sans-serif;
+}
