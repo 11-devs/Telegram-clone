@@ -80,7 +80,44 @@ public class FileDownloadService {
             return future;
         });
     }
+    private final Map<String, TransferInfo> infoCache = new ConcurrentHashMap<>();
 
+    //... existing methods
+
+    /**
+     * Asynchronously retrieves metadata for a file from the server.
+     * This method initiates a download to get the TransferInfo but does not download the file chunks.
+     * It's used to get file details (name, size) for rendering UI elements.
+     *
+     * @param fileId The unique ID of the file.
+     * @return A CompletableFuture that will complete with the file's TransferInfo.
+     */
+    public CompletableFuture<TransferInfo> getFileInfo(String fileId) {
+        if (fileId == null || fileId.isBlank()) {
+            System.err.println("FileDownloadService.getFileInfo was called with a null or blank fileId.");
+            return CompletableFuture.failedFuture(new IllegalArgumentException("File ID cannot be null or blank."));
+        }
+        if (infoCache.containsKey(fileId)) {
+            return CompletableFuture.completedFuture(infoCache.get(fileId));
+        }
+
+        CompletableFuture<TransferInfo> future = new CompletableFuture<>();
+        executor.submit(() -> {
+            try {
+                // initiateDownload gets info from server and loads local transfer state if it exists.
+                TransferInfo info = transferManager.initiateDownload(fileId, cacheDir.toString());
+                if (info != null) {
+                    infoCache.put(fileId, info);
+                    future.complete(info);
+                } else {
+                    future.completeExceptionally(new IOException("Failed to retrieve file info from server."));
+                }
+            } catch (Exception e) {
+                future.completeExceptionally(e);
+            }
+        });
+        return future;
+    }
     private void downloadAndCacheFile(String fileId, CompletableFuture<File> future) {
         try {
             TransferInfo info = transferManager.initiateDownload(fileId, cacheDir.toString());

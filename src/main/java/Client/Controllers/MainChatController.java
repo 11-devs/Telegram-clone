@@ -10,6 +10,7 @@ import JSocket2.Protocol.Rpc.RpcResponse;
 import JSocket2.Protocol.StatusCode;
 import JSocket2.Protocol.Transfer.FileInfoModel;
 import JSocket2.Protocol.Transfer.IProgressListener;
+import JSocket2.Protocol.Transfer.TransferInfo;
 import Shared.Api.Models.ChatController.GetChatInfoOutputModel;
 import Shared.Api.Models.MediaController.CreateMediaInputModel;
 import Shared.Api.Models.MessageController.GetMessageOutputModel;
@@ -49,6 +50,7 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.awt.*;
+import java.io.IOException;
 import java.util.List;
 import java.io.File;
 import java.net.URL;
@@ -62,6 +64,7 @@ import java.util.ArrayList;
 import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
 import static JSocket2.Utils.FileUtil.getFileExtension;
@@ -362,6 +365,52 @@ public class MainChatController implements Initializable {
     /**
      * DTO class to mirror the server's GetMessageOutputModel for clean JSON parsing.
      */
+    private static class DocumentInfo {
+        private String fileId;
+        private String fileName;
+        private long fileSize;
+        private String fileExtension;
+        private String storedPath;
+        private String senderName;
+
+        /**
+         * Constructor for local file uploads.
+         */
+        public DocumentInfo(String fileName, long fileSize, String fileExtension, String storedPath) {
+            this.fileName = fileName;
+            this.fileSize = fileSize;
+            this.fileExtension = fileExtension;
+            this.storedPath = storedPath;
+        }
+
+        /**
+         * Constructor for downloaded files, created from server metadata.
+         */
+        public DocumentInfo(TransferInfo transferInfo) {
+            this.fileId = transferInfo.getFileId();
+            this.fileName = transferInfo.getFileName() + "." + transferInfo.getFileExtension();
+            this.fileSize = transferInfo.getFileSize();
+            this.fileExtension = transferInfo.getFileExtension();
+            // The final path is resolved by the download service upon completion.
+            // We can predict it for the 'open' action.
+            this.storedPath = new File(transferInfo.getDestinationPath(), this.fileName).getPath();
+        }
+
+        //<editor-fold desc="Getters and Setters">
+        public String getFileId() { return fileId; }
+        public void setFileId(String fileId) { this.fileId = fileId; }
+        public String getFileName() { return fileName; }
+        public void setFileName(String fileName) { this.fileName = fileName; }
+        public long getFileSize() { return fileSize; }
+        public void setFileSize(long fileSize) { this.fileSize = fileSize; }
+        public String getFileExtension() { return fileExtension; }
+        public void setFileExtension(String fileExtension) { this.fileExtension = fileExtension; }
+        public String getStoredPath() { return storedPath; }
+        public void setStoredPath(String storedPath) { this.storedPath = storedPath; }
+        public String getSenderName() { return senderName; }
+        public void setSenderName(String senderName) { this.senderName = senderName; }
+        //</editor-fold>
+    }
     private static class MessageDto {
         UUID messageId;
         UUID senderId;
@@ -804,7 +853,13 @@ public class MainChatController implements Initializable {
      *
      * @param user The UserViewModel to load messages for.
      */
-    private void loadMessages(UserViewModel user) {
+    /**
+     * Loads messages for the selected user, now with support for media messages.
+     *
+     * @param user The UserViewModel to load messages for.
+     */
+
+    public void loadMessages(UserViewModel user) {
         messagesContainer.getChildren().clear();
         if (user == null || user.getUserId() == null) {
             showEmptyChatState();
@@ -824,13 +879,29 @@ public class MainChatController implements Initializable {
                     }
 
                     for (GetMessageOutputModel msg : response.getPayload()) {
-
-
                         LocalDateTime timestamp = LocalDateTime.parse(msg.getTimestamp());
-                        if (msg.getTextContent() != null) {
-                            addMessageBubble(msg.getTextContent(), msg.getOutgoing(), timestamp.format(DateTimeFormatter.ofPattern("HH:mm")), "read", msg.getOutgoing() ? null : msg.getSenderName());
+                        String formattedTime = timestamp.format(DateTimeFormatter.ofPattern("HH:mm"));
+                        String senderName = msg.getOutgoing() ? null : msg.getSenderName();
+
+                        if (msg.getMessageType() == MessageType.TEXT && msg.getTextContent() != null) {
+                            addMessageBubble(msg.getTextContent(), msg.getOutgoing(), formattedTime, "read", senderName);
+                        } else if (msg.getMessageType() == MessageType.MEDIA && msg.getMediaId() != null) {
+                            final String fileId = msg.getFileId();
+                            // Asynchronously fetch file info to build the bubble without blocking the UI thread.
+                            fileDownloadService.getFileInfo(fileId).thenAcceptAsync(transferInfo -> {
+                                if (transferInfo != null) {
+                                    DocumentInfo docInfo = new DocumentInfo(transferInfo);
+                                    docInfo.setSenderName(senderName);
+                                    Platform.runLater(() -> addDocumentMessageBubble(docInfo, msg.getOutgoing(), formattedTime, "read"));
+                                } else {
+                                    System.err.println("Could not retrieve info for fileId: " + fileId);
+                                }
+                            }).exceptionally(ex -> {
+                                System.err.println("Failed to get TransferInfo for fileId: " + fileId);
+                                ex.printStackTrace();
+                                return null;
+                            });
                         }
-                        // TODO: Add logic for media messages here
                     }
                     scrollToBottom();
                 });
@@ -1427,36 +1498,54 @@ public class MainChatController implements Initializable {
      * Opens a document using the system's default application
      */
     private void openDocument(DocumentInfo docInfo) {
-        try {
-            File file = new File(docInfo.getStoredPath());
-            if (!file.exists()) {
-                showTemporaryNotification("File Not Found\nThe document file could not be found.\n");
-                return;
+        if (docInfo.getStoredPath() != null) {
+            File localFile = new File(docInfo.getStoredPath());
+            if (localFile.exists()) {
+                try {
+                    if (Desktop.isDesktopSupported()) {
+                        Desktop.getDesktop().open(localFile);
+                        System.out.println("Opening existing local document: " + docInfo.getFileName());
+                        return;
+                    }
+                } catch (IOException e) {
+                    System.err.println("Could not open local file, will try to download. Error: " + e.getMessage());
+                }
             }
-
-            // Check if Desktop is supported
-            if (!Desktop.isDesktopSupported()) {
-                showTemporaryNotification("Not Supported\nOpening files is not supported on this system.\n");
-                return;
-            }
-
-            Desktop desktop = Desktop.getDesktop();
-
-            // Check if the open action is supported
-            if (!desktop.isSupported(Desktop.Action.OPEN)) {
-                showTemporaryNotification("Not Supported\nOpening files is not supported on this system.\n");
-                return;
-            }
-
-            // Open the file with the system's default application
-            desktop.open(file);
-
-            System.out.println("Opening document: " + docInfo.getFileName());
-
-        } catch (Exception e) {
-            System.err.println("Error opening document: " + e.getMessage());
-            showTemporaryNotification("Open Error\nFailed to open the document: " + e.getMessage() + "\n");
         }
+
+        // If no local path or it fails, use the fileId to download/get from cache.
+        if (docInfo.getFileId() == null || docInfo.getFileId().isEmpty()) {
+            showTemporaryNotification("File Not Found\nCannot locate or download the file.");
+            return;
+        }
+
+        showTemporaryNotification("Opening " + docInfo.getFileName() + "...");
+
+        fileDownloadService.getFile(docInfo.getFileId()).thenAcceptAsync(file -> {
+            Platform.runLater(() -> {
+                try {
+                    if (file != null && file.exists()) {
+                        if (Desktop.isDesktopSupported()) {
+                            Desktop.getDesktop().open(file);
+                        } else {
+                            showTemporaryNotification("Not Supported\nOpening files is not supported on this system.");
+                        }
+                    } else {
+                        showTemporaryNotification("Download Error\nFile not found after download.");
+                    }
+                } catch (IOException e) {
+                    System.err.println("Error opening downloaded document: " + e.getMessage());
+                    showTemporaryNotification("Open Error\nCould not open the downloaded file.");
+                }
+            });
+        }).exceptionally(ex -> {
+            Platform.runLater(() -> {
+                System.err.println("Failed to download or open file: " + ex.getMessage());
+                ex.printStackTrace();
+                showTemporaryNotification("Download Failed\nCould not retrieve the file.");
+            });
+            return null;
+        });
     }
 
     /**
@@ -1471,16 +1560,37 @@ public class MainChatController implements Initializable {
         File saveLocation = fileChooser.showSaveDialog(currentStage);
 
         if (saveLocation != null) {
-            try {
-                File sourceFile = new File(docInfo.getStoredPath());
-                Files.copy(sourceFile.toPath(), saveLocation.toPath(), StandardCopyOption.REPLACE_EXISTING);
-
-                showTemporaryNotification("Document saved to " + saveLocation.getName());
-
-            } catch (Exception e) {
-                System.err.println("Error saving document: " + e.getMessage());
-                showTemporaryNotification("Save Error\nFailed to save the document: " + e.getMessage() + "\n");
+            CompletableFuture<File> sourceFileFuture;
+            // Case 1: File was uploaded by this client and path is known and valid.
+            if (docInfo.getStoredPath() != null && new File(docInfo.getStoredPath()).exists()) {
+                sourceFileFuture = CompletableFuture.completedFuture(new File(docInfo.getStoredPath()));
             }
+            // Case 2: File needs to be fetched from server/cache via its ID.
+            else if (docInfo.getFileId() != null) {
+                showTemporaryNotification("Downloading file to save...");
+                sourceFileFuture = fileDownloadService.getFile(docInfo.getFileId());
+            }
+            // Case 3: No way to locate the file.
+            else {
+                showTemporaryNotification("Save Error\nCould not locate the source file.");
+                return;
+            }
+
+            sourceFileFuture.thenAcceptAsync(sourceFile -> {
+                try {
+                    Files.copy(sourceFile.toPath(), saveLocation.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    Platform.runLater(() -> showTemporaryNotification("Document saved to " + saveLocation.getName()));
+                } catch (IOException e) {
+                    System.err.println("Error saving document: " + e.getMessage());
+                    Platform.runLater(() -> showTemporaryNotification("Save Error\nFailed to copy the file."));
+                }
+            }).exceptionally(ex -> {
+                Platform.runLater(() -> {
+                    System.err.println("Error getting source file for saving: " + ex.getMessage());
+                    showTemporaryNotification("Save Error\nCould not retrieve the file for saving.");
+                });
+                return null;
+            });
         }
     }
 

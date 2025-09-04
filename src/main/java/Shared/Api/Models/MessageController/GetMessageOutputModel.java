@@ -26,6 +26,16 @@ public class GetMessageOutputModel {
 
     private UUID mediaId;
 
+    public String getFileId() {
+        return fileId;
+    }
+
+    public void setFileId(String fileId) {
+        this.fileId = fileId;
+    }
+
+    private String fileId;
+
     //<editor-fold desc="Getters and Setters">
     public UUID getMessageId() {
         return messageId;

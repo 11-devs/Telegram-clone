@@ -54,6 +54,7 @@ public class MessageRpcController extends RpcControllerBase {
             Media media = ((MediaMessage) message).getMedia();
             if (media != null) {
                 output.setMediaId(media.getId());
+                output.setFileId(media.getFileId());
             }
         }
 
