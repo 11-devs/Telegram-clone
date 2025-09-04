@@ -4,6 +4,7 @@ import Shared.Models.MessageViewModel;
 import Shared.Models.UserType;
 import Shared.Models.UserViewModel;
 import Shared.Models.UserViewModelBuilder;
+import Shared.Utils.SidebarUtil;
 import Shared.Utils.TelegramCellUtils;
 import javafx.animation.*;
 import javafx.application.Platform;
@@ -22,6 +23,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Text;
+import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.net.URL;
@@ -1695,7 +1697,8 @@ public class MainChatController implements Initializable {
      */
     private void showSideBar() {
         if (sidebarController != null) {
-            sidebarController.toggleSidebar(true); // Show with Animation
+            Stage parentStage = (Stage) menuButton.getScene().getWindow();
+            SidebarUtil.showSidebarDialog(parentStage, "/Client/fxml/sidebarMenu.fxml", this);
         } else {
             System.out.println("SidebarController is not initialized!");
         }
