@@ -954,7 +954,7 @@ public class MainChatController implements Initializable {
                         file.length(),
                         getFileExtension(file)
                 );
-                RpcResponse<Object> createMediaResponse = rpcCaller.createMediaEntry(createMediaInput);
+                RpcResponse<UUID> createMediaResponse = rpcCaller.createMediaEntry(createMediaInput);
 
                 if (createMediaResponse.getStatusCode() != StatusCode.OK) {
                     System.err.println("Failed to create media entry on server: " + createMediaResponse.getMessage());
@@ -974,7 +974,7 @@ public class MainChatController implements Initializable {
                     SendMessageInputModel messageInput = new SendMessageInputModel();
                     messageInput.setChatId(UUID.fromString(currentSelectedUser.getUserId()));
                     messageInput.setMessageType(MessageType.MEDIA);
-                    messageInput.setMediaId(UUID.fromString(fileId));
+                    messageInput.setMediaId(createMediaResponse.getPayload());
 
                     Task<RpcResponse<SendMessageOutputModel>> sendMessageTask = chatService.sendMessage(messageInput);
                     sendMessageTask.setOnSucceeded(event -> {
@@ -1006,7 +1006,7 @@ public class MainChatController implements Initializable {
                 Platform.runLater(() -> showTemporaryNotification("Error starting upload."));
             }
         });
-    }
+        }
 
     // ============ MESSAGE HANDLING ============
 

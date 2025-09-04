@@ -1,6 +1,5 @@
 package Shared.Models.Media;
 
-import Shared.Models.Account.Account;
 import Shared.Models.BaseEntity;
 import jakarta.persistence.*;
 
@@ -13,7 +12,7 @@ public class Media extends BaseEntity {
     private MediaType type;
 
     @Column(nullable = false)
-    private String url;
+    private String fileId;
 
     private Long size; // in bytes
 
@@ -32,12 +31,12 @@ public class Media extends BaseEntity {
         this.type = type;
     }
 
-    public String getUrl() {
-        return url;
+    public String getFileId() {
+        return fileId;
     }
 
-    public void setUrl(String url) {
-        this.url = url;
+    public void setFileId(String fileId) {
+        this.fileId = fileId;
     }
 
     public Long getSize() {

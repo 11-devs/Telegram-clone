@@ -16,6 +16,7 @@ import Shared.Api.Models.AccountController.*;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 
 public class RpcCaller extends RpcCallerBase {
     private Gson gson = new Gson();
@@ -74,7 +75,7 @@ public class RpcCaller extends RpcCallerBase {
     public RpcResponse<SendMessageOutputModel> sendMessage(SendMessageInputModel model) throws IOException {
         return callRpcAndGetResponse("MessageRpcController", "sendMessage", SendMessageOutputModel.class, model);
     }
-    public RpcResponse<Object> createMediaEntry(CreateMediaInputModel model) throws IOException {
-        return callRpcAndGetResponse("MediaRpcController", "createMediaEntry", Object.class, model);
+    public RpcResponse<UUID> createMediaEntry(CreateMediaInputModel model) throws IOException {
+        return callRpcAndGetResponse("MediaRpcController", "createMediaEntry", UUID.class, model);
     }
 }

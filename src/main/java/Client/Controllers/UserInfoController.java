@@ -256,12 +256,14 @@ public class UserInfoController implements Initializable {
                                     selectedFile.length(),
                                     FileUtil.getFileExtension(selectedFile)
                             );
-                            RpcResponse<Object> createMediaResponse = rpcCaller.createMediaEntry(createMediaInput);
+                            RpcResponse<UUID> createMediaResponse = rpcCaller.createMediaEntry(createMediaInput);
 
                             if (createMediaResponse.getStatusCode() != StatusCode.OK) {
                                 System.err.println("Failed to create media entry for profile photo: " + createMediaResponse.getMessage());
                                 Platform.runLater(this::restoreUIOnFailure);
                                 return;
+                            }else{
+                                System.out.println("success create media id: " + fileId);
                             }
 
                             UploadTask uploadTask = new UploadTask(app.getFileTransferManager(), info, selectedFile, listener);
@@ -271,7 +273,7 @@ public class UserInfoController implements Initializable {
                                 Platform.runLater(() -> {
                                     try {
                                         photoPreview.setImage(originalImage);
-                                        profilePhotoId = fileId;
+                                        profilePhotoId = createMediaResponse.getPayload().toString();
                                         signUpButton.setDisable(false);
                                         restoreUIOnSuccess();
                                     } catch (Exception ex) {
