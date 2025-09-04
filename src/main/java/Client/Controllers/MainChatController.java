@@ -1,7 +1,6 @@
 package Client.Controllers;
 
 import Shared.Models.*;
-import Shared.Utils.DialogUtil;
 import Shared.Utils.SidebarUtil;
 import Shared.Utils.TelegramCellUtils;
 import javafx.animation.*;
@@ -246,38 +245,6 @@ public class MainChatController implements Initializable {
      * Button to toggle notifications in the right panel.
      */
     @FXML private Button notificationsToggle;
-    /**
-     * Button to show all media in the right panel.
-     */
-    @FXML private Button showAllMediaButton;
-    /**
-     * ToggleButton for the media tab in the right panel.
-     */
-    @FXML private ToggleButton mediaTab;
-    /**
-     * ToggleButton for the files tab in the right panel.
-     */
-    @FXML private ToggleButton filesTab;
-    /**
-     * ToggleButton for the links tab in the right panel.
-     */
-    @FXML private ToggleButton linksTab;
-    /**
-     * ToggleButton for the music tab in the right panel.
-     */
-    @FXML private ToggleButton musicTab;
-    /**
-     * ScrollPane for the media grid in the right panel.
-     */
-    @FXML private ScrollPane mediaScrollPane;
-    /**
-     * GridPane displaying media items in the right panel.
-     */
-    @FXML private GridPane mediaGrid;
-    /**
-     * VBox for the empty media state in the right panel.
-     */
-    @FXML private VBox emptyMediaState;
 
     // ============ DATA AND STATE ============
 
@@ -540,7 +507,7 @@ public class MainChatController implements Initializable {
         moreOptionsButton.setOnAction(e -> showMoreOptions());
 
         // Message input buttons
-        attachmentButton.setOnAction(e -> showAttachmentOptions());
+        attachmentButton.setOnAction(e -> attachDocument());
         emojiButton.setOnAction(e -> showEmojiPicker());
         sendButton.setOnAction(e -> handleSendAction());
 
@@ -555,13 +522,6 @@ public class MainChatController implements Initializable {
         profileVideoButton.setOnAction(e -> startVideoCall());
         profileSearchButton.setOnAction(e -> showSearchInChat());
         notificationsToggle.setOnAction(e -> toggleNotifications());
-        showAllMediaButton.setOnAction(e -> showAllMedia());
-
-        // Media tabs
-        mediaTab.setOnAction(e -> switchMediaFilter("media"));
-        filesTab.setOnAction(e -> switchMediaFilter("files"));
-        linksTab.setOnAction(e -> switchMediaFilter("links"));
-        musicTab.setOnAction(e -> switchMediaFilter("music"));
 
         // Scroll listener for messages
         messagesScrollPane.vvalueProperty().addListener((obs, oldVal, newVal) -> {
@@ -1713,9 +1673,6 @@ public class MainChatController implements Initializable {
         // Update notification status
         notificationStatusLabel.setText(user.isMuted() ? "Disabled" : "Enabled");
         updateNotificationToggle(!user.isMuted());
-
-        // Update media section
-        updateMediaSection(user);
     }
 
     /**
@@ -1736,140 +1693,6 @@ public class MainChatController implements Initializable {
         } else {
             loadDefaultProfileAvatar();
         }
-    }
-
-    // ============ MEDIA SECTION ============
-
-    /**
-     * Switches the media filter type and updates the UI.
-     *
-     * @param filterType The type of media to filter (e.g., "media", "files").
-     */
-    private void switchMediaFilter(String filterType) {
-        currentMediaFilter = filterType;
-
-        // Update tab selection
-        ToggleGroup mediaGroup = new ToggleGroup();
-        mediaTab.setToggleGroup(mediaGroup);
-        filesTab.setToggleGroup(mediaGroup);
-        linksTab.setToggleGroup(mediaGroup);
-        musicTab.setToggleGroup(mediaGroup);
-
-        switch (filterType) {
-            case "media" -> mediaTab.setSelected(true);
-            case "files" -> filesTab.setSelected(true);
-            case "links" -> linksTab.setSelected(true);
-            case "music" -> musicTab.setSelected(true);
-        }
-
-        updateMediaGrid(filterType);
-    }
-
-    /**
-     * Updates the media grid based on the current filter type.
-     *
-     * @param filterType The type of media to display.
-     */
-    private void updateMediaGrid(String filterType) {
-        if (mediaGrid == null) return;
-
-        mediaGrid.getChildren().clear();
-
-        // Simulate loading media items
-        // TODO: Implement server-side media loading.
-        boolean hasMedia = simulateMediaLoading(filterType);
-
-        if (hasMedia) {
-            emptyMediaState.setVisible(false);
-            mediaScrollPane.setVisible(true);
-        } else {
-            emptyMediaState.setVisible(true);
-            mediaScrollPane.setVisible(false);
-        }
-    }
-
-    /**
-     * Simulates loading media items based on the filter type.
-     * TODO: Get count from server for real data.
-     *
-     * @param filterType The type of media to simulate.
-     * @return True if media items were loaded, false otherwise.
-     */
-    private boolean simulateMediaLoading(String filterType) {
-        // Simulate different amounts of media for different types
-        int itemCount = switch (filterType) {
-            case "media" -> 8;
-            case "files" -> 3;
-            case "links" -> 5;
-            case "music" -> 2;
-            default -> 0;
-        };
-
-        for (int i = 0; i < itemCount; i++) {
-            StackPane mediaItem = createMediaItem(filterType, i);
-            mediaGrid.add(mediaItem, i % 3, i / 3);
-        }
-
-        return itemCount > 0;
-    }
-
-    /**
-     * Creates a media item StackPane with a placeholder image.
-     * TODO: Replace with real server logic for media items.
-     *
-     * @param type  The type of media (e.g., "media", "files").
-     * @param index The index of the media item.
-     * @return The constructed StackPane for the media item.
-     */
-    private StackPane createMediaItem(String type, int index) {
-        StackPane item = new StackPane();
-        item.setPrefSize(80, 80);
-        item.getStyleClass().add("media-item");
-
-        // Create placeholder content based on type
-        ImageView placeholder = new ImageView();
-        placeholder.setFitWidth(80);
-        placeholder.setFitHeight(80);
-        placeholder.setPreserveRatio(true);
-
-        try {
-            String imagePath = switch (type) {
-                case "media" -> "../images/photo-placeholder.png"; // TODO: Verify image path and load from server.
-                case "files" -> "../images/file-placeholder.png";
-                case "links" -> "../images/link-placeholder.png";
-                case "music" -> "../images/music-placeholder.png";
-                default -> "../images/default-placeholder.png";
-            };
-
-            Image image = new Image(Objects.requireNonNull(getClass().getResource(imagePath)).toExternalForm());
-            placeholder.setImage(image);
-        } catch (Exception e) {
-            // Create colored rectangle as fallback
-            Region coloredRect = new Region();
-            coloredRect.setPrefSize(80, 80);
-            coloredRect.getStyleClass().add("media-placeholder");
-            item.getChildren().add(coloredRect);
-            return item;
-        }
-
-        item.getChildren().add(placeholder);
-
-        // Add click handler
-        item.setOnMouseClicked(e -> openMediaItem(type, index));
-
-        return item;
-    }
-
-    /**
-     * Updates the media section in the right panel.
-     *
-     * @param user The UserViewModel to update the media for.
-     */
-    private void updateMediaSection(UserViewModel user) {
-        if (user == null) return;
-
-        // Update media grid based on current filter
-        updateMediaGrid(currentMediaFilter);
     }
 
     // ============ SCROLL MANAGEMENT ============
@@ -2133,31 +1956,6 @@ public class MainChatController implements Initializable {
         );
 
         menu.show(moreOptionsButton, moreOptionsButton.getLayoutX(), moreOptionsButton.getLayoutY() + moreOptionsButton.getHeight());
-    }
-
-    /**
-     * Shows a context menu with attachment options.
-     */
-    private void showAttachmentOptions() {
-        ContextMenu menu = new ContextMenu();
-
-        MenuItem photoItem = new MenuItem("Photo or Video");
-        photoItem.setOnAction(e -> attachPhoto());
-
-        MenuItem documentItem = new MenuItem("Document");
-        documentItem.setOnAction(e -> attachDocument());
-
-        MenuItem pollItem = new MenuItem("Poll");
-        pollItem.setOnAction(e -> createPoll());
-
-        MenuItem contactItem = new MenuItem("Contact");
-        contactItem.setOnAction(e -> attachContact());
-
-        MenuItem locationItem = new MenuItem("Location");
-        locationItem.setOnAction(e -> attachLocation());
-
-        menu.getItems().addAll(photoItem, documentItem, pollItem, contactItem, locationItem);
-        menu.show(attachmentButton, attachmentButton.getLayoutX(), attachmentButton.getLayoutY() - 200);
     }
 
     /**
@@ -2466,14 +2264,6 @@ public class MainChatController implements Initializable {
     private void openMediaItem(String type, int index) {
         System.out.println("Opening " + type + " item " + index);
         // TODO: Implement media viewer (UI: Design media viewer, Server: Fetch media content).
-    }
-
-    /**
-     * Shows all media in a full browser (placeholder).
-     */
-    private void showAllMedia() {
-        System.out.println("Showing all media");
-        // TODO: Implement full media browser (UI: Design media browser, Server: Fetch all media).
     }
 
     /**

@@ -9,12 +9,9 @@
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.layout.ColumnConstraints?>
-<?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
@@ -320,17 +317,6 @@
                                     </image>
                                 </ImageView>
                             </graphic>
-                            <contextMenu>
-                                <ContextMenu>
-                                    <items>
-                                        <MenuItem text="Photo or Video" />
-                                        <MenuItem text="Document" />
-                                        <MenuItem text="Poll" />
-                                        <MenuItem text="Contact" />
-                                        <MenuItem text="Location" />
-                                    </items>
-                                </ContextMenu>
-                            </contextMenu>
                         </Button>
 
                         <!-- Message Input Field Container -->
@@ -509,86 +495,22 @@
                             <Insets bottom="16.0" left="24.0" right="24.0" top="16.0" />
                         </padding>
                         <children>
-                            <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="setting-icon">
-                                <image>
-                                    <Image url="@../images/more-options-icon.png" />
-                                </image>
-                            </ImageView>
-                            <Label styleClass="setting-title" text="More" HBox.hgrow="ALWAYS" />
                             <ImageView fitHeight="16.0" fitWidth="16.0" styleClass="chevron-icon">
                                 <image>
                                     <Image url="@../images/chevron-right-icon.png" />
                                 </image>
                         <HBox.margin>
-                           <Insets top="4.0" />
+                           <Insets top="2.0" />
                         </HBox.margin>
                             </ImageView>
+                            <Label styleClass="setting-title" text="More" HBox.hgrow="ALWAYS" />
                         </children>
                     </HBox>
                 </children>
             </VBox>
 
             <!-- Media and Files Section -->
-            <VBox styleClass="media-files-section" VBox.vgrow="ALWAYS">
-                <children>
-                    <!-- Section Header -->
-                    <HBox alignment="CENTER_LEFT" spacing="0.0" styleClass="media-header">
-                        <padding>
-                            <Insets bottom="12.0" left="24.0" right="24.0" top="20.0" />
-                        </padding>
-                        <children>
-                            <Label styleClass="media-section-title" text="Media and Files" HBox.hgrow="ALWAYS" />
-                            <Button fx:id="showAllMediaButton" styleClass="show-all-button" text="Show All" />
-                        </children>
-                    </HBox>
-
-                    <!-- Media Categories -->
-                    <HBox spacing="0.0" styleClass="media-categories">
-                        <padding>
-                            <Insets bottom="12.0" left="24.0" right="24.0" top="8.0" />
-                        </padding>
-                        <children>
-                            <ToggleButton fx:id="mediaTab" selected="true" styleClass="media-tab" text="Media" />
-                            <ToggleButton fx:id="filesTab" styleClass="media-tab" text="Files" />
-                            <ToggleButton fx:id="linksTab" styleClass="media-tab" text="Links" />
-                            <ToggleButton fx:id="musicTab" styleClass="media-tab" text="Music" />
-                        </children>
-                    </HBox>
-
-                    <!-- Media Grid -->
-                    <ScrollPane fx:id="mediaScrollPane" fitToWidth="true" hbarPolicy="NEVER" styleClass="media-scroll-pane" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
-                        <content>
-                            <GridPane fx:id="mediaGrid" hgap="4.0" styleClass="media-grid" vgap="4.0">
-                                <padding>
-                                    <Insets bottom="24.0" left="24.0" right="24.0" top="8.0" />
-                                </padding>
-                                <columnConstraints>
-                                    <ColumnConstraints percentWidth="33.33" />
-                                    <ColumnConstraints percentWidth="33.33" />
-                                    <ColumnConstraints percentWidth="33.33" />
-                                </columnConstraints>
-                            </GridPane>
-                        </content>
-                    </ScrollPane>
-
-                    <!-- Empty Media State -->
-                    <VBox fx:id="emptyMediaState" alignment="CENTER" spacing="12.0" styleClass="empty-media-state" visible="false" VBox.vgrow="ALWAYS">
-                        <children>
-                            <ImageView fitHeight="48.0" fitWidth="48.0" opacity="0.3" styleClass="empty-media-icon">
-                                <image>
-                                    <Image url="@../images/no-media-icon.png" />
-                                </image>
-                            </ImageView>
-                            <VBox alignment="CENTER" spacing="4.0">
-                                <children>
-                                    <Label styleClass="empty-media-title" text="No media yet" />
-                                    <Label styleClass="empty-media-subtitle" text="Share photos and videos to see them here" textAlignment="CENTER" wrapText="true" />
-                                </children>
-                            </VBox>
-                        </children>
-                    </VBox>
-                </children>
-            </VBox>
+            <VBox styleClass="media-files-section" VBox.vgrow="ALWAYS" />
         </VBox>
     </right>
 
