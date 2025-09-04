@@ -2,6 +2,8 @@ package Client.Controllers;
 
 import Client.AppConnectionManager;
 import Client.RpcCaller;
+import Client.Services.ChatService;
+import Client.Services.FileDownloadService;
 import Client.Tasks.UploadTask;
 import JSocket2.Core.Client.ConnectionManager;
 import JSocket2.Protocol.Rpc.RpcResponse;
@@ -9,14 +11,12 @@ import JSocket2.Protocol.StatusCode;
 import JSocket2.Protocol.Transfer.FileInfoModel;
 import JSocket2.Protocol.Transfer.IProgressListener;
 import Shared.Api.Models.ChatController.GetChatInfoOutputModel;
-import Shared.Api.Models.ChatController.getChatsByUserInputModel;
-import Shared.Api.Models.MessageController.GetMessageByChatInputModel;
+import Shared.Api.Models.MediaController.CreateMediaInputModel;
 import Shared.Api.Models.MessageController.GetMessageOutputModel;
 import Shared.Api.Models.MessageController.SendMessageInputModel;
 import Shared.Api.Models.MessageController.SendMessageOutputModel;
 import Shared.Models.*;
 //import Shared.Utils.SidebarUtil;
-import Shared.Models.Chat.Chat;
 import Shared.Models.Message.MessageType;
 import Shared.Utils.TelegramCellUtils;
 import com.google.gson.Gson;
@@ -354,6 +354,8 @@ public class MainChatController implements Initializable {
      */
     private ConnectionManager connectionManager;
     private RpcCaller rpcCaller;
+    private ChatService chatService;
+    private FileDownloadService fileDownloadService;
     //private UserIdentity currentUser;
     private final Gson gson = new Gson();
 
@@ -378,6 +380,9 @@ public class MainChatController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         connectionManager = AppConnectionManager.getInstance().getConnectionManager();
         rpcCaller = AppConnectionManager.getInstance().getRpcCaller();
+        chatService = new ChatService(rpcCaller);
+        fileDownloadService = FileDownloadService.getInstance();
+        fileDownloadService.initialize();;
         //currentUser = connectionManager.getClient().getUserIdentity();
         initializeSidebarsSplitPane();
         initializeData();
@@ -486,12 +491,7 @@ public class MainChatController implements Initializable {
     }
     private void loadUserChatsFromServer() {
 
-        Task<RpcResponse<GetChatInfoOutputModel[]>> getChatsTask = new Task<>() {
-            @Override
-            protected RpcResponse<GetChatInfoOutputModel[]> call() throws Exception {
-                return rpcCaller.getChatsByUser();
-            }
-        };
+        Task<RpcResponse<GetChatInfoOutputModel[]>> getChatsTask = chatService.fetchUserChats();
 
         getChatsTask.setOnSucceeded(event -> {
             RpcResponse<GetChatInfoOutputModel[]> response = getChatsTask.getValue();
@@ -502,6 +502,7 @@ public class MainChatController implements Initializable {
                     // In a real application, the server should return a richer ViewModel/DTO.
                     UserViewModel uvm = new UserViewModelBuilder()
                             .userId(chat.getId().toString()) // Use userId field to store the Chat ID
+                            .avatarId(chat.getProfilePictureId())
                             .userName(chat.getTitle() != null ? chat.getTitle() : "Private Chat")
                             .lastMessage("...") // Placeholder for last message
                             .time(" ") // chat.getUpdatedAt() != null ? chat.getUpdatedAt().format(DateTimeFormatter.ofPattern("HH:mm")) :
@@ -522,61 +523,6 @@ public class MainChatController implements Initializable {
         new Thread(getChatsTask).start();
     }
     /**
-     * Loads sample chat data for demonstration purposes.
-     * This method will be replaced with real data fetching.
-     */
-    // TODO: Replace with real data
-    // TODO: This section will be deleted (This is an example)
-    private void loadSampleChats() {
-        UserViewModel user1 = new UserViewModelBuilder()
-                .userName("Alice Johnson")
-                .lastMessage("Hey there! How are you doing?")
-                .time("13:06")
-                .isOnline(true)
-                .notificationsNumber("3")
-                .isVerified(true)
-                .type(UserType.USER.name()).bio("Hi im Alice")
-                .phoneNumber("+981111111111")
-                .userId("Alice")
-                .build();
-
-        UserViewModel user2 = new UserViewModelBuilder()
-                .userName("Bob Smith")
-                .lastMessage("Let's meet tomorrow")
-                .time("13:00")
-                .isOnline(false)
-                .lastSeen("last seen 2 hours ago")
-                .type(UserType.USER.name()).bio("Hi im Bob")
-                .phoneNumber("+982222222222")
-                .userId("Bob")
-                .build();
-
-        UserViewModel group1 = new UserViewModelBuilder()
-                .userName("Development Team")
-                .lastMessage("John: Great work on the project!")
-                .time("12:20")
-                .notificationsNumber("12")
-                .isPinned(true)
-                .type(UserType.GROUP.name())
-                .bio("Hi we are Development Team")
-                .userId("Development Team")
-                .build();
-
-        UserViewModel channel1 = new UserViewModelBuilder()
-                .userName("Tech News")
-                .lastMessage("Latest updates in technology")
-                .time("11:15")
-                .isMuted(true)
-                .type(UserType.CHANNEL.name())
-                .bio("Hi we are Tech News")
-                .userId("Tech News")
-                .build();
-
-        allChatUsers.addAll(user1, user2, group1, channel1);
-        filteredChatUsers.setAll(allChatUsers);
-    }
-
-    /**
      * Sets up the chat list with a custom cell factory and selection listener.
      */
     private void setupChatList() {
@@ -589,11 +535,9 @@ public class MainChatController implements Initializable {
                 selectChat(newUser);
             }
         });
-
         // Initially show welcome state
         showWelcomeState();
     }
-
     /**
      * Sets up the message input area with auto-resize, key handling, and focus listeners.
      */
@@ -828,15 +772,30 @@ public class MainChatController implements Initializable {
      * @param user The UserViewModel to update the avatar for.
      */
     private void updateHeaderAvatar(UserViewModel user) {
-        if (user.getAvatarPath() != null && !user.getAvatarPath().isEmpty()) {
-            try {
-                Image avatar = new Image(user.getAvatarPath());
-                headerAvatarImage.setImage(avatar);
-            } catch (Exception e) {
-                loadDefaultHeaderAvatar();
-            }
-        } else {
-            loadDefaultHeaderAvatar();
+        loadDefaultHeaderAvatar(); // Set default avatar immediately
+
+        // Assuming UserViewModel has getAvatarId()
+        String avatarId = user.getAvatarId();
+
+        if (avatarId != null && !avatarId.isEmpty()) {
+            fileDownloadService.getFile(avatarId).thenAccept(file -> {
+                Platform.runLater(() -> {
+                    // Check if the current user is still the one we initiated this download for
+                    if (currentSelectedUser != null && avatarId.equals(currentSelectedUser.getAvatarId())) {
+                        try {
+                            Image avatar = new Image(file.toURI().toString());
+                            headerAvatarImage.setImage(avatar);
+                        } catch (Exception e) {
+                            System.err.println("Failed to load downloaded avatar: " + e.getMessage());
+                            loadDefaultHeaderAvatar(); // Fallback to default on error
+                        }
+                    }
+                });
+            }).exceptionally(e -> {
+                System.err.println("Failed to download avatar " + avatarId + ": " + e.getMessage());
+                // The default avatar is already showing, so no UI action needed on failure.
+                return null;
+            });
         }
     }
 
@@ -852,14 +811,7 @@ public class MainChatController implements Initializable {
             return;
         }
 
-        Task<RpcResponse<GetMessageOutputModel[]>> getMessagesTask = new Task<>() {
-            @Override
-            protected RpcResponse<GetMessageOutputModel[]> call() throws Exception {
-                GetMessageByChatInputModel input = new GetMessageByChatInputModel();
-                input.setChatId(UUID.fromString(user.getUserId()));
-                return rpcCaller.getMessagesByChat(input);
-            }
-        };
+        Task<RpcResponse<GetMessageOutputModel[]>> getMessagesTask = chatService.fetchMessagesForChat(UUID.fromString(user.getUserId()));
 
         getMessagesTask.setOnSucceeded(event -> {
             RpcResponse<GetMessageOutputModel[]> response = getMessagesTask.getValue();
@@ -919,12 +871,7 @@ public class MainChatController implements Initializable {
         input.setTextContent(text);
         input.setMessageType(MessageType.TEXT);
 
-        Task<RpcResponse<SendMessageOutputModel>> sendMessageTask = new Task<>() {
-            @Override
-            protected RpcResponse<SendMessageOutputModel> call() throws Exception {
-                return rpcCaller.sendMessage(input);
-            }
-        };
+        Task<RpcResponse<SendMessageOutputModel>> sendMessageTask = chatService.sendMessage(input);
 
         sendMessageTask.setOnSucceeded(event -> {
             RpcResponse<SendMessageOutputModel> response = sendMessageTask.getValue();
@@ -989,7 +936,7 @@ public class MainChatController implements Initializable {
     private void uploadFileAndSendMessage(File file, DocumentInfo docInfo) {
         IProgressListener listener = (transferred, total) -> {
             double progress = (total > 0) ? ((double) transferred / total) * 100 : 0;
-            System.out.printf("Upload Progress: %.2f%%\n", progress);
+            System.out.printf("Upload Progress: %.2f%%\\n", progress);
             // TODO: Update UI with progress indicator on the message bubble
         };
 
@@ -997,9 +944,25 @@ public class MainChatController implements Initializable {
         ExecutorService backgroundExecutor = app.getBackgroundExecutor();
         backgroundExecutor.submit(() -> {
             try {
+                // Step 1: Initiate upload to get FileId. This is a custom protocol message, not RPC.
                 FileInfoModel info = app.getFileTransferManager().initiateUpload(file);
                 String fileId = info.FileId;
 
+                // Step 2: Create the Media DB entry via RPC.
+                CreateMediaInputModel createMediaInput = new CreateMediaInputModel(
+                        UUID.fromString(fileId),
+                        file.length(),
+                        getFileExtension(file)
+                );
+                RpcResponse<Object> createMediaResponse = rpcCaller.createMediaEntry(createMediaInput);
+
+                if (createMediaResponse.getStatusCode() != StatusCode.OK) {
+                    System.err.println("Failed to create media entry on server: " + createMediaResponse.getMessage());
+                    Platform.runLater(() -> showTemporaryNotification("Error preparing upload."));
+                    return; // Abort upload
+                }
+
+                // Step 3: Start the actual upload task
                 UploadTask uploadTask = new UploadTask(app.getFileTransferManager(), info, file, listener);
                 app.registerTask(fileId, uploadTask);
 
@@ -1007,17 +970,13 @@ public class MainChatController implements Initializable {
                     app.unregisterTask(fileId);
                     System.out.println("Upload successful. Media ID: " + fileId);
 
+                    // Step 4: Send the message pointing to the Media ID
                     SendMessageInputModel messageInput = new SendMessageInputModel();
                     messageInput.setChatId(UUID.fromString(currentSelectedUser.getUserId()));
                     messageInput.setMessageType(MessageType.MEDIA);
                     messageInput.setMediaId(UUID.fromString(fileId));
 
-                    Task<RpcResponse<SendMessageOutputModel>> sendMessageTask = new Task<>() {
-                        @Override
-                        protected RpcResponse<SendMessageOutputModel> call() throws Exception {
-                            return rpcCaller.sendMessage(messageInput);
-                        }
-                    };
+                    Task<RpcResponse<SendMessageOutputModel>> sendMessageTask = chatService.sendMessage(messageInput);
                     sendMessageTask.setOnSucceeded(event -> {
                         if (sendMessageTask.getValue().getStatusCode() == StatusCode.OK) {
                             System.out.println("Media message sent successfully.");
@@ -1042,7 +1001,8 @@ public class MainChatController implements Initializable {
                 backgroundExecutor.submit(uploadTask);
 
             } catch (Exception ex) {
-                System.err.println("Error initiating file upload: " + ex.getMessage());
+                System.err.println("Error initiating file upload or creating media entry: " + ex.getMessage());
+                ex.printStackTrace();
                 Platform.runLater(() -> showTemporaryNotification("Error starting upload."));
             }
         });
@@ -1880,16 +1840,29 @@ public class MainChatController implements Initializable {
      */
     private void updateProfileAvatar(UserViewModel user) {
         if (profileAvatarImage == null) return;
+        loadDefaultProfileAvatar(); // Set default avatar immediately
 
-        if (user.getAvatarPath() != null && !user.getAvatarPath().isEmpty()) {
-            try {
-                Image avatar = new Image(user.getAvatarPath());
-                profileAvatarImage.setImage(avatar);
-            } catch (Exception e) {
-                loadDefaultProfileAvatar();
-            }
-        } else {
-            loadDefaultProfileAvatar();
+        // Assuming UserViewModel has getAvatarId()
+        String avatarId = user.getAvatarId();
+
+        if (avatarId != null && !avatarId.isEmpty()) {
+            fileDownloadService.getFile(avatarId).thenAccept(file -> {
+                Platform.runLater(() -> {
+                    // Check if the right panel is still visible and for the same user
+                    if (isRightPanelVisible && currentSelectedUser != null && avatarId.equals(currentSelectedUser.getAvatarId())) {
+                        try {
+                            Image avatar = new Image(file.toURI().toString());
+                            profileAvatarImage.setImage(avatar);
+                        } catch (Exception e) {
+                            System.err.println("Failed to load downloaded profile avatar: " + e.getMessage());
+                            loadDefaultProfileAvatar();
+                        }
+                    }
+                });
+            }).exceptionally(e -> {
+                System.err.println("Failed to download profile avatar " + avatarId + ": " + e.getMessage());
+                return null;
+            });
         }
     }
 

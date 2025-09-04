@@ -5,6 +5,7 @@ import JSocket2.Protocol.Rpc.RpcCallerBase;
 import JSocket2.Protocol.Rpc.RpcResponse;
 import Shared.Api.Models.ChatController.GetChatInfoOutputModel;
 import Shared.Api.Models.ChatController.getChatsByUserInputModel;
+import Shared.Api.Models.MediaController.CreateMediaInputModel;
 import Shared.Api.Models.MessageController.GetMessageByChatInputModel;
 import Shared.Api.Models.MessageController.GetMessageOutputModel;
 import Shared.Api.Models.MessageController.SendMessageInputModel;
@@ -72,5 +73,8 @@ public class RpcCaller extends RpcCallerBase {
 
     public RpcResponse<SendMessageOutputModel> sendMessage(SendMessageInputModel model) throws IOException {
         return callRpcAndGetResponse("MessageRpcController", "sendMessage", SendMessageOutputModel.class, model);
+    }
+    public RpcResponse<Object> createMediaEntry(CreateMediaInputModel model) throws IOException {
+        return callRpcAndGetResponse("MediaRpcController", "createMediaEntry", Object.class, model);
     }
 }

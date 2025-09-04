@@ -23,10 +23,6 @@ public class Media extends BaseEntity {
 
     private String thumbnailUrl;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "uploaded_by_account_id", nullable = false)
-    private Account uploadedBy;
-
     // Getters and setters
     public MediaType getType() {
         return type;
@@ -76,11 +72,4 @@ public class Media extends BaseEntity {
         this.thumbnailUrl = thumbnailUrl;
     }
 
-    public Account getUploadedBy() {
-        return uploadedBy;
-    }
-
-    public void setUploadedBy(Account uploadedBy) {
-        this.uploadedBy = uploadedBy;
-    }
 }

@@ -23,8 +23,8 @@ public class UserViewModelBuilder {
         return this;
     }
 
-    public UserViewModelBuilder avatarPath(String path) {
-        user.setAvatarPath(path);
+    public UserViewModelBuilder avatarId(String id) {
+        user.setAvatarId(id);
         return this;
     }
 

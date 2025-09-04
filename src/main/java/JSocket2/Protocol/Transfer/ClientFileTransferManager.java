@@ -17,6 +17,7 @@ import com.google.gson.JsonSyntaxException;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -115,6 +116,25 @@ public class ClientFileTransferManager extends FileTransferManager{
         );
         return info;
     }
+    public TransferInfo initiateDownload(String fileId, String destinationPath) throws IOException {
+        if (TransferFiles.canLoad(fileId)) {
+            try {
+                TransferFiles tf = TransferFiles.Load(fileId);
+                if (tf != null) {
+                    activeTransfers.put(fileId, tf);
+                    return tf.getinfo();
+                }
+            } catch (Exception e) {
+                System.err.println("Could not resume download for " + fileId + ", starting fresh. " + e.getMessage());
+                // Fall through to start a new download
+            }
+        }
+        // If not resumable or failed to resume, start a new download request.
+        String systemTempDir = System.getProperty("java.io.tmpdir");
+        String tempPath = Paths.get(systemTempDir, "JTelegram").toString();
+
+        return sendDownloadRequest(UUID.randomUUID(), fileId, destinationPath, tempPath);
+    }
     public TransferInfo initiateDownload(String fileId) throws IOException {
         sendDownloadRequest(UUID.randomUUID(),fileId);
         String basePath = "src/files/temp";
@@ -140,6 +160,40 @@ public class ClientFileTransferManager extends FileTransferManager{
         }
         return null;
     }
+    private TransferInfo sendDownloadRequest(UUID requestId, String fileId, String destinationPath, String tempPath) throws IOException {
+        DownloadRequestMetadata metadata = new DownloadRequestMetadata(fileId);
+        byte[] metadataBytes = gson.toJson(metadata).getBytes(StandardCharsets.UTF_8);
+
+        Message request = new Message(
+                MessageHeader.BuildDownloadRequestHeader(requestId, true, metadataBytes.length, 0),
+                metadataBytes,
+                new byte[0]
+        );
+
+        CompletableFuture<Message> futureResponse = new CompletableFuture<>();
+        pendingRequests.put(requestId, futureResponse);
+        handler.write(request);
+
+        Message response;
+        try {
+            response = futureResponse.join();
+        } finally {
+            pendingRequests.remove(requestId);
+        }
+
+        RpcResponseMetadata metaObj = gson.fromJson(
+                new String(response.getMetadata(), StandardCharsets.UTF_8),
+                RpcResponseMetadata.class
+        );
+        DownloadFileInfoModel info = gson.fromJson(
+                new String(response.getPayload(), StandardCharsets.UTF_8),
+                DownloadFileInfoModel.class
+        );
+        int totalChunksCount = (int) Math.ceil((double) info.getFileLength() / 65536);
+        createTransfer(fileId,info.getFileName(),info.getFileExtension(),destinationPath,tempPath,totalChunksCount,info.getFileLength());
+        return activeTransfers.get(fileId).getinfo();
+    }
+
     private void sendDownloadRequest(UUID requestId, String fileId) throws IOException {
         DownloadRequestMetadata metadata = new DownloadRequestMetadata(fileId);
         byte[] metadataBytes = gson.toJson(metadata).getBytes(StandardCharsets.UTF_8);

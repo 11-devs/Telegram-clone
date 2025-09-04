@@ -64,7 +64,9 @@ public class GenericDAO<T> {
             delete(entity);
         }
     }
-
+    public void save(T obj) {
+        executeTransaction(em -> em.merge(obj));
+    }
     public T findByField(String fieldName, Object value) {
         String jpql = "SELECT e FROM " + type.getSimpleName() + " e WHERE e." + fieldName + " = :value";
         TypedQuery<T> query = entityManager.createQuery(jpql, type);

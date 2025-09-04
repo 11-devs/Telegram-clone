@@ -312,7 +312,7 @@ public class UserCustomCellController {
     private void updateAvatar() {
         if (avatarImage == null) return;
 
-        String avatarPath = currentUser.getAvatarPath();
+        String avatarPath = currentUser.getAvatarId();
         if (avatarPath != null && !avatarPath.isEmpty()) {
             try {
                 avatarImage.setImage(new Image(avatarPath));

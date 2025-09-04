@@ -9,10 +9,12 @@ import JSocket2.Protocol.Rpc.RpcResponse;
 import JSocket2.Protocol.StatusCode;
 import JSocket2.Protocol.Transfer.FileInfoModel;
 import JSocket2.Protocol.Transfer.IProgressListener;
+import JSocket2.Utils.FileUtil;
 import Shared.Api.Models.AccountController.BasicRegisterInputModel;
 import Shared.Api.Models.AccountController.BasicRegisterOutputModel;
 import Shared.Api.Models.AccountController.VerifyCodeInputModel;
 import Shared.Api.Models.AccountController.VerifyCodeOutputModel;
+import Shared.Api.Models.MediaController.CreateMediaInputModel;
 import Shared.Utils.DeviceUtil;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -35,6 +37,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 
 import static Shared.Utils.SceneUtil.changeSceneWithSameSize;
@@ -248,6 +251,18 @@ public class UserInfoController implements Initializable {
                         try {
                             FileInfoModel info = app.getFileTransferManager().initiateUpload(selectedFile);
                             String fileId = info.FileId;
+                            CreateMediaInputModel createMediaInput = new CreateMediaInputModel(
+                                    UUID.fromString(fileId),
+                                    selectedFile.length(),
+                                    FileUtil.getFileExtension(selectedFile)
+                            );
+                            RpcResponse<Object> createMediaResponse = rpcCaller.createMediaEntry(createMediaInput);
+
+                            if (createMediaResponse.getStatusCode() != StatusCode.OK) {
+                                System.err.println("Failed to create media entry for profile photo: " + createMediaResponse.getMessage());
+                                Platform.runLater(this::restoreUIOnFailure);
+                                return;
+                            }
 
                             UploadTask uploadTask = new UploadTask(app.getFileTransferManager(), info, selectedFile, listener);
                             app.registerTask(fileId, uploadTask);
