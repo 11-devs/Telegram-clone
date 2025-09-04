@@ -2,15 +2,17 @@ package Shared.Api.Models.MessageController;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
+import java.time.format.DateTimeFormatter; // Import for formatting
 
 public class SendMessageOutputModel {
     private UUID messageId;
-    private LocalDateTime timestamp;
+    private String timestamp; // Changed from LocalDateTime to String
     private String status;
 
     public SendMessageOutputModel(UUID messageId, LocalDateTime timestamp, String status) {
         this.messageId = messageId;
-        this.timestamp = timestamp;
+        // Convert LocalDateTime to String using ISO_LOCAL_DATE_TIME format
+        this.timestamp = timestamp != null ? timestamp.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) : null;
         this.status = status;
     }
 
@@ -22,11 +24,11 @@ public class SendMessageOutputModel {
         this.messageId = messageId;
     }
 
-    public LocalDateTime getTimestamp() {
+    public String getTimestamp() { // Changed getter return type
         return timestamp;
     }
 
-    public void setTimestamp(LocalDateTime timestamp) {
+    public void setTimestamp(String timestamp) { // Changed setter parameter type
         this.timestamp = timestamp;
     }
 

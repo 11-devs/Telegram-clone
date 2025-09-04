@@ -3,7 +3,7 @@ package Server;
 import JSocket2.Core.Server.ServerApplication;
 import JSocket2.Core.Server.ServerApplicationBuilder;
 import JSocket2.Cryptography.RsaKeyManager;
-import Server.Controllers.AccountRpcController;
+import Server.Controllers.*;
 import Shared.Database.Database;
 import Shared.Models.Account.Account;
 import jakarta.persistence.EntityManager;
@@ -18,6 +18,10 @@ public class Server {
         builder.getServices().AddSingletonWithInstance(EntityManager.class,database.getEntityManager());
         builder.getServices().AddSingleton(DaoManager.class);
         builder.addController(AccountRpcController.class);
+        builder.addController(MessageRpcController.class);
+        builder.addController(ChatRpcController.class);
+        builder.addController(ContactRpcController.class);
+        builder.addController(ViewRpcController.class);
         ServerApplication app = builder.build();
         app.Run();
     }

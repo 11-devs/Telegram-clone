@@ -1,12 +1,30 @@
 package Client.Controllers;
 
+import Client.AppConnectionManager;
+import Client.RpcCaller;
+import Client.Tasks.UploadTask;
+import JSocket2.Core.Client.ConnectionManager;
+import JSocket2.Protocol.Rpc.RpcResponse;
+import JSocket2.Protocol.StatusCode;
+import JSocket2.Protocol.Transfer.FileInfoModel;
+import JSocket2.Protocol.Transfer.IProgressListener;
+import Shared.Api.Models.ChatController.GetChatInfoOutputModel;
+import Shared.Api.Models.ChatController.getChatsByUserInputModel;
+import Shared.Api.Models.MessageController.GetMessageByChatInputModel;
+import Shared.Api.Models.MessageController.GetMessageOutputModel;
+import Shared.Api.Models.MessageController.SendMessageInputModel;
+import Shared.Api.Models.MessageController.SendMessageOutputModel;
 import Shared.Models.*;
 //import Shared.Utils.SidebarUtil;
+import Shared.Models.Chat.Chat;
+import Shared.Models.Message.MessageType;
 import Shared.Utils.TelegramCellUtils;
+import com.google.gson.Gson;
 import javafx.animation.*;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
@@ -31,15 +49,20 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.awt.*;
+import java.util.List;
 import java.io.File;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.ResourceBundle;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 
 import static JSocket2.Utils.FileUtil.getFileExtension;
 import static Shared.Utils.DialogUtil.showNotificationDialog;
@@ -329,8 +352,33 @@ public class MainChatController implements Initializable {
      * @param location  The location used to resolve relative paths for the root object, or null if unknown.
      * @param resources The resources used to localize the root object, or null if not localized.
      */
+    private ConnectionManager connectionManager;
+    private RpcCaller rpcCaller;
+    //private UserIdentity currentUser;
+    private final Gson gson = new Gson();
+
+    /**
+     * DTO class to mirror the server's GetMessageOutputModel for clean JSON parsing.
+     */
+    private static class MessageDto {
+        UUID messageId;
+        UUID senderId;
+        String senderName;
+        UUID chatId;
+        String timestamp;
+        boolean isEdited;
+        boolean isOutgoing;
+        MessageType messageType;
+        String textContent;
+        UUID mediaId;
+    }
+
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        connectionManager = AppConnectionManager.getInstance().getConnectionManager();
+        rpcCaller = AppConnectionManager.getInstance().getRpcCaller();
+        //currentUser = connectionManager.getClient().getUserIdentity();
         initializeSidebarsSplitPane();
         initializeData();
         setupChatList();
@@ -340,7 +388,56 @@ public class MainChatController implements Initializable {
         // TODO: Implement keyboard shortcut setup for enhanced navigation.
         loadInitialState();
     }
+// Add these two new methods anywhere inside the MainChatController class.
 
+    /**
+     * Updates the status and timestamp of a specific message bubble.
+     *
+     * @param messageNode The HBox container of the message to update.
+     * @param status      The new status ("sending", "delivered", "read", "failed").
+     * @param time        The new time string. If null, time is not updated.
+     */
+    private void updateMessageStatus(HBox messageNode, String status, String time) {
+        if (messageNode == null) return;
+
+        // The VBox bubble is the first (and only) child for outgoing messages
+        if (messageNode.getChildren().isEmpty() || !(messageNode.getChildren().getFirst() instanceof VBox bubble)) {
+            return;
+        }
+        // The HBox timeContainer is the last child of the bubble
+        if (bubble.getChildren().isEmpty() || !(bubble.getChildren().getLast() instanceof HBox timeContainer)) {
+            return;
+        }
+
+        // Update time if provided
+        if (time != null && !timeContainer.getChildren().isEmpty() && timeContainer.getChildren().getFirst() instanceof Label timeLabel) {
+            timeLabel.setText(time);
+        }
+
+        // Find the status label
+        Label statusLabel = null;
+        for (var node : timeContainer.getChildren()) {
+            if (node.getStyleClass().contains("message-status")) {
+                statusLabel = (Label) node;
+                break;
+            }
+        }
+
+        if (statusLabel != null) {
+            statusLabel.setText(getStatusIcon(status));
+            statusLabel.getStyleClass().removeAll("sending", "sent", "delivered", "read", "failed");
+            statusLabel.getStyleClass().add(status);
+        }
+    }
+
+    /**
+     * Refreshes the chat list to reflect the latest message.
+     * A future enhancement could be to move the chat to the top of the list.
+     * @param user The UserViewModel of the chat that was updated.
+     */
+    private void reorderAndRefreshChatList(UserViewModel user) {
+        refreshChatList();
+    }
     // ============ INITIALIZATION METHODS ============
 
     /**
@@ -384,10 +481,46 @@ public class MainChatController implements Initializable {
         currentMessages = FXCollections.observableArrayList();
 
         // Load sample data for demonstration
-        loadSampleChats();
+        loadUserChatsFromServer();
         // TODO: Implement fetching data from the server or database.
     }
+    private void loadUserChatsFromServer() {
 
+        Task<RpcResponse<GetChatInfoOutputModel[]>> getChatsTask = new Task<>() {
+            @Override
+            protected RpcResponse<GetChatInfoOutputModel[]> call() throws Exception {
+                return rpcCaller.getChatsByUser();
+            }
+        };
+
+        getChatsTask.setOnSucceeded(event -> {
+            RpcResponse<GetChatInfoOutputModel[]> response = getChatsTask.getValue();
+            if (response.getStatusCode() == StatusCode.OK && response.getPayload() != null) {
+                List<UserViewModel> userViewModels = new ArrayList<>();
+                for (GetChatInfoOutputModel chat : response.getPayload()) {
+                    // NOTE: This mapping is simplified due to server API limitations (no last message/sender info).
+                    // In a real application, the server should return a richer ViewModel/DTO.
+                    UserViewModel uvm = new UserViewModelBuilder()
+                            .userId(chat.getId().toString()) // Use userId field to store the Chat ID
+                            .userName(chat.getTitle() != null ? chat.getTitle() : "Private Chat")
+                            .lastMessage("...") // Placeholder for last message
+                            .time(" ") // chat.getUpdatedAt() != null ? chat.getUpdatedAt().format(DateTimeFormatter.ofPattern("HH:mm")) :
+                            .type(chat.getType())
+                            .build();
+                    userViewModels.add(uvm);
+                }
+                Platform.runLater(() -> {
+                    allChatUsers.setAll(userViewModels);
+                    filteredChatUsers.setAll(allChatUsers);
+                });
+            } else {
+                System.err.println("Failed to load chats: " + response.getMessage());
+            }
+        });
+
+        getChatsTask.setOnFailed(event -> getChatsTask.getException().printStackTrace());
+        new Thread(getChatsTask).start();
+    }
     /**
      * Loads sample chat data for demonstration purposes.
      * This method will be replaced with real data fetching.
@@ -714,66 +847,205 @@ public class MainChatController implements Initializable {
      */
     private void loadMessages(UserViewModel user) {
         messagesContainer.getChildren().clear();
-
-        if (user.getType() == UserType.USER) {
-            loadUserMessages(user);
-        } else if (user.getType() == UserType.GROUP || user.getType() == UserType.SUPERGROUP) {
-            loadGroupMessages(user);
-        } else if (user.getType() == UserType.CHANNEL) {
-            loadChannelMessages(user);
+        if (user == null || user.getUserId() == null) {
+            showEmptyChatState();
+            return;
         }
 
-        // Scroll to bottom after loading
-        Platform.runLater(this::scrollToBottom);
+        Task<RpcResponse<GetMessageOutputModel[]>> getMessagesTask = new Task<>() {
+            @Override
+            protected RpcResponse<GetMessageOutputModel[]> call() throws Exception {
+                GetMessageByChatInputModel input = new GetMessageByChatInputModel();
+                input.setChatId(UUID.fromString(user.getUserId()));
+                return rpcCaller.getMessagesByChat(input);
+            }
+        };
+
+        getMessagesTask.setOnSucceeded(event -> {
+            RpcResponse<GetMessageOutputModel[]> response = getMessagesTask.getValue();
+            if (response.getStatusCode() == StatusCode.OK && response.getPayload() != null) {
+                Platform.runLater(() -> {
+                    messagesContainer.getChildren().clear();
+                    if (response.getPayload().length == 0) {
+                        showEmptyChatState();
+                        return;
+                    }
+
+                    for (GetMessageOutputModel msg : response.getPayload()) {
+
+
+                        LocalDateTime timestamp = LocalDateTime.parse(msg.getTimestamp());
+                        if (msg.getTextContent() != null) {
+                            addMessageBubble(msg.getTextContent(), msg.getOutgoing(), timestamp.format(DateTimeFormatter.ofPattern("HH:mm")), "read", msg.getOutgoing() ? null : msg.getSenderName());
+                        }
+                        // TODO: Add logic for media messages here
+                    }
+                    scrollToBottom();
+                });
+            } else {
+                System.err.println("Failed to load messages: " + response.getMessage());
+                Platform.runLater(this::showEmptyChatState);
+            }
+        });
+
+        getMessagesTask.setOnFailed(event -> {
+            getMessagesTask.getException().printStackTrace();
+            Platform.runLater(this::showEmptyChatState);
+        });
+
+        new Thread(getMessagesTask).start();
     }
 
-    /**
-     * Loads sample user messages for demonstration.
-     * TODO: Replace with real data from the server.
-     * TODO: This section will be deleted (This is an example).
-     *
-     * @param user The UserViewModel for the user chat.
-     */
-    private void loadUserMessages(UserViewModel user) {
-        // Sample private chat messages
-        addMessageBubble("Hey! How's your day going?", false, "10:30", "read", user.getUserName());
-        addMessageBubble("Pretty good! Just finished a big project at work 🎉", true, "10:32", "read", null);
-        addMessageBubble("That's awesome! What was the project about?", false, "10:33", "read", user.getUserName());
-        addMessageBubble("It was a new mobile app for our company. Took 3 months to complete!", true, "10:35", "delivered", null);
+    private void sendMessage() {
+        String text = messageInputField.getText().trim();
+        if (text.isEmpty() || currentSelectedUser == null) return;
 
-        if (user.hasUnreadMessages()) {
-            addMessageBubble("Congratulations! 🎊 Would love to hear more about it", false, getCurrentTime(), "delivered", user.getUserName());
+        String currentTime = getCurrentTime();
+
+        // Optimistically add message to UI
+        HBox messageNode = addMessageBubble(text, true, currentTime, "sending", null);
+        scrollToBottom();
+
+        currentSelectedUser.setLastMessage(text);
+        currentSelectedUser.setTime(currentTime);
+        refreshChatList();
+
+        messageInputField.clear();
+        updateSendButtonState();
+
+        // Send message to the server in a background task
+        SendMessageInputModel input = new SendMessageInputModel();
+        input.setChatId(UUID.fromString(currentSelectedUser.getUserId())); // This is the chat ID
+        input.setTextContent(text);
+        input.setMessageType(MessageType.TEXT);
+
+        Task<RpcResponse<SendMessageOutputModel>> sendMessageTask = new Task<>() {
+            @Override
+            protected RpcResponse<SendMessageOutputModel> call() throws Exception {
+                return rpcCaller.sendMessage(input);
+            }
+        };
+
+        sendMessageTask.setOnSucceeded(event -> {
+            RpcResponse<SendMessageOutputModel> response = sendMessageTask.getValue();
+            if (response.getStatusCode() == StatusCode.OK) {
+                System.out.println("Message sent successfully. ID: " + response.getPayload().getMessageId());
+                Platform.runLater(() -> updateLastMessageStatus("delivered")); // Simulate delivery confirmation
+                LocalDateTime serverTimestamp = LocalDateTime.parse(response.getPayload().getTimestamp());
+                String formattedTime = serverTimestamp.format(DateTimeFormatter.ofPattern("HH:mm"));
+                Platform.runLater(() -> {
+                updateMessageStatus(messageNode, "delivered", formattedTime);
+                currentSelectedUser.setLastMessage(text);
+                currentSelectedUser.setTime(formattedTime);
+                reorderAndRefreshChatList(currentSelectedUser);
+            });
+            } else {
+                System.err.println("Failed to send message: " + response.getMessage());
+                Platform.runLater(() -> showTemporaryNotification("Failed to send message."));
+                System.err.println("Failed to send message: " + response.getMessage());
+                Platform.runLater(() -> {
+                updateMessageStatus(messageNode, "failed", null);
+                showTemporaryNotification("Failed to send message.");});
+            }
+        });
+
+        sendMessageTask.setOnFailed(event -> {
+            sendMessageTask.getException().printStackTrace();
+            Platform.runLater(() -> {
+                updateMessageStatus(messageNode, "failed", null);
+                showTemporaryNotification("Error sending message.");
+                });
+        });
+
+        new Thread(sendMessageTask).start();
+        Platform.runLater(() -> messageInputField.requestFocus());
+    }
+
+    private void processDocumentAttachment(File file) {
+        try {
+            DocumentInfo docInfo = new DocumentInfo(
+                    file.getName(),
+                    file.length(),
+                    getFileExtension(file),
+                    file.getAbsolutePath()
+            );
+
+            // TODO: A more robust path management is needed
+            String documentsDir = "Client/documents/";
+            ensureDataDirectoryExists(documentsDir);
+            Path targetPath = Paths.get(documentsDir + System.currentTimeMillis() + "_" + file.getName());
+            Files.copy(file.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+            docInfo.setStoredPath(targetPath.toString());
+
+            // Upload the file and then send the message
+            uploadFileAndSendMessage(file, docInfo);
+
+        } catch (Exception e) {
+            System.err.println("Error processing document: " + e.getMessage());
+            showTemporaryNotification("Upload Error\nFailed to process the selected document.");
         }
     }
 
-    /**
-     * Loads sample group messages for demonstration.
-     * TODO: Replace with real data from the server.
-     * TODO: This section will be deleted (This is an example).
-     *
-     * @param group The UserViewModel for the group chat.
-     */
-    private void loadGroupMessages(UserViewModel group) {
-        // Sample group chat messages
-        addMessageBubble("Hey everyone! Meeting at 3 PM today", false, "09:15", "read", "John");
-        addMessageBubble("Sounds good! I'll be there", true, "09:16", "read", null);
-        addMessageBubble("Can we move it to 3:30? I'm running a bit late", false, "09:18", "read", "Sarah");
-        addMessageBubble("Sure, no problem! 3:30 it is", false, "09:20", "read", "Mike");
-        addMessageBubble("Perfect! See you all then 👍", true, "09:21", "delivered", null);
-    }
+    private void uploadFileAndSendMessage(File file, DocumentInfo docInfo) {
+        IProgressListener listener = (transferred, total) -> {
+            double progress = (total > 0) ? ((double) transferred / total) * 100 : 0;
+            System.out.printf("Upload Progress: %.2f%%\n", progress);
+            // TODO: Update UI with progress indicator on the message bubble
+        };
 
-    /**
-     * Loads sample channel messages for demonstration.
-     * TODO: Replace with real data from the server.
-     * TODO: This section will be deleted (This is an example).
-     *
-     * @param channel The UserViewModel for the channel.
-     */
-    private void loadChannelMessages(UserViewModel channel) {
-        // Sample channel messages
-        addMessageBubble("📢 New update available! Check out the latest features in version 2.1", false, "08:00", "read", channel.getUserName());
-        addMessageBubble("🔥 Hot topic: AI advances in 2025", false, "07:30", "read", channel.getUserName());
-        addMessageBubble("💡 Tip of the day: Use keyboard shortcuts to boost productivity", false, "06:45", "read", channel.getUserName());
+        var app = connectionManager.getClient();
+        ExecutorService backgroundExecutor = app.getBackgroundExecutor();
+        backgroundExecutor.submit(() -> {
+            try {
+                FileInfoModel info = app.getFileTransferManager().initiateUpload(file);
+                String fileId = info.FileId;
+
+                UploadTask uploadTask = new UploadTask(app.getFileTransferManager(), info, file, listener);
+                app.registerTask(fileId, uploadTask);
+
+                uploadTask.setOnSucceeded(e -> {
+                    app.unregisterTask(fileId);
+                    System.out.println("Upload successful. Media ID: " + fileId);
+
+                    SendMessageInputModel messageInput = new SendMessageInputModel();
+                    messageInput.setChatId(UUID.fromString(currentSelectedUser.getUserId()));
+                    messageInput.setMessageType(MessageType.MEDIA);
+                    messageInput.setMediaId(UUID.fromString(fileId));
+
+                    Task<RpcResponse<SendMessageOutputModel>> sendMessageTask = new Task<>() {
+                        @Override
+                        protected RpcResponse<SendMessageOutputModel> call() throws Exception {
+                            return rpcCaller.sendMessage(messageInput);
+                        }
+                    };
+                    sendMessageTask.setOnSucceeded(event -> {
+                        if (sendMessageTask.getValue().getStatusCode() == StatusCode.OK) {
+                            System.out.println("Media message sent successfully.");
+                            Platform.runLater(() -> addDocumentMessageBubble(docInfo, true, getCurrentTime(), "delivered"));
+                        } else {
+                            Platform.runLater(() -> showTemporaryNotification("Failed to send file message."));
+                        }
+                    });
+                    sendMessageTask.setOnFailed(failEvent -> {
+                        sendMessageTask.getException().printStackTrace();
+                        Platform.runLater(() -> showTemporaryNotification("Error sending file message."));
+                    });
+                    new Thread(sendMessageTask).start();
+                });
+
+                uploadTask.setOnFailed(failEvent -> {
+                    app.unregisterTask(fileId);
+                    uploadTask.getException().printStackTrace();
+                    Platform.runLater(() -> showTemporaryNotification("File upload failed."));
+                });
+
+                backgroundExecutor.submit(uploadTask);
+
+            } catch (Exception ex) {
+                System.err.println("Error initiating file upload: " + ex.getMessage());
+                Platform.runLater(() -> showTemporaryNotification("Error starting upload."));
+            }
+        });
     }
 
     // ============ MESSAGE HANDLING ============
@@ -787,7 +1059,7 @@ public class MainChatController implements Initializable {
      * @param status     The delivery status (e.g., "sent", "delivered", "read").
      * @param senderName The name of the sender (null for outgoing).
      */
-    private void addMessageBubble(String text, boolean isOutgoing, String time, String status, String senderName) {
+    private HBox addMessageBubble(String text, boolean isOutgoing, String time, String status, String senderName) {
         HBox messageContainer = new HBox();
         messageContainer.setSpacing(12);
         messageContainer.setPadding(new Insets(4, 0, 4, 0));
@@ -814,6 +1086,7 @@ public class MainChatController implements Initializable {
 
         // Animate new message if it's being added in real-time
         TelegramCellUtils.animateNewMessage(messageContainer);
+        return messageContainer;
     }
 
     /**
@@ -1016,49 +1289,6 @@ public class MainChatController implements Initializable {
         }
     }
 
-    /**
-     * Processes the selected document and adds it to the chat
-     */
-    private void processDocumentAttachment(File file) {
-        try {
-            // Create document info object
-            DocumentInfo docInfo = new DocumentInfo(
-                    file.getName(),
-                    file.length(),
-                    getFileExtension(file),
-                    file.getAbsolutePath()
-            );
-
-            //TODO: connect to the data base
-            // Copy file to app's document directory for persistence
-            String documentsDir = "/Client/documents"; // TODO: it has bug
-            ensureDataDirectoryExists(documentsDir);
-
-            String newFileName = System.currentTimeMillis() + "_" + file.getName();
-            Path targetPath = Path.of(documentsDir + newFileName);
-
-            // Copy file
-            Files.copy(file.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-            docInfo.setStoredPath(targetPath.toString());
-
-            // Add document message bubble
-            addDocumentMessageBubble(docInfo, true, getCurrentTime(), "sent");
-
-            // Update chat list
-            if (currentSelectedUser != null) {
-                currentSelectedUser.setLastMessage("📄 " + file.getName());
-                currentSelectedUser.setTime(getCurrentTime());
-                refreshChatList();
-            }
-
-            // Simulate upload progress and delivery
-            simulateDocumentUpload(docInfo);
-
-        } catch (Exception e) {
-            System.err.println("Error processing document: " + e.getMessage());
-            showTemporaryNotification("Upload Error\nFailed to process the selected document.\n");
-        }
-    }
 
     /**
      * Creates a document message bubble with file info and controls
@@ -1384,39 +1614,6 @@ public class MainChatController implements Initializable {
             // Handle voice message recording
             startVoiceRecording();
         }
-    }
-
-    /**
-     * Sends the current message and updates the UI.
-     */
-    private void sendMessage() {
-        String text = messageInputField.getText().trim();
-        if (text.isEmpty() || currentSelectedUser == null) return;
-
-        // Create message with reply if present
-        String messageText = text;
-        if (replyPreviewContainer.isVisible()) {
-            messageText = "↪ " + replyMessageLabel.getText() + "\n\n" + text;
-            closeReplyPreview();
-        }
-
-        // Add message to chat
-        addMessageBubble(messageText, true, getCurrentTime(), "sent", null);
-
-        // Clear input
-        messageInputField.clear();
-        updateSendButtonState();
-
-        // Update chat list
-        currentSelectedUser.setLastMessage(text);
-        currentSelectedUser.setTime(getCurrentTime());
-        refreshChatList();
-
-        // Simulate message delivery
-        simulateMessageDelivery();
-
-        // Focus input for next message
-        Platform.runLater(() -> messageInputField.requestFocus());
     }
 
     /**
@@ -2002,9 +2199,11 @@ public class MainChatController implements Initializable {
      */
     private String getStatusIcon(String status) { // TODO UI
         return switch (status.toLowerCase()) {
+            case "sending" -> "🕒"; // Clock icon for sending
             case "sent" -> "✓";
             case "delivered" -> "✓✓";
-            case "read" -> "✓✓";
+            case "read" -> "✓✓"; // A different color would be better for 'read' state
+            case "failed" -> "!"; // Exclamation mark for failed
             default -> "";
         };
     }

@@ -12,6 +12,6 @@ public class LoginOutputModel {
     public void setStatus(String status) { this.status = status; }
 
     public String getAccessKey() { return accessKey; }
-    public void setAccessKey(String accessToken) { this.accessKey = accessKey; }
+    public void setAccessKey(String accessKey) { this.accessKey = accessKey; }
 
 }

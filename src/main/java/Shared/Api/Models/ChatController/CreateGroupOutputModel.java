@@ -1,28 +1,29 @@
 package Shared.Api.Models.ChatController;
 
 import Shared.Models.Chat.ChatType;
+import java.util.List;
 import java.util.UUID;
 
-public class CreateChannelOutputModel {
+public class CreateGroupOutputModel {
     private UUID id;
     private ChatType type;
     private String title;
     private String profilePictureId;
     private String description;
-    private boolean isPublic;
     private UUID creatorId;
+    private List<UUID> initialMemberIds;
 
-    public CreateChannelOutputModel() {
+    public CreateGroupOutputModel() {
     }
 
-    public CreateChannelOutputModel(UUID id, ChatType type, String title, String profilePictureId, String description, boolean isPublic, UUID creatorId) {
+    public CreateGroupOutputModel(UUID id, ChatType type, String title, String profilePictureId, String description, UUID creatorId, List<UUID> initialMemberIds) {
         this.id = id;
         this.type = type;
         this.title = title;
         this.profilePictureId = profilePictureId;
         this.description = description;
-        this.isPublic = isPublic;
         this.creatorId = creatorId;
+        this.initialMemberIds = initialMemberIds;
     }
 
     // Getters and Setters
@@ -66,19 +67,19 @@ public class CreateChannelOutputModel {
         this.description = description;
     }
 
-    public boolean isPublic() {
-        return isPublic;
-    }
-
-    public void setPublic(boolean aPublic) {
-        isPublic = aPublic;
-    }
-
     public UUID getCreatorId() {
         return creatorId;
     }
 
     public void setCreatorId(UUID creatorId) {
         this.creatorId = creatorId;
+    }
+
+    public List<UUID> getInitialMemberIds() {
+        return initialMemberIds;
+    }
+
+    public void setInitialMemberIds(List<UUID> initialMemberIds) {
+        this.initialMemberIds = initialMemberIds;
     }
 }

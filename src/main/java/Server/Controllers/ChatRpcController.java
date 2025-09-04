@@ -23,18 +23,27 @@ public class ChatRpcController extends RpcControllerBase {
         this.daoManager = daoManager;
     }
 
-    public RpcResponse<List<Chat>> getChatsByUser(getChatsByUserInputModel model) {
+    // Changed return type from List<Chat> to List<GetChatInfoOutputModel>
+    public RpcResponse<List<GetChatInfoOutputModel>> getChatsByUser() {
         List<Membership> memberships = daoManager.getMembershipDAO()
-                .findAllByField("account.id", model.getUserId());
+                .findAllByField("account.id", UUID.fromString(getCurrentUser().getUserId()));
 
-        List<Chat> chats = memberships.stream()
-                .map(Membership::getChat)
+        List<GetChatInfoOutputModel> chatInfoList = memberships.stream()
+                .map(membership -> {
+                    Chat chat = membership.getChat();
+                    GetChatInfoOutputModel output = new GetChatInfoOutputModel();
+                    output.setId(chat.getId());
+                    output.setType(chat.getType().toString());
+                    output.setTitle(chat.getTitle());
+                    output.setProfilePictureId(chat.getProfilePictureId());
+                    return output;
+                })
                 .collect(Collectors.toList());
 
-        return Ok(chats);
+        return Ok(chatInfoList);
     }
 
-
+    // Changed return type from Object to CreateChannelOutputModel
     public RpcResponse<Object> createChannel(CreateChannelInputModel model) {
         // Find creator account
         Account creator = daoManager.getAccountDAO().findById(model.getCreatorId());
@@ -54,9 +63,20 @@ public class ChatRpcController extends RpcControllerBase {
         creatorMembership.setJoinDate(LocalDateTime.now());
         daoManager.getMembershipDAO().insert(creatorMembership);
 
-        return Ok(newChannel);
+        // Map to output model
+        CreateChannelOutputModel output = new CreateChannelOutputModel();
+        output.setId(newChannel.getId());
+        output.setType(newChannel.getType());
+        output.setTitle(newChannel.getTitle());
+        output.setProfilePictureId(newChannel.getProfilePictureId());
+        output.setDescription(newChannel.getDescription());
+        output.setPublic(newChannel.isPublic());
+        output.setCreatorId(newChannel.getCreatedBy().getId());
+
+        return Ok(output);
     }
 
+    // Changed return type from Object to CreateGroupOutputModel
     public RpcResponse<Object> createGroup(CreateGroupInputModel model){
         Account creator = daoManager.getAccountDAO().findById(model.getCreatorId());
         if (creator == null) {
@@ -95,7 +115,17 @@ public class ChatRpcController extends RpcControllerBase {
             }
         }
 
-        return Ok(newGroup);
+        // Map to output model
+        CreateGroupOutputModel output = new CreateGroupOutputModel();
+        output.setId(newGroup.getId());
+        output.setType(newGroup.getType());
+        output.setTitle(newGroup.getTitle());
+        output.setProfilePictureId(newGroup.getProfilePictureId());
+        output.setDescription(newGroup.getDescription());
+        output.setCreatorId(newGroup.getCreatedBy().getId());
+        output.setInitialMemberIds(model.getMemberIds()); // Reflect initial members from input
+
+        return Ok(output);
     }
 
     public RpcResponse<Object> getChatInfo(GetChatInfoInputModel model){
@@ -106,7 +136,7 @@ public class ChatRpcController extends RpcControllerBase {
 
         GetChatInfoOutputModel output = new GetChatInfoOutputModel();
         output.setId(chat.getId());
-        output.setType(chat.getType());
+        output.setType(chat.getType().toString());
         output.setTitle(chat.getTitle());
         output.setProfilePictureId(chat.getProfilePictureId());
 
@@ -138,13 +168,17 @@ public class ChatRpcController extends RpcControllerBase {
         return Ok(output);
     }
 
+    // Changed return type from Object to GetChatInfoOutputModel
     public RpcResponse<Object> getChatById(GetChatByIdInputModel model) {
         Chat chat = daoManager.getChatDAO().findById(model.getChatId());
         if (chat == null) {
             return BadRequest("Chat not found.");
         }
-        return Ok(chat);
+        GetChatInfoOutputModel output = new GetChatInfoOutputModel();
+        output.setId(chat.getId());
+        output.setType(chat.getType().toString());
+        output.setTitle(chat.getTitle());
+        output.setProfilePictureId(chat.getProfilePictureId());
+        return Ok(output);
     }
-
-
 }

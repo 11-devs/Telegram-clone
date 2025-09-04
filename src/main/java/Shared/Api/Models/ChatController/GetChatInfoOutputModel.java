@@ -5,7 +5,7 @@ import java.util.UUID;
 
 public class GetChatInfoOutputModel {
     private UUID id;
-    private ChatType type;
+    private String type;
     private String title;
     private String profilePictureId;
 
@@ -17,11 +17,11 @@ public class GetChatInfoOutputModel {
         this.id = id;
     }
 
-    public ChatType getType() {
+    public String getType() {
         return type;
     }
 
-    public void setType(ChatType type) {
+    public void setType(String type) {
         this.type = type;
     }
 
