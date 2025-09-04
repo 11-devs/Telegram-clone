@@ -168,7 +168,7 @@
                                 <graphic>
                                     <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
                                         <image>
-                                            <Image url="@../images/call-icon.png" />
+                                            <Image url="@../images/calls-icon.png" />
                                         </image>
                                     </ImageView>
                                 </graphic>
@@ -519,6 +519,9 @@
                                 <image>
                                     <Image url="@../images/chevron-right-icon.png" />
                                 </image>
+                        <HBox.margin>
+                           <Insets top="4.0" />
+                        </HBox.margin>
                             </ImageView>
                         </children>
                     </HBox>

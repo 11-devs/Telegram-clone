@@ -601,10 +601,6 @@
     -fx-background-color: #708090;
 }
 
-.chevron-icon {
-    -fx-opacity: 0.5;
-}
-
 /* ============ MEDIA SECTION ============ */
 .media-files-section {
     -fx-background-color: #17212B;
