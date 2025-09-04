@@ -4,6 +4,7 @@
     -fx-background-color: #17212B;
     -fx-border-color: #17212B;
     -fx-font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    -fx-padding: 0;
 }
 
 /* light theme */
@@ -468,7 +469,7 @@
     -fx-background-color: #17212B;
     -fx-border-color: #0F1419;
     -fx-border-width: 0 0 0 1;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 8, 0.3, -1, 0);
+    -fx-visibility: hidden;
 }
 
 .profile-header-section {

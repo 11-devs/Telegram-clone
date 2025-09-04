@@ -198,10 +198,6 @@ public class MainChatController implements Initializable {
      */
     @FXML private ImageView profileAvatarImage;
     /**
-     * Circle indicating the online status in the right panel.
-     */
-    @FXML private Circle profileOnlineIndicator;
-    /**
      * Label showing the user's name in the right panel.
      */
     @FXML private Label profileNameLabel;
@@ -425,7 +421,9 @@ public class MainChatController implements Initializable {
                 .isOnline(true)
                 .notificationsNumber("3")
                 .isVerified(true)
-                .type(UserType.USER.name()).bio("Hi im Alice").phoneNumber("+981111111111")
+                .type(UserType.USER.name()).bio("Hi im Alice")
+                .phoneNumber("+981111111111")
+                .userId("Alice")
                 .build();
 
         UserViewModel user2 = new UserViewModelBuilder()
@@ -434,7 +432,9 @@ public class MainChatController implements Initializable {
                 .time("13:00")
                 .isOnline(false)
                 .lastSeen("last seen 2 hours ago")
-                .type(UserType.USER.name()).bio("Hi im Bob").phoneNumber("+982222222222")
+                .type(UserType.USER.name()).bio("Hi im Bob")
+                .phoneNumber("+982222222222")
+                .userId("Bob")
                 .build();
 
         UserViewModel group1 = new UserViewModelBuilder()
@@ -443,7 +443,9 @@ public class MainChatController implements Initializable {
                 .time("12:20")
                 .notificationsNumber("12")
                 .isPinned(true)
-                .type(UserType.GROUP.name()).bio("Hi we are Development Team")
+                .type(UserType.GROUP.name())
+                .bio("Hi we are Development Team")
+                .userId("Development Team")
                 .build();
 
         UserViewModel channel1 = new UserViewModelBuilder()
@@ -451,7 +453,9 @@ public class MainChatController implements Initializable {
                 .lastMessage("Latest updates in technology")
                 .time("11:15")
                 .isMuted(true)
-                .type(UserType.CHANNEL.name()).bio("Hi we are Tech News")
+                .type(UserType.CHANNEL.name())
+                .bio("Hi we are Tech News")
+                .userId("Tech News")
                 .build();
 
         allChatUsers.addAll(user1, user2, group1, channel1);
@@ -1346,9 +1350,6 @@ public class MainChatController implements Initializable {
 
         // Update avatar
         updateProfileAvatar(user);
-
-        // Update badges and indicators
-        profileOnlineIndicator.setVisible(user.isOnline());
 
         // Update notification status
         notificationStatusLabel.setText(user.isMuted() ? "Disabled" : "Enabled");
