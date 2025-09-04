@@ -1,6 +1,7 @@
 package Client.Controllers;
 
 import Shared.Models.CountryCode;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -13,13 +14,19 @@ import javafx.stage.Stage;
 
 import java.util.stream.Collectors;
 
+/**
+ * Controller for the country selection dialog.
+ */
 public class CountrySelectionController {
+
     @FXML
-    TextField searchField;
+    private TextField searchField;
+
     @FXML
-    ListView<String> countryList;
+    private ListView<String> countryList;
+
     @FXML
-    VBox rootVBox;
+    private VBox rootVBox;
 
     private Stage dialogStage;
     private PhoneNumberController parentController;
@@ -36,20 +43,51 @@ public class CountrySelectionController {
                     selectCountry();
                 }
             });
+
+            // Adjust height dynamically after layout is computed
+            Platform.runLater(this::adjustHeight);
         }
     }
 
     public void setDialogStage(Stage dialogStage) {
         this.dialogStage = dialogStage;
+        System.out.println("Dialog stage set: " + (dialogStage != null));
     }
 
-    public void setParentController(PhoneNumberController parentController) {
-        this.parentController = parentController;
+    public void setParentController(Object parentController) {
+        if (parentController instanceof PhoneNumberController) {
+            this.parentController = (PhoneNumberController) parentController;
+            System.out.println("Parent controller set: " + true);
+        } else {
+            System.err.println("Parent controller is not an instance of PhoneNumberController");
+        }
     }
 
-    public void setAllCountries(ObservableList<CountryCode> allCountries) {
-        this.allCountries = allCountries;
-        updateCountryList();
+    public void setData(Object data) {
+        if (data instanceof ObservableList<?>) {
+            @SuppressWarnings("unchecked")
+            ObservableList<CountryCode> countries = (ObservableList<CountryCode>) data;
+            this.allCountries = countries;
+            updateCountryList();
+            System.out.println("All countries set with size: " + (allCountries != null ? allCountries.size() : 0));
+            Platform.runLater(this::adjustHeight); // Adjust height after data is set
+        } else {
+            System.err.println("Data is not an instance of ObservableList<CountryCode>");
+        }
+    }
+
+    private void adjustHeight() {
+        if (countryList != null && searchField != null && rootVBox != null && dialogStage != null) {
+            countryList.applyCss();
+            double listHeight = countryList.getHeight() > 0 ? countryList.getHeight() + 50 : 250;
+            double marginTotal = 20.0;
+            double searchHeight = searchField.getHeight() > 0 ? searchField.getHeight() : 30.0;
+            double newVBoxHeight = listHeight + marginTotal + searchHeight;
+            rootVBox.setPrefHeight(newVBoxHeight);
+            dialogStage.sizeToScene();
+        } else {
+            System.err.println("One of countryList, searchField, rootVBox, or dialogStage is null in adjustHeight!");
+        }
     }
 
     private void updateCountryList() {

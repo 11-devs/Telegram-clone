@@ -1,0 +1,320 @@
+/* ============ TELEGRAM SIDEBAR MENU STYLING ============ */
+
+/* Dark Theme Colors */
+.sidebar-menu-container {
+    -fx-background-color: #17212B;
+    -fx-border-color: #0F1419;
+    -fx-border-width: 0 1 0 0;
+    -fx-font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.sidebar-header {
+    -fx-background-color: #17212B;
+    -fx-border-color: transparent;
+    -fx-min-height: 100px;
+}
+
+.user-profile-section {
+    -fx-background-color: transparent;
+    -fx-cursor: hand;
+    -fx-background-radius: 12px;
+    -fx-padding: 8;
+}
+
+.user-avatar-container {
+    -fx-background-color: transparent;
+}
+
+.user-avatar {
+    -fx-smooth: true;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.15), 4, 0.4, 0, 0);
+}
+
+.user-online-indicator {
+    -fx-fill: #4CAF50;
+    -fx-stroke: #17212B;
+    -fx-stroke-width: 3px;
+}
+
+.user-name {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 18px;
+    -fx-font-weight: 600;
+}
+
+.set-emoji-status-button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: #92A3AF;
+    -fx-font-size: 14px;
+    -fx-font-weight: 400;
+    -fx-cursor: hand;
+    -fx-padding: 0;
+    -fx-background-radius: 8px;
+    -fx-alignment: center-left;
+}
+
+.set-emoji-status-button:hover {
+    -fx-background-color: #1E2832;
+    -fx-text-fill: #4FC3F7;
+    -fx-padding: 4 8 4 8;
+}
+
+.profile-dropdown-button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-cursor: hand;
+    -fx-min-width: 24px;
+    -fx-min-height: 24px;
+    -fx-pref-width: 24px;
+    -fx-pref-height: 24px;
+    -fx-padding: 4;
+    -fx-background-radius: 50px;
+}
+
+.profile-dropdown-button:hover {
+    -fx-background-color: #1E2832;
+}
+
+/* ============ MENU SEPARATOR ============ */
+.menu-separator {
+    -fx-background-color: #92A3AF;
+    -fx-pref-height: 0.5px;
+    -fx-opacity: 0.05;
+}
+
+/* ============ MENU SCROLL PANE ============ */
+.menu-scroll-pane {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.menu-scroll-pane .viewport,
+.menu-scroll-pane .content {
+    -fx-background-color: transparent;
+}
+
+.menu-items-container {
+    -fx-background-color: transparent;
+    -fx-spacing: 2px;
+}
+
+/* ============ MENU ITEMS ============ */
+.menu-item-button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-cursor: hand;
+    -fx-min-height: 48px;
+    -fx-pref-height: 48px;
+    -fx-padding: 12 20 12 20;
+    -fx-background-radius: 0;
+    -fx-alignment: center-left;
+}
+
+.menu-item-button:hover {
+    -fx-background-color: #1E2832;
+}
+
+.menu-item-icon {
+    -fx-opacity: 0.8;
+    -fx-smooth: true;
+}
+
+.menu-item-text {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 16px;
+    -fx-font-weight: 400;
+}
+
+.menu-item-button:hover .menu-item-text {
+    -fx-text-fill: #FFFFFF;
+}
+
+.menu-item-button:hover .menu-item-icon {
+    -fx-opacity: 1.0;
+}
+
+/* ============ NIGHT MODE TOGGLE ============ */
+.menu-item-toggle {
+    -fx-background-color: transparent;
+    -fx-cursor: hand;
+    -fx-min-height: 48px;
+    -fx-pref-height: 48px;
+    -fx-background-radius: 0;
+}
+
+.menu-item-toggle:hover {
+    -fx-background-color: #1E2832;
+}
+
+.toggle-button {
+    -fx-background-color: rgba(146, 163, 175, 0.3);
+    -fx-background-radius: 20px;
+    -fx-min-width: 52px;
+    -fx-pref-width: 52px;
+    -fx-min-height: 28px;
+    -fx-pref-height: 28px;
+    -fx-cursor: hand;
+    -fx-border-color: transparent;
+}
+
+.toggle-button:hover {
+    -fx-background-color: rgba(146, 163, 175, 0.4);
+}
+
+.toggle-button-on {
+    -fx-background-color: #4FC3F7;
+}
+
+.toggle-button-on:hover {
+    -fx-background-color: #29B6F6;
+}
+
+/* ============ SIDEBAR FOOTER ============ */
+.sidebar-footer {
+    -fx-background-color: #17212B;
+    -fx-border-color: #2C3E50;
+    -fx-border-width: 1 0 0 0;
+    -fx-opacity: 0.8;
+}
+
+.app-name {
+    -fx-text-fill: #92A3AF;
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+}
+
+.version-info {
+    -fx-text-fill: #708090;
+    -fx-font-size: 12px;
+    -fx-font-weight: 400;
+    -fx-cursor: hand;
+}
+
+.version-info:hover {
+    -fx-text-fill: #4FC3F7;
+}
+
+/* ============ SCROLLBAR STYLING ============ */
+.menu-scroll-pane .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-pref-width: 6px;
+    -fx-max-width: 6px;
+    -fx-min-width: 6px;
+}
+
+.menu-scroll-pane .scroll-bar:vertical .track {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-opacity: 0;
+}
+
+.menu-scroll-pane .scroll-bar:vertical .thumb {
+    -fx-background-color: rgba(146, 163, 175, 0.3);
+    -fx-background-radius: 3px;
+    -fx-border-radius: 3px;
+    -fx-border-color: transparent;
+}
+
+.menu-scroll-pane .scroll-bar:vertical .thumb:hover {
+    -fx-background-color: rgba(146, 163, 175, 0.5);
+}
+
+.menu-scroll-pane .scroll-bar:vertical .thumb:pressed {
+    -fx-background-color: rgba(146, 163, 175, 0.7);
+}
+
+.menu-scroll-pane .scroll-bar:vertical .increment-button,
+.menu-scroll-pane .scroll-bar:vertical .decrement-button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-pref-height: 0;
+    -fx-pref-width: 0;
+}
+
+/* ============ BADGES AND INDICATORS ============ */
+.notification-badge {
+    -fx-background-color: #F44336;
+    -fx-text-fill: white;
+    -fx-background-radius: 50px;
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-padding: 2 6 2 6;
+    -fx-min-width: 18px;
+    -fx-min-height: 18px;
+    -fx-alignment: center;
+}
+
+.update-indicator {
+    -fx-background-color: #4FC3F7;
+    -fx-background-radius: 50px;
+    -fx-min-width: 8px;
+    -fx-min-height: 8px;
+    -fx-pref-width: 8px;
+    -fx-pref-height: 8px;
+}
+
+/* ============ RESPONSIVE ADJUSTMENTS ============ */
+.sidebar-menu-container.compact {
+    -fx-min-width: 240px;
+    -fx-pref-width: 260px;
+}
+
+.sidebar-menu-container.compact .user-name {
+    -fx-font-size: 16px;
+}
+
+.sidebar-menu-container.compact .menu-item-text {
+    -fx-font-size: 14px;
+}
+
+.sidebar-menu-container.compact .menu-item-button {
+    -fx-min-height: 44px;
+    -fx-pref-height: 44px;
+    -fx-padding: 10 16 10 16;
+}
+
+/* ============ COLLAPSED STATE ============ */
+.sidebar-menu-container.collapsed {
+    -fx-min-width: 72px;
+    -fx-pref-width: 72px;
+}
+
+.sidebar-menu-container.collapsed .menu-item-text,
+.sidebar-menu-container.collapsed .user-name,
+.sidebar-menu-container.collapsed .set-emoji-status-button,
+.sidebar-menu-container.collapsed .sidebar-footer {
+    -fx-visible: false;
+}
+
+.sidebar-menu-container.collapsed .menu-item-button {
+    -fx-padding: 12;
+    -fx-alignment: center;
+}
+
+/* ============ PLATFORM SPECIFIC ============ */
+.sidebar-menu-container.windows {
+    -fx-font-family: "Segoe UI", sans-serif;
+}
+
+.sidebar-menu-container.macos {
+    -fx-font-family: "SF Pro Display", "Helvetica Neue", sans-serif;
+}
+
+.sidebar-menu-container.linux {
+    -fx-font-family: "Ubuntu", "Liberation Sans", sans-serif;
+}
+
+/* ============ HIGH CONTRAST MODE ============ */
+.sidebar-menu-container.high-contrast .menu-item-button:focused,
+.sidebar-menu-container.high-contrast .menu-item-button:hover {
+    -fx-border-color: #FFD700;
+    -fx-border-width: 2px;
+}
+
+.sidebar-menu-container.high-contrast .menu-item-text {
+    -fx-font-weight: 600;
+}
