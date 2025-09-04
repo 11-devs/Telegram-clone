@@ -27,9 +27,12 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -46,7 +49,9 @@ import javafx.scene.layout.*;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import javafx.util.Duration;
 
 import java.awt.*;
@@ -1494,11 +1499,73 @@ public class MainChatController implements Initializable {
         return icon;
     }
 
+    private boolean isVideoFile(String extension) {
+        if (extension == null) return false;
+        return switch (extension.toLowerCase()) {
+            case "mp4", "avi", "mkv", "mov", "flv" -> true;
+            default -> false;
+        };
+    }
+
     /**
-     * Opens a document using the system's default application
+     * Loads the video player FXML and displays it in a new stage.
+     * @param videoFile The video file to play.
      */
+    private void openVideoPlayer(File videoFile) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/Client/fxml/videoPlayerDialog.fxml"));
+            VideoPlayerController controller = new VideoPlayerController();
+            loader.setController(controller);
+
+            Parent root = loader.load();
+            controller.setVideoFile(videoFile);
+
+            Stage videoStage = new Stage();
+            videoStage.initModality(Modality.APPLICATION_MODAL);
+            videoStage.initStyle(StageStyle.DECORATED);
+            videoStage.setTitle(videoFile.getName());
+            videoStage.setScene(new Scene(root));
+            videoStage.setOnCloseRequest(event -> controller.cleanup());
+
+            videoStage.show();
+        } catch (IOException e) {
+            System.err.println("Failed to open video player: " + e.getMessage());
+            e.printStackTrace();
+            showTemporaryNotification("Error opening video player.");
+        }
+    }
     private void openDocument(DocumentInfo docInfo) {
         if (docInfo.getStoredPath() != null) {
+            if (isVideoFile(docInfo.getFileExtension())) {
+                File localVideoFile = (docInfo.getStoredPath() != null) ? new File(docInfo.getStoredPath()) : null;
+
+                if (localVideoFile != null && localVideoFile.exists()) {
+                    openVideoPlayer(localVideoFile);
+                    return;
+                }
+
+                if (docInfo.getFileId() != null && !docInfo.getFileId().isEmpty()) {
+                    showTemporaryNotification("Opening " + docInfo.getFileName() + "...");
+                    fileDownloadService.getFile(docInfo.getFileId()).thenAcceptAsync(downloadedFile -> {
+                        Platform.runLater(() -> {
+                            if (downloadedFile != null && downloadedFile.exists()) {
+                                openVideoPlayer(downloadedFile);
+                            } else {
+                                showTemporaryNotification("Download Error\nVideo not found after download.");
+                            }
+                        });
+                    }).exceptionally(ex -> {
+                        Platform.runLater(() -> {
+                            showTemporaryNotification("Download Failed\nCould not retrieve the video.");
+                            ex.printStackTrace();
+                        });
+                        return null;
+                    });
+                } else {
+                    showTemporaryNotification("File Not Found\nCannot locate or download the video.");
+                }
+                return;
+            }
             File localFile = new File(docInfo.getStoredPath());
             if (localFile.exists()) {
                 try {

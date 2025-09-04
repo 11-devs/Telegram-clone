@@ -5,54 +5,101 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Slider?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.media.MediaView?>
+<?import javafx.scene.shape.SVGPath?>
 
-<StackPane fx:id="rootPane" prefHeight="400.0" prefWidth="600.0" style="-fx-background-color: black;" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1">
+<StackPane fx:id="rootPane" prefHeight="450.0" prefWidth="800.0" styleClass="video-player-root" stylesheets="@../css/videoPlayer.css"
+           xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="Client.Controllers.VideoPlayerController"> <!-- NOTE: The fx:controller attribute was added here -->
     <children>
-        <MediaView fx:id="mediaView" fitHeight="400.0" fitWidth="600.0" StackPane.alignment="CENTER" />
-        <VBox fx:id="controlsContainer" alignment="BOTTOM_CENTER" styleClass="controls-container">
+        <MediaView fx:id="mediaView" fitHeight="450.0" fitWidth="800.0" StackPane.alignment="CENTER" />
+
+        <VBox fx:id="controlsContainer" alignment="BOTTOM_CENTER" styleClass="controls-container" VBox.vgrow="ALWAYS">
+            <padding>
+                <Insets bottom="10.0" left="15.0" right="15.0" />
+            </padding>
             <children>
-                <!-- Top Half -->
+                <!-- Time Slider with Progress and Buffer Bars -->
+                <StackPane fx:id="timeSliderContainer" alignment="CENTER_LEFT">
+                    <children>
+                        <!-- Layer 1: Background Track -->
+                        <Pane fx:id="trackBackground" styleClass="track-background" />
+                        <!-- Layer 2: Buffer Progress -->
+                        <Pane fx:id="bufferBar" styleClass="buffer-bar" />
+                        <!-- Layer 3: Playback Progress -->
+                        <Pane fx:id="progressBar" styleClass="progress-bar" />
+                        <!-- Layer 4: The actual slider (invisible track, visible thumb) -->
+                        <Slider fx:id="timeSlider" />
+                    </children>
+                </StackPane>
+
+                <!-- Main Controls Row -->
                 <HBox alignment="CENTER" spacing="10">
                     <children>
-                        <HBox alignment="CENTER_LEFT">
-                           <children>
-                              <Button fx:id="volumeButton" mnemonicParsing="false" styleClass="control-button" text="🔊" />
-                              <Slider fx:id="volumeSlider" prefWidth="80.0" />
-                           </children>
+                        <!-- Left Controls: Play/Pause, Volume -->
+                        <HBox alignment="CENTER_LEFT" spacing="5.0">
+                            <children>
+                                <Button fx:id="playPauseButton" mnemonicParsing="false" styleClass="control-button">
+                                    <graphic>
+                                        <StackPane>
+                                            <children>
+                                                <SVGPath fx:id="playIcon" content="M6 4.5 L18 12 L6 19.5 Z" styleClass="control-icon" />
+                                                <SVGPath fx:id="pauseIcon" content="M6 5 H10 V19 H6 Z M14 5 H18 V19 H14 Z" managed="false" styleClass="control-icon" visible="false" />
+                                            </children>
+                                        </StackPane>
+                                    </graphic>
+                                </Button>
+                                <HBox fx:id="volumeContainer" alignment="CENTER_LEFT">
+                                    <children>
+                                        <Button fx:id="volumeButton" mnemonicParsing="false" styleClass="control-button">
+                                            <graphic>
+                                                <StackPane>
+                                                    <children>
+                                                        <SVGPath fx:id="volumeHighIcon" content="M14.5 4.5 L9.5 9.5 H5.5 C4.9 9.5 4.5 9.9 4.5 10.5 V13.5 C4.5 14.1 4.9 14.5 5.5 14.5 H9.5 L14.5 19.5 Z M16.5 7.5 C17.9 8.9 17.9 11.1 16.5 12.5 M18.5 5.5 C21.3 8.3 21.3 11.7 18.5 14.5" styleClass="control-icon" stroke="white" strokeWidth="1.5" fill="transparent" strokeLineJoin="ROUND" strokeLineCap="ROUND"/>
+                                                        <SVGPath fx:id="volumeMuteIcon" content="M14.5 4.5 L9.5 9.5 H5.5 C4.9 9.5 4.5 9.9 4.5 10.5 V13.5 C4.5 14.1 4.9 14.5 5.5 14.5 H9.5 L14.5 19.5 Z M17.5 10.5 L21.5 14.5 M17.5 14.5 L21.5 10.5" managed="false" styleClass="control-icon" visible="false" stroke="white" strokeWidth="1.5" fill="transparent" strokeLineJoin="ROUND" strokeLineCap="ROUND"/>
+                                                    </children>
+                                                </StackPane>
+                                            </graphic>
+                                        </Button>
+                                        <!-- Container for animated slider -->
+                                        <StackPane fx:id="volumeSliderContainer" styleClass="volume-slider-container">
+                                            <Slider fx:id="volumeSlider" value="100.0" />
+                                        </StackPane>
+                                    </children>
+                                </HBox>
+                            </children>
                         </HBox>
+
                         <Region HBox.hgrow="ALWAYS" />
-                        <Button fx:id="playPauseButton" mnemonicParsing="false" styleClass="control-button" text="▶" />
-                        <Region HBox.hgrow="ALWAYS" />
-                        <HBox alignment="CENTER_RIGHT">
-                           <children>
-                              <Button fx:id="fullscreenButton" mnemonicParsing="false" styleClass="control-button" text="⛶" />
-                              <Button fx:id="settingsButton" mnemonicParsing="false" styleClass="control-button" text="⚙" />
-                           </children>
+
+                        <!-- Right Controls: Time, Fullscreen -->
+                        <HBox alignment="CENTER_RIGHT" spacing="15.0">
+                            <children>
+                                <Label fx:id="currentTimeLabel" styleClass="time-label" text="00:00" />
+                                <Label styleClass="time-label" text="/" />
+                                <Label fx:id="totalTimeLabel" styleClass="time-label" text="00:00" />
+                                <Button fx:id="fullscreenButton" mnemonicParsing="false" styleClass="control-button">
+                                    <graphic>
+                                        <StackPane>
+                                            <children>
+                                                <SVGPath fx:id="fullscreenEnterIcon" content="M16 8 L20 4 M16 8 L20 8 L20 4 M4 12 L8 16 M4 12 L4 16 L8 16 M8 4 L4 8 M8 4 L4 4 L4 8 M20 12 L16 16 M20 12 L20 16 L16 16" styleClass="control-icon" stroke="white" strokeWidth="2" fill="transparent" strokeLineJoin="ROUND" strokeLineCap="ROUND"/>
+                                                <SVGPath fx:id="fullscreenExitIcon" content="M14 10 L20 4 M14 10 L14 4 L20 4 M10 14 L4 20 M10 14 L10 20 L4 20 M4 10 L10 4 M4 10 L4 4 L10 4 M20 14 L14 20 M20 14 L20 20 L14 20" managed="false" styleClass="control-icon" stroke="white" strokeWidth="2" fill="transparent" strokeLineJoin="ROUND" strokeLineCap="ROUND" visible="false"/>
+                                            </children>
+                                        </StackPane>
+                                    </graphic>
+                                </Button>
+                            </children>
                         </HBox>
                     </children>
-                </HBox>
-                <!-- Bottom Half -->
-                <HBox alignment="CENTER" spacing="10">
-                    <children>
-                        <Label fx:id="currentTimeLabel" text="00:00" textFill="white" />
-                        <Slider fx:id="timeSlider" HBox.hgrow="ALWAYS" />
-                        <Label fx:id="remainingTimeLabel" text="-00:19" textFill="white" />
-                    </children>
-                     <VBox.margin>
+                    <VBox.margin>
                         <Insets top="5.0" />
-                     </VBox.margin>
+                    </VBox.margin>
                 </HBox>
             </children>
-            <StackPane.margin>
-                <Insets bottom="20.0" left="20.0" right="20.0" />
-            </StackPane.margin>
-            <padding>
-                <Insets bottom="10.0" left="15.0" right="15.0" top="5.0" />
-            </padding>
         </VBox>
     </children>
 </StackPane>

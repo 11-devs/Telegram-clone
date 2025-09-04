@@ -18,6 +18,7 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter'
     implementation 'org.openjfx:javafx-controls:23.0.2'
     implementation 'org.openjfx:javafx-fxml:23.0.2'
+    implementation "org.openjfx:javafx-media:23.0.2"
     implementation 'com.google.code.gson:gson:2.10.1'
     implementation 'com.jfoenix:jfoenix:9.0.10' // TODO: use jfoenix components in the future
     implementation 'org.postgresql:postgresql:42.6.0' // or latest version
@@ -39,7 +40,7 @@ application {
 }
 javafx {
     version = "23.0.2"
-    modules = ["javafx.controls", "javafx.fxml"]
+    modules = ["javafx.controls", "javafx.fxml", 'javafx.media' ]
 }
 
 test {
