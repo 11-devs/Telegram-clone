@@ -265,7 +265,7 @@
 }
 
 .scroll-to-bottom-button {
-    -fx-background-color: #4FC3F7;
+    -fx-background-color: #1D2B3A;
     -fx-border-color: transparent;
     -fx-background-radius: 50%;
     -fx-min-width: 44px;
@@ -277,13 +277,11 @@
 }
 
 .scroll-to-bottom-button:hover {
-    -fx-background-color: #29B6F6;
-    -fx-scale-x: 1.05;
-    -fx-scale-y: 1.05;
+    -fx-background-color: #243446;
 }
 
 .scroll-to-bottom-button:pressed {
-    -fx-background-color: #0288D1;
+    -fx-background-color: #2B3C4F;
 }
 
 .unread-badge {
@@ -687,19 +685,22 @@
 
 /* ============ MESSAGE BUBBLES ============ */
 .message-bubble {
-    -fx-background-radius: 18px;
-    -fx-border-radius: 18px;
+    -fx-background-radius: 14px;
+    -fx-border-radius: 14px;
     -fx-padding: 8 12 8 12;
     -fx-max-width: 420px;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.12), 0, 0, 0, 0) 0 1px 3px, dropshadow(gaussian, rgba(0, 0, 0, 0.24), 0, 0, 0, 0) 0 1px 2px;
+    -fx-border-color: #182533;
+    -fx-border-width: 0;
 }
 
 .message-bubble.outgoing {
-    -fx-background-color: #4FC3F7;
+    -fx-background-color: #2B5278;
+    -fx-border-color: transparent;
 }
 
 .message-bubble.incoming {
-    -fx-background-color: #202B36;
+    -fx-background-color: #182533;
+    -fx-border-color: transparent;
 }
 
 .message-bubble.outgoing.last-in-group {
@@ -758,6 +759,272 @@
 
 .message-status.read {
     -fx-text-fill: #4CAF50;
+}
+
+/* ============ DOCUMENT MESSAGE BUBBLE STYLES ============ */
+
+/* Document icon container */
+.document-icon-container {
+    -fx-background-color: #2B5278;
+    -fx-border-radius: 12px;
+    -fx-effect: dropshadow(gaussian, rgba(43, 82, 120, 0.3), 6, 0.2, 0, 2);
+    -fx-transition: all 0.2s ease-in-out;
+}
+
+/* Pseudo-element for animation (simulated via JavaFX) */
+.document-icon-container.hovered::before {
+    -fx-background-color: rgba(255, 255, 255, 0.2);
+    -fx-translate-x: 100%;
+}
+
+/* File type specific icon containers */
+.document-icon-container.pdf {
+    -fx-background-color: #e74c3c;
+    -fx-effect: dropshadow(gaussian, rgba(231, 76, 60, 0.3), 6, 0.2, 0, 2);
+}
+
+.document-icon-container.word {
+    -fx-background-color: #3498db;
+    -fx-effect: dropshadow(gaussian, rgba(52, 152, 219, 0.3), 6, 0.2, 0, 2);
+}
+
+.document-icon-container.excel {
+    -fx-background-color: #27ae60;
+    -fx-effect: dropshadow(gaussian, rgba(39, 174, 96, 0.3), 6, 0.2, 0, 2);
+}
+
+.document-icon-container.powerpoint {
+    -fx-background-color: #f39c12;
+    -fx-effect: dropshadow(gaussian, rgba(243, 156, 18, 0.3), 6, 0.2, 0, 2);
+}
+
+.document-icon-container.image {
+    -fx-background-color: #9b59b6;
+    -fx-effect: dropshadow(gaussian, rgba(155, 89, 182, 0.3), 6, 0.2, 0, 2);
+}
+
+.document-icon-container.archive {
+    -fx-background-color: #f1c40f;
+    -fx-effect: dropshadow(gaussian, rgba(241, 196, 15, 0.3), 6, 0.2, 0, 2);
+}
+
+/* Document text styles */
+.document-name {
+    -fx-font-weight: 600;
+    -fx-font-size: 14px;
+    -fx-text-fill: #ffffff;
+    -fx-line-spacing: 1.3em;
+    -fx-wrap-text: true;
+    -fx-max-width: 200px;
+}
+
+.document-name.outgoing {
+    -fx-text-fill: #ffffff;
+}
+
+.document-name.incoming {
+    -fx-text-fill: #ffffff;
+}
+
+.document-details {
+    -fx-font-size: 12px;
+    -fx-text-fill: #bdc3c7;
+    -fx-font-weight: 400;
+    -fx-opacity: 0.8;
+}
+
+.document-details.outgoing {
+    -fx-text-fill: #b8e6b8;
+}
+
+.document-details.incoming {
+    -fx-text-fill: #bdc3c7;
+}
+
+/* Action buttons */
+.document-action-button {
+    -fx-background-color: #2B5278;
+    -fx-text-fill: #ffffff;
+    -fx-border-width: 0;
+    -fx-border-radius: 8px;
+    -fx-padding: 6px 12px;
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+    -fx-cursor: hand;
+    -fx-transition: all 0.2s ease-in-out;
+    -fx-effect: dropshadow(gaussian, rgba(43, 82, 120, 0.3), 4, 0.2, 0, 2);
+    -fx-text-transform: uppercase;
+    -fx-letter-spacing: 0.5px;
+}
+
+.document-action-button.hovered {
+    -fx-background-color: #182533;
+    -fx-effect: dropshadow(gaussian, rgba(24, 37, 51, 0.4), 8, 0.2, 0, 4);
+    -fx-translate-y: -1px;
+}
+
+.document-action-button.pressed {
+    -fx-translate-y: 0;
+    -fx-effect: dropshadow(gaussian, rgba(43, 82, 120, 0.3), 4, 0.2, 0, 2);
+}
+
+.document-action-button.outgoing {
+    -fx-background-color: #2B5278;
+    -fx-effect: dropshadow(gaussian, rgba(43, 82, 120, 0.3), 4, 0.2, 0, 2);
+}
+
+.document-action-button.outgoing.hovered {
+    -fx-background-color: #182533;
+    -fx-effect: dropshadow(gaussian, rgba(24, 37, 51, 0.4), 8, 0.2, 0, 4);
+}
+
+/* Progress indicator for uploading documents */
+.document-upload-progress {
+    -fx-background-color: rgba(43, 82, 120, 0.2);
+    -fx-min-height: 3px;
+    -fx-max-height: 3px;
+    -fx-border-radius: 18px 18px 0 0;
+}
+
+/* Document status indicators */
+.document-status {
+    -fx-alignment: center;
+    -fx-min-width: 16px;
+    -fx-min-height: 16px;
+    -fx-border-radius: 50%;
+    -fx-text-fill: #ffffff;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 3, 0.2, 0, 1);
+}
+
+.document-status.uploading {
+    -fx-background-color: #f39c12;
+}
+
+.document-status.delivered {
+    -fx-background-color: #3498db;
+}
+
+.document-status.read {
+    -fx-background-color: #27ae60;
+}
+
+/* Error states */
+.document-bubble.error {
+    -fx-border-color: #e74c3c;
+    -fx-background-color: #182533;
+}
+
+.document-bubble.error .document-icon-container {
+    -fx-background-color: #e74c3c;
+}
+
+.document-bubble.error .document-action-button {
+    -fx-background-color: #e74c3c;
+}
+
+/* Success states */
+.document-bubble.success {
+    -fx-border-color: #27ae60;
+}
+
+.document-bubble.success .document-icon-container {
+    -fx-background-color: #27ae60;
+}
+
+/* Time and status styles for document bubbles */
+.document-bubble .message-time {
+    -fx-font-size: 11px;
+    -fx-text-fill: #bdc3c7;
+    -fx-opacity: 0.8;
+}
+
+.document-bubble.outgoing .message-time {
+    -fx-text-fill: #b8e6b8;
+}
+
+.document-bubble .message-status {
+    -fx-font-size: 11px;
+    -fx-margin-left: 4px;
+}
+
+.document-bubble .message-status.sent {
+    -fx-text-fill: #bdc3c7;
+}
+
+.document-bubble .message-status.delivered {
+    -fx-text-fill: #3498db;
+}
+
+.document-bubble .message-status.read {
+    -fx-text-fill: #27ae60;
+}
+
+/* Context menu styles for document bubbles */
+.document-context-menu {
+    -fx-background-color: #182533;
+    -fx-border-color: #2B5278;
+    -fx-border-width: 1;
+    -fx-border-radius: 8px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 16, 0.4, 0, 0);
+    -fx-padding: 4 0 4 0;
+    -fx-min-width: 120px;
+    -fx-text-fill: #ffffff;
+}
+
+.document-context-menu .menu-item {
+    -fx-padding: 8 16 8 16;
+    -fx-font-size: 13px;
+    -fx-cursor: hand;
+}
+
+.document-context-menu .menu-item:hover {
+    -fx-background-color: #2B5278;
+}
+
+.document-context-menu .separator {
+    -fx-min-height: 1px;
+    -fx-max-height: 1px;
+    -fx-background-color: #2B5278;
+    -fx-margin: 4 0 4 0;
+}
+
+/* Tooltip styles for document info */
+.document-tooltip {
+    -fx-background-color: rgba(24, 37, 51, 0.8);
+    -fx-text-fill: #ffffff;
+    -fx-padding: 6 8 6 8;
+    -fx-border-radius: 4px;
+    -fx-font-size: 11px;
+    -fx-opacity: 0;
+    -fx-translate-y: -5px;
+    -fx-transition: all 0.2s ease-in-out;
+}
+
+.document-tooltip.show {
+    -fx-opacity: 1;
+    -fx-translate-y: 0;
+}
+
+/* High contrast mode support (simulated with class) */
+.high-contrast .document-bubble {
+    -fx-border-width: 2;
+    -fx-border-color: #ffffff;
+}
+
+.high-contrast .document-action-button {
+    -fx-border-width: 1;
+    -fx-border-color: #ffffff;
+}
+
+.high-contrast .document-name {
+    -fx-font-weight: 700;
+}
+
+/* Accessibility improvements */
+.document-action-button:focused {
+    -fx-border-width: 2;
+    -fx-border-color: #2B5278;
+    -fx-border-insets: 2;
 }
 
 /* ============ FLOATING ACTION BUTTON ============ */

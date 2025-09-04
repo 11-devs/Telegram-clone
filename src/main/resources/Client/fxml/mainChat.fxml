@@ -259,14 +259,14 @@
                     </VBox>
 
                     <!-- Scroll to Bottom Button -->
-                    <StackPane fx:id="scrollToBottomContainer" styleClass="scroll-to-bottom-container" visible="false" StackPane.alignment="BOTTOM_RIGHT">
+                    <StackPane fx:id="scrollToBottomContainer" alignment="BOTTOM_RIGHT" prefWidth="330.0" styleClass="scroll-to-bottom-container" visible="false" StackPane.alignment="BOTTOM_RIGHT">
                         <StackPane.margin>
                             <Insets bottom="80.0" right="24.0" />
                         </StackPane.margin>
                         <children>
                             <Button fx:id="scrollToBottomButton" styleClass="scroll-to-bottom-button">
                                 <graphic>
-                                    <ImageView fitHeight="18.0" fitWidth="18.0" pickOnBounds="true" preserveRatio="true">
+                                    <ImageView fitHeight="40.0" fitWidth="40.0" pickOnBounds="true" preserveRatio="true">
                                         <image>
                                             <Image url="@../images/arrow-down-icon.png" />
                                         </image>
@@ -336,7 +336,7 @@
                         <!-- Message Input Field Container -->
                         <VBox styleClass="input-field-container" HBox.hgrow="ALWAYS">
                             <children>
-                                <TextArea fx:id="messageInputField" maxHeight="120.0" prefRowCount="1" prefWidth="299.0" promptText="Write a message..." styleClass="message-input-field" wrapText="true" />
+                                <TextArea fx:id="messageInputField" prefRowCount="1" promptText="Write a message..." styleClass="message-input-field" wrapText="true" />
                             </children>
                         </VBox>
 

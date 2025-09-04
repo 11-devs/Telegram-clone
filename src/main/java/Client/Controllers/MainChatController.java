@@ -1,9 +1,7 @@
 package Client.Controllers;
 
-import Shared.Models.MessageViewModel;
-import Shared.Models.UserType;
-import Shared.Models.UserViewModel;
-import Shared.Models.UserViewModelBuilder;
+import Shared.Models.*;
+import Shared.Utils.DialogUtil;
 import Shared.Utils.SidebarUtil;
 import Shared.Utils.TelegramCellUtils;
 import javafx.animation.*;
@@ -15,6 +13,12 @@ import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
@@ -23,14 +27,23 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Text;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import java.awt.*;
+import java.io.File;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 import java.util.ResourceBundle;
+
+import static Shared.Utils.DialogUtil.showNotificationDialog;
+import static Shared.Utils.FileUtil.*;
 
 /**
  * The MainChatController class manages the main chat interface of the application.
@@ -997,6 +1010,352 @@ public class MainChatController implements Initializable {
             replyToMessage = null;
         });
         hideReply.play();
+    }
+
+    // ============ DOCUMENT MESSAGE BUBBLE IMPLEMENTATION ============
+
+    /**
+     * Enhanced methods to add to your MainChatController class for document handling
+     */
+            // ============ DOCUMENT ATTACHMENT METHODS ============
+
+    /**
+     * Enhanced attachDocument method with file chooser integration
+     */
+    private void attachDocument() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Select Document");
+
+        // Add common document filters
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("All Files", "*.*"),
+                new FileChooser.ExtensionFilter("PDF Documents", "*.pdf"),
+                new FileChooser.ExtensionFilter("Word Documents", "*.doc", "*.docx"),
+                new FileChooser.ExtensionFilter("Excel Files", "*.xls", "*.xlsx"),
+                new FileChooser.ExtensionFilter("PowerPoint Files", "*.ppt", "*.pptx"),
+                new FileChooser.ExtensionFilter("Text Files", "*.txt"),
+                new FileChooser.ExtensionFilter("Images", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.bmp"),
+                new FileChooser.ExtensionFilter("Archives", "*.zip", "*.rar", "*.7z"),
+                new FileChooser.ExtensionFilter("Code", "java", "py", "js", "cpp", "c", "html", "css", "fxml")
+        );
+
+        Stage currentStage = (Stage) attachmentButton.getScene().getWindow();
+        File selectedFile = fileChooser.showOpenDialog(currentStage);
+
+        if (selectedFile != null) {
+            // Validate file size (e.g., max 100MB)
+            long maxFileSize = 100 * 1024 * 1024; // 100MB in bytes
+            if (selectedFile.length() > maxFileSize) {
+                showTemporaryNotification("File Too Large\nThe selected file is too large. Maximum file size is 100MB.\n");
+                return;
+            }
+
+            // Process the file attachment
+            processDocumentAttachment(selectedFile);
+        }
+    }
+
+    /**
+     * Processes the selected document and adds it to the chat
+     */
+    private void processDocumentAttachment(File file) {
+        try {
+            // Create document info object
+            DocumentInfo docInfo = new DocumentInfo(
+                    file.getName(),
+                    file.length(),
+                    getFileExtension(file.getName()),
+                    file.getAbsolutePath()
+            );
+
+            //TODO: connect to the data base
+            // Copy file to app's document directory for persistence
+            String documentsDir = "/Client/documents"; // TODO: it has bug
+            ensureDataDirectoryExists(documentsDir);
+
+            String newFileName = System.currentTimeMillis() + "_" + file.getName();
+            Path targetPath = Path.of(documentsDir + newFileName);
+
+            // Copy file
+            Files.copy(file.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+            docInfo.setStoredPath(targetPath.toString());
+
+            // Add document message bubble
+            addDocumentMessageBubble(docInfo, true, getCurrentTime(), "sent");
+
+            // Update chat list
+            if (currentSelectedUser != null) {
+                currentSelectedUser.setLastMessage("📄 " + file.getName());
+                currentSelectedUser.setTime(getCurrentTime());
+                refreshChatList();
+            }
+
+            // Simulate upload progress and delivery
+            simulateDocumentUpload(docInfo);
+
+        } catch (Exception e) {
+            System.err.println("Error processing document: " + e.getMessage());
+            showTemporaryNotification("Upload Error\nFailed to process the selected document.\n");
+        }
+    }
+
+    /**
+     * Creates a document message bubble with file info and controls
+     */
+    private void addDocumentMessageBubble(DocumentInfo docInfo, boolean isOutgoing,
+                                          String time, String status) {
+        HBox messageContainer = new HBox();
+        messageContainer.setSpacing(12);
+        messageContainer.setPadding(new Insets(4, 0, 4, 0));
+
+        if (isOutgoing) {
+            messageContainer.setAlignment(Pos.CENTER_RIGHT);
+            VBox bubble = createDocumentBubble(docInfo, time, status, true);
+            messageContainer.getChildren().add(bubble);
+        } else {
+            messageContainer.setAlignment(Pos.CENTER_LEFT);
+
+            // Add sender avatar for group chats
+            if (currentSelectedUser != null &&
+                    (currentSelectedUser.getType() == UserType.GROUP ||
+                            currentSelectedUser.getType() == UserType.SUPERGROUP)) {
+                ImageView senderAvatar = createSenderAvatar(docInfo.getSenderName());
+                messageContainer.getChildren().add(senderAvatar);
+            }
+
+            VBox bubble = createDocumentBubble(docInfo, time, status, false);
+            messageContainer.getChildren().add(bubble);
+        }
+
+        messagesContainer.getChildren().add(messageContainer);
+        TelegramCellUtils.animateNewMessage(messageContainer);
+
+        Platform.runLater(this::scrollToBottom);
+    }
+
+    /**
+     * Creates the document bubble UI with file icon, info, and open button
+     */
+    private VBox createDocumentBubble(DocumentInfo docInfo, String time, String status, boolean isOutgoing) {
+        VBox bubble = new VBox();
+        bubble.setSpacing(8);
+        bubble.getStyleClass().addAll("message-bubble", "document-bubble", isOutgoing ? "outgoing" : "incoming");
+        bubble.setMaxWidth(350);
+        bubble.setPadding(new Insets(12));
+
+        // Document content container
+        HBox docContainer = new HBox();
+        docContainer.setSpacing(12);
+        docContainer.setAlignment(Pos.CENTER_LEFT);
+
+        // File icon
+        VBox iconContainer = new VBox();
+        iconContainer.setAlignment(Pos.CENTER);
+        iconContainer.setPrefSize(48, 48);
+        iconContainer.getStyleClass().add("document-icon-container");
+
+        // Create icon based on file type
+        ImageView fileIcon = createFileTypeIcon(docInfo.getFileExtension());
+        fileIcon.setFitWidth(70);
+        fileIcon.setFitHeight(70);
+        fileIcon.setPreserveRatio(true);
+
+        iconContainer.getChildren().add(fileIcon);
+
+        // File info
+        VBox fileInfo = new VBox();
+        fileInfo.setSpacing(4);
+        fileInfo.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(fileInfo, Priority.ALWAYS);
+
+        // File name
+        Label fileName = new Label(docInfo.getFileName());
+        fileName.getStyleClass().addAll("document-name", isOutgoing ? "outgoing" : "incoming");
+        fileName.setWrapText(true);
+        fileName.setMaxWidth(200);
+
+        // File size and type
+        Label fileDetails = new Label(formatFileSize(docInfo.getFileSize()) + " • " +
+                docInfo.getFileExtension().toUpperCase());
+        fileDetails.getStyleClass().addAll("document-details", isOutgoing ? "outgoing" : "incoming");
+
+        fileInfo.getChildren().addAll(fileName, fileDetails);
+
+        // Action buttons container
+        VBox actionsContainer = new VBox();
+        actionsContainer.setSpacing(4);
+        actionsContainer.setAlignment(Pos.CENTER);
+
+        // Open button
+        Button openButton = new Button("Open");
+        openButton.getStyleClass().addAll("document-action-button", isOutgoing ? "outgoing" : "incoming");
+        openButton.setPrefWidth(100);
+        openButton.setOnAction(e -> openDocument(docInfo));
+
+        // Download/Save button (for received files)
+        Button saveButton = null;
+        if (!isOutgoing) {
+            saveButton = new Button("Save");
+            saveButton.getStyleClass().addAll("document-action-button", "secondary");
+            saveButton.setPrefWidth(60);
+            saveButton.setOnAction(e -> saveDocument(docInfo));
+        }
+
+        actionsContainer.getChildren().add(openButton);
+        if (saveButton != null) {
+            actionsContainer.getChildren().add(saveButton);
+        }
+
+        docContainer.getChildren().addAll(iconContainer, fileInfo, actionsContainer);
+
+        // Time and status container
+        HBox timeContainer = new HBox();
+        timeContainer.setSpacing(4);
+        timeContainer.setAlignment(Pos.CENTER_RIGHT);
+        timeContainer.setPadding(new Insets(4, 0, 0, 0));
+
+        Label timeLabel = new Label(time);
+        timeLabel.getStyleClass().addAll("message-time", isOutgoing ? "outgoing" : "incoming");
+        timeContainer.getChildren().add(timeLabel);
+
+        // Add status for outgoing messages
+        if (isOutgoing && status != null) {
+            Label statusLabel = new Label(getStatusIcon(status));
+            statusLabel.getStyleClass().addAll("message-status", status);
+            timeContainer.getChildren().add(statusLabel);
+        }
+
+        bubble.getChildren().addAll(docContainer, timeContainer);
+
+        // Add click handler for message options
+        bubble.setOnMouseClicked(this::handleMessageClick);
+
+        return bubble;
+    }
+
+    /**
+     * Creates appropriate file type icon based on extension
+     */
+    private ImageView createFileTypeIcon(String extension) {
+        ImageView icon = new ImageView();
+        String iconPath;
+
+        try {
+            switch (extension.toLowerCase()) {
+                case "pdf" -> iconPath = "/Client/images/file-icons/pdf-icon.png";
+                case "doc", "docx" -> iconPath = "/Client/images/file-icons/word-icon.png";
+                case "xls", "xlsx" -> iconPath = "/Client/images/file-icons/excel-icon.png";
+                case "ppt", "pptx" -> iconPath = "/Client/images/file-icons/powerpoint-icon.png";
+                case "txt" -> iconPath = "/Client/images/file-icons/text-icon.png";
+                case "zip", "rar", "7z" -> iconPath = "/Client/images/file-icons/archive-icon.png";
+                case "png", "jpg", "jpeg", "gif", "bmp" -> iconPath = "/Client/images/file-icons/image-icon.png";
+                case "mp3", "wav", "flac" -> iconPath = "/Client/images/file-icons/audio-icon.png";
+                case "mp4", "avi", "mkv" -> iconPath = "/Client/images/file-icons/video-icon.png";
+                case "java", "py", "js", "cpp", "c", "html", "css", "fxml" -> iconPath = "/Client/images/file-icons/code-icon.png";
+                default -> iconPath = "/Client/images/file-icons/document-icon.png";
+            }
+
+            Image image = new Image(Objects.requireNonNull(getClass().getResource(iconPath)).toExternalForm());
+            icon.setImage(image);
+        } catch (Exception e) {
+            // Fallback to default icon
+            try {
+                Image defaultImage = new Image(Objects.requireNonNull(
+                        getClass().getResource("/Client/images/file-icons/document-icon.png")).toExternalForm());
+                icon.setImage(defaultImage);
+            } catch (Exception ex) {
+                // Create a simple colored rectangle as final fallback
+                System.err.println("Failed to load file icons: " + ex.getMessage());
+            }
+        }
+
+        return icon;
+    }
+
+    /**
+     * Opens a document using the system's default application
+     */
+    private void openDocument(DocumentInfo docInfo) {
+        try {
+            File file = new File(docInfo.getStoredPath());
+            if (!file.exists()) {
+                showTemporaryNotification("File Not Found\nThe document file could not be found.\n");
+                return;
+            }
+
+            // Check if Desktop is supported
+            if (!Desktop.isDesktopSupported()) {
+                showTemporaryNotification("Not Supported\nOpening files is not supported on this system.\n");
+                return;
+            }
+
+            Desktop desktop = Desktop.getDesktop();
+
+            // Check if the open action is supported
+            if (!desktop.isSupported(Desktop.Action.OPEN)) {
+                showTemporaryNotification("Not Supported\nOpening files is not supported on this system.\n");
+                return;
+            }
+
+            // Open the file with the system's default application
+            desktop.open(file);
+
+            System.out.println("Opening document: " + docInfo.getFileName());
+
+        } catch (Exception e) {
+            System.err.println("Error opening document: " + e.getMessage());
+            showTemporaryNotification("Open Error\nFailed to open the document: " + e.getMessage() + "\n");
+        }
+    }
+
+    /**
+     * Saves a received document to a user-selected location
+     */
+    private void saveDocument(DocumentInfo docInfo) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Save Document");
+        fileChooser.setInitialFileName(docInfo.getFileName());
+
+        Stage currentStage = (Stage) messagesContainer.getScene().getWindow();
+        File saveLocation = fileChooser.showSaveDialog(currentStage);
+
+        if (saveLocation != null) {
+            try {
+                File sourceFile = new File(docInfo.getStoredPath());
+                Files.copy(sourceFile.toPath(), saveLocation.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+                showTemporaryNotification("Document saved to " + saveLocation.getName());
+
+            } catch (Exception e) {
+                System.err.println("Error saving document: " + e.getMessage());
+                showTemporaryNotification("Save Error\nFailed to save the document: " + e.getMessage() + "\n");
+            }
+        }
+    }
+
+    /**
+     * Simulates document upload progress
+     */
+    private void simulateDocumentUpload(DocumentInfo docInfo) {
+        //TODO: In a real implementation, this would handle actual file upload to server
+
+        // Simulate upload progress
+        Timeline uploadProgress = new Timeline(
+                new KeyFrame(Duration.seconds(0.5), e -> updateDocumentStatus(docInfo, "uploading")),
+                new KeyFrame(Duration.seconds(1.5), e -> updateDocumentStatus(docInfo, "delivered")),
+                new KeyFrame(Duration.seconds(3), e -> updateDocumentStatus(docInfo, "read"))
+        );
+
+        uploadProgress.play();
+    }
+
+    /**
+     * Updates the status of a document message
+     */
+    private void updateDocumentStatus(DocumentInfo docInfo, String status) {
+        // Find and update the document message status // TODO
+        // This would typically update the UI status indicator
+        System.out.println("Document " + docInfo.getFileName() + " status: " + status);
     }
 
     // ============ FILTER AND SEARCH ============
@@ -2155,14 +2514,6 @@ public class MainChatController implements Initializable {
     }
 
     /**
-     * Attaches a document (placeholder).
-     */
-    private void attachDocument() {
-        System.out.println("Attaching document");
-        // TODO: Implement file chooser for documents (UI: Design file chooser, Server: Upload document).
-    }
-
-    /**
      * Creates a poll (placeholder).
      */
     private void createPoll() {
@@ -2254,33 +2605,11 @@ public class MainChatController implements Initializable {
 
     /**
      * Displays a temporary notification overlay at the top of the screen.
-     * TODO: Enhance with more features like custom duration or styling.
-     *
      * @param message The message to display in the notification.
      */
     private void showTemporaryNotification(String message) {
-        // Create temporary notification overlay
-        Label notification = new Label(message);
-        notification.getStyleClass().add("temporary-notification");
-
-        // Position at top of screen
-        StackPane.setAlignment(notification, Pos.TOP_CENTER);
-        StackPane.setMargin(notification, new Insets(20, 0, 0, 0));
-
-        // Add to main container
-        if (mainChatContainer.getChildren().isEmpty()) {
-            StackPane overlay = new StackPane();
-            overlay.getChildren().add(notification);
-            overlay.setMouseTransparent(true);
-            mainChatContainer.getChildren().add(overlay);
-        }
-
-        // Auto-hide after 3 seconds
-        Timeline autoHide = new Timeline(new KeyFrame(Duration.seconds(3), e -> {
-            TelegramCellUtils.animateNotificationBadge(notification, false);
-            // TODO (UI): Remove notification from mainChatContainer after animation to prevent memory leaks.
-        }));
-        autoHide.play();
+        Stage parentStage = (Stage) menuButton.getScene().getWindow();
+        showNotificationDialog(parentStage, message);
     }
 
     /**
