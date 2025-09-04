@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Slider?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.media.MediaView?>
+
+<StackPane fx:id="rootPane" prefHeight="400.0" prefWidth="600.0" style="-fx-background-color: black;" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1">
+    <children>
+        <MediaView fx:id="mediaView" fitHeight="400.0" fitWidth="600.0" StackPane.alignment="CENTER" />
+        <VBox fx:id="controlsContainer" alignment="BOTTOM_CENTER" styleClass="controls-container">
+            <children>
+                <!-- Top Half -->
+                <HBox alignment="CENTER" spacing="10">
+                    <children>
+                        <HBox alignment="CENTER_LEFT">
+                           <children>
+                              <Button fx:id="volumeButton" mnemonicParsing="false" styleClass="control-button" text="🔊" />
+                              <Slider fx:id="volumeSlider" prefWidth="80.0" />
+                           </children>
+                        </HBox>
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Button fx:id="playPauseButton" mnemonicParsing="false" styleClass="control-button" text="▶" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <HBox alignment="CENTER_RIGHT">
+                           <children>
+                              <Button fx:id="fullscreenButton" mnemonicParsing="false" styleClass="control-button" text="⛶" />
+                              <Button fx:id="settingsButton" mnemonicParsing="false" styleClass="control-button" text="⚙" />
+                           </children>
+                        </HBox>
+                    </children>
+                </HBox>
+                <!-- Bottom Half -->
+                <HBox alignment="CENTER" spacing="10">
+                    <children>
+                        <Label fx:id="currentTimeLabel" text="00:00" textFill="white" />
+                        <Slider fx:id="timeSlider" HBox.hgrow="ALWAYS" />
+                        <Label fx:id="remainingTimeLabel" text="-00:19" textFill="white" />
+                    </children>
+                     <VBox.margin>
+                        <Insets top="5.0" />
+                     </VBox.margin>
+                </HBox>
+            </children>
+            <StackPane.margin>
+                <Insets bottom="20.0" left="20.0" right="20.0" />
+            </StackPane.margin>
+            <padding>
+                <Insets bottom="10.0" left="15.0" right="15.0" top="5.0" />
+            </padding>
+        </VBox>
+    </children>
+</StackPane>

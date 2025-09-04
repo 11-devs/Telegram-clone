@@ -1,0 +1,52 @@
+.controls-container {
+    -fx-background-color: rgba(0, 0, 0, 0.75);
+    -fx-background-radius: 15;
+}
+
+.control-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-padding: 5px;
+}
+
+.control-button:hover {
+    -fx-text-fill: lightgray;
+}
+
+.slider {
+    -fx-padding: 0;
+}
+
+.slider .track {
+    -fx-background-color: #666666;
+    -fx-pref-height: 3px;
+    -fx-background-insets: 0;
+}
+
+.slider .thumb {
+    -fx-background-color: white;
+    -fx-pref-height: 12px;
+    -fx-pref-width: 12px;
+    -fx-border-radius: 6px;
+    -fx-background-insets: -5;
+}
+
+#timeSlider .track {
+     -fx-background-color:
+        -fx-shadow-highlight-color, 
+        linear-gradient(to right, -fx-accent 0%, -fx-accent 100%, #666666 100%);
+}
+
+#timeSlider .thumb {
+    -fx-background-insets: -4.5;
+}
+
+#volumeSlider .track {
+    -fx-pref-height: 2px;
+}
+
+#volumeSlider .thumb {
+    -fx-pref-height: 10px;
+    -fx-pref-width: 10px;
+}
