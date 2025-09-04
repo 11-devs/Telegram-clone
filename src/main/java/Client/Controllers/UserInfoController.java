@@ -116,7 +116,12 @@ public class UserInfoController implements Initializable {
                     var response = basicRegisterTask.getValue();
                     if(response.getStatusCode() == StatusCode.OK){
                         var resultCode = AccessKeyManager.LoginWithAccessKey(response.getPayload().getAccessKey(),connectionManager.getClient());
-                        if(resultCode == StatusCode.OK) System.out.println("Successful login");
+                        if (resultCode == StatusCode.OK) {
+                            System.out.println("Successful login");
+                            changeSceneWithSameSize(root, "/Client/fxml/mainChat.fxml", (MainChatController controller) -> {
+
+                            });
+                        }
                     }
                 } catch (Exception e) {
                     e.printStackTrace();

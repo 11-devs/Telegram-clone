@@ -101,7 +101,12 @@ public class CloudPasswordCheckController {
                         switch (response.getPayload().getStatus()){
                             case "logged_in":
                                 var resultCode = AccessKeyManager.LoginWithAccessKey(response.getPayload().getAccessKey(),connectionManager.getClient());
-                                if(resultCode == StatusCode.OK) System.out.println("Successful login");
+                                if (resultCode == StatusCode.OK) {
+                                    System.out.println("Successful login");
+                                    changeSceneWithSameSize(root, "/Client/fxml/mainChat.fxml", (MainChatController controller) -> {
+
+                                    });
+                                }
                                 break;
                         }
                     }else{

@@ -241,7 +241,9 @@ public class VerificationViaTelegramController {
                 var resultCode = AccessKeyManager.LoginWithAccessKey(payload.getAccessKey(), connectionManager.getClient());
                 if (resultCode == StatusCode.OK) {
                     System.out.println("Successful login");
-                    // TODO: Navigate to the main chat screen
+                    changeSceneWithSameSize(root, "/Client/fxml/mainChat.fxml", (MainChatController controller) -> {
+
+                    });
                 }
                 break;
         }
