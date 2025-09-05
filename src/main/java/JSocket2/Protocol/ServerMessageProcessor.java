@@ -107,7 +107,7 @@ public class ServerMessageProcessor implements IMessageProcessor {
     private void handleRpcCall(Message message) throws IOException {
         var metadata = gson.fromJson(new String(message.getMetadata(), StandardCharsets.UTF_8), RpcCallMetadata.class);
         var payloadJson = new String(message.getPayload(), StandardCharsets.UTF_8);
-        var response = rpcDispatcher.dispatch(metadata, payloadJson,serverSession.getActiveUser());
+        var response = rpcDispatcher.dispatch(metadata, payloadJson,serverSession.getServerSessionManager(),serverSession.getActiveUser());
 
         var rpcResponseMetadataString = gson.toJson(new RpcResponseMetadata(response.getStatusCode().code, response.getMessage()));
         var rpcResponsePayloadString = gson.toJson(response.getPayload());

@@ -185,4 +185,7 @@ public class ClientApplication {
         notifyConnectionLost();
         shutdown();
     }
+    public ServiceProvider getServiceProvider() {
+        return serviceProvider;
+    }
 }

@@ -2,21 +2,24 @@ package Client.Controllers;
 
 import Client.AppConnectionManager;
 import Client.RpcCaller;
+import Client.Services.ChatService;
+import Client.Services.FileDownloadService;
+import Client.Services.UI.ChatUIService;
 import Client.Tasks.UploadTask;
 import JSocket2.Core.Client.ConnectionManager;
 import JSocket2.Protocol.Rpc.RpcResponse;
 import JSocket2.Protocol.StatusCode;
 import JSocket2.Protocol.Transfer.FileInfoModel;
 import JSocket2.Protocol.Transfer.IProgressListener;
+import JSocket2.Protocol.Transfer.TransferInfo;
 import Shared.Api.Models.ChatController.GetChatInfoOutputModel;
-import Shared.Api.Models.ChatController.getChatsByUserInputModel;
-import Shared.Api.Models.MessageController.GetMessageByChatInputModel;
+import Shared.Api.Models.MediaController.CreateMediaInputModel;
 import Shared.Api.Models.MessageController.GetMessageOutputModel;
 import Shared.Api.Models.MessageController.SendMessageInputModel;
 import Shared.Api.Models.MessageController.SendMessageOutputModel;
+import Shared.Events.Models.NewMessageEventModel;
 import Shared.Models.*;
 //import Shared.Utils.SidebarUtil;
-import Shared.Models.Chat.Chat;
 import Shared.Models.Message.MessageType;
 import Shared.Utils.TelegramCellUtils;
 import com.google.gson.Gson;
@@ -26,9 +29,12 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -45,10 +51,13 @@ import javafx.scene.layout.*;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import javafx.util.Duration;
 
 import java.awt.*;
+import java.io.IOException;
 import java.util.List;
 import java.io.File;
 import java.net.URL;
@@ -62,6 +71,7 @@ import java.util.ArrayList;
 import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
 import static JSocket2.Utils.FileUtil.getFileExtension;
@@ -354,12 +364,61 @@ public class MainChatController implements Initializable {
      */
     private ConnectionManager connectionManager;
     private RpcCaller rpcCaller;
+    private ChatService chatService;
+    private ChatUIService chatUIService;
+    private FileDownloadService fileDownloadService;
     //private UserIdentity currentUser;
     private final Gson gson = new Gson();
 
     /**
      * DTO class to mirror the server's GetMessageOutputModel for clean JSON parsing.
      */
+    private static class DocumentInfo {
+        private String fileId;
+        private String fileName;
+        private long fileSize;
+        private String fileExtension;
+        private String storedPath;
+        private String senderName;
+
+        /**
+         * Constructor for local file uploads.
+         */
+        public DocumentInfo(String fileName, long fileSize, String fileExtension, String storedPath) {
+            this.fileName = fileName;
+            this.fileSize = fileSize;
+            this.fileExtension = fileExtension;
+            this.storedPath = storedPath;
+        }
+
+        /**
+         * Constructor for downloaded files, created from server metadata.
+         */
+        public DocumentInfo(TransferInfo transferInfo) {
+            this.fileId = transferInfo.getFileId();
+            this.fileName = transferInfo.getFileName() + "." + transferInfo.getFileExtension();
+            this.fileSize = transferInfo.getFileSize();
+            this.fileExtension = transferInfo.getFileExtension();
+            // The final path is resolved by the download service upon completion.
+            // We can predict it for the 'open' action.
+            this.storedPath = new File(transferInfo.getDestinationPath(), this.fileName).getPath();
+        }
+
+        //<editor-fold desc="Getters and Setters">
+        public String getFileId() { return fileId; }
+        public void setFileId(String fileId) { this.fileId = fileId; }
+        public String getFileName() { return fileName; }
+        public void setFileName(String fileName) { this.fileName = fileName; }
+        public long getFileSize() { return fileSize; }
+        public void setFileSize(long fileSize) { this.fileSize = fileSize; }
+        public String getFileExtension() { return fileExtension; }
+        public void setFileExtension(String fileExtension) { this.fileExtension = fileExtension; }
+        public String getStoredPath() { return storedPath; }
+        public void setStoredPath(String storedPath) { this.storedPath = storedPath; }
+        public String getSenderName() { return senderName; }
+        public void setSenderName(String senderName) { this.senderName = senderName; }
+        //</editor-fold>
+    }
     private static class MessageDto {
         UUID messageId;
         UUID senderId;
@@ -378,6 +437,11 @@ public class MainChatController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         connectionManager = AppConnectionManager.getInstance().getConnectionManager();
         rpcCaller = AppConnectionManager.getInstance().getRpcCaller();
+        chatService = new ChatService(rpcCaller);
+        fileDownloadService = FileDownloadService.getInstance();
+        fileDownloadService.initialize();;
+        chatUIService = connectionManager.getClient().getServiceProvider().GetService(ChatUIService.class);
+        chatUIService.setActiveChatController(this);
         //currentUser = connectionManager.getClient().getUserIdentity();
         initializeSidebarsSplitPane();
         initializeData();
@@ -387,6 +451,48 @@ public class MainChatController implements Initializable {
         setupAnimations();
         // TODO: Implement keyboard shortcut setup for enhanced navigation.
         loadInitialState();
+    }
+    public void handleIncomingMessage(NewMessageEventModel message) {
+        // Check if the message belongs to the currently opened chat
+        if (currentSelectedUser != null && currentSelectedUser.getUserId().equals(message.getChatId().toString())) {
+            String formattedTime = LocalDateTime.parse(message.getTimestamp()).format(DateTimeFormatter.ofPattern("HH:mm"));
+
+            if (message.getMessageType() == MessageType.TEXT) {
+                addMessageBubble(message.getTextContent(), false, formattedTime, "received", message.getSenderName());
+            } else if (message.getMessageType() == MessageType.MEDIA) {
+                fileDownloadService.getFileInfo(message.getFileId()).thenAcceptAsync(transferInfo -> {
+                    if (transferInfo != null) {
+                        DocumentInfo docInfo = new DocumentInfo(transferInfo);
+                        docInfo.setSenderName(message.getSenderName());
+                        Platform.runLater(() -> addDocumentMessageBubble(docInfo, false, formattedTime, "received"));
+                    }
+                });
+            }
+
+            if (messagesScrollPane.getVvalue() > 0.9) {
+                scrollToBottom();
+            }
+        }
+
+        // Update the corresponding chat item in the list
+        allChatUsers.stream()
+                .filter(user -> user.getUserId().equals(message.getChatId().toString()))
+                .findFirst()
+                .ifPresent(user -> {
+                    user.setLastMessage(message.getTextContent() != null ? message.getTextContent() : "Media");
+                    user.setTime(message.getTimestamp());
+
+                    // Increment unread count only if the chat is not currently active
+                    if (currentSelectedUser == null || !currentSelectedUser.getUserId().equals(user.getUserId())) {
+                        try {
+                            int currentCount = Integer.parseInt(user.getNotificationsNumber());
+                            user.setNotificationsNumber(String.valueOf(currentCount + 1));
+                        } catch (NumberFormatException e) {
+                            user.setNotificationsNumber("1");
+                        }
+                    }
+                    reorderAndRefreshChatList(user);
+                });
     }
 // Add these two new methods anywhere inside the MainChatController class.
 
@@ -486,25 +592,20 @@ public class MainChatController implements Initializable {
     }
     private void loadUserChatsFromServer() {
 
-        Task<RpcResponse<GetChatInfoOutputModel[]>> getChatsTask = new Task<>() {
-            @Override
-            protected RpcResponse<GetChatInfoOutputModel[]> call() throws Exception {
-                return rpcCaller.getChatsByUser();
-            }
-        };
+        Task<RpcResponse<GetChatInfoOutputModel[]>> getChatsTask = chatService.fetchUserChats();
 
         getChatsTask.setOnSucceeded(event -> {
             RpcResponse<GetChatInfoOutputModel[]> response = getChatsTask.getValue();
             if (response.getStatusCode() == StatusCode.OK && response.getPayload() != null) {
                 List<UserViewModel> userViewModels = new ArrayList<>();
                 for (GetChatInfoOutputModel chat : response.getPayload()) {
-                    // NOTE: This mapping is simplified due to server API limitations (no last message/sender info).
-                    // In a real application, the server should return a richer ViewModel/DTO.
+                    // --- MODIFIED LOGIC: Use real data from the server ---
                     UserViewModel uvm = new UserViewModelBuilder()
-                            .userId(chat.getId().toString()) // Use userId field to store the Chat ID
+                            .userId(chat.getId().toString())
+                            .avatarId(chat.getProfilePictureId())
                             .userName(chat.getTitle() != null ? chat.getTitle() : "Private Chat")
-                            .lastMessage("...") // Placeholder for last message
-                            .time(" ") // chat.getUpdatedAt() != null ? chat.getUpdatedAt().format(DateTimeFormatter.ofPattern("HH:mm")) :
+                            .lastMessage(chat.getLastMessage()) // Use real last message
+                            .time(chat.getLastMessageTimestamp())     // Use real timestamp
                             .type(chat.getType())
                             .build();
                     userViewModels.add(uvm);
@@ -521,60 +622,7 @@ public class MainChatController implements Initializable {
         getChatsTask.setOnFailed(event -> getChatsTask.getException().printStackTrace());
         new Thread(getChatsTask).start();
     }
-    /**
-     * Loads sample chat data for demonstration purposes.
-     * This method will be replaced with real data fetching.
-     */
-    // TODO: Replace with real data
-    // TODO: This section will be deleted (This is an example)
-    private void loadSampleChats() {
-        UserViewModel user1 = new UserViewModelBuilder()
-                .userName("Alice Johnson")
-                .lastMessage("Hey there! How are you doing?")
-                .time("13:06")
-                .isOnline(true)
-                .notificationsNumber("3")
-                .isVerified(true)
-                .type(UserType.USER.name()).bio("Hi im Alice")
-                .phoneNumber("+981111111111")
-                .userId("Alice")
-                .build();
 
-        UserViewModel user2 = new UserViewModelBuilder()
-                .userName("Bob Smith")
-                .lastMessage("Let's meet tomorrow")
-                .time("13:00")
-                .isOnline(false)
-                .lastSeen("last seen 2 hours ago")
-                .type(UserType.USER.name()).bio("Hi im Bob")
-                .phoneNumber("+982222222222")
-                .userId("Bob")
-                .build();
-
-        UserViewModel group1 = new UserViewModelBuilder()
-                .userName("Development Team")
-                .lastMessage("John: Great work on the project!")
-                .time("12:20")
-                .notificationsNumber("12")
-                .isPinned(true)
-                .type(UserType.GROUP.name())
-                .bio("Hi we are Development Team")
-                .userId("Development Team")
-                .build();
-
-        UserViewModel channel1 = new UserViewModelBuilder()
-                .userName("Tech News")
-                .lastMessage("Latest updates in technology")
-                .time("11:15")
-                .isMuted(true)
-                .type(UserType.CHANNEL.name())
-                .bio("Hi we are Tech News")
-                .userId("Tech News")
-                .build();
-
-        allChatUsers.addAll(user1, user2, group1, channel1);
-        filteredChatUsers.setAll(allChatUsers);
-    }
 
     /**
      * Sets up the chat list with a custom cell factory and selection listener.
@@ -589,11 +637,9 @@ public class MainChatController implements Initializable {
                 selectChat(newUser);
             }
         });
-
         // Initially show welcome state
         showWelcomeState();
     }
-
     /**
      * Sets up the message input area with auto-resize, key handling, and focus listeners.
      */
@@ -828,15 +874,30 @@ public class MainChatController implements Initializable {
      * @param user The UserViewModel to update the avatar for.
      */
     private void updateHeaderAvatar(UserViewModel user) {
-        if (user.getAvatarPath() != null && !user.getAvatarPath().isEmpty()) {
-            try {
-                Image avatar = new Image(user.getAvatarPath());
-                headerAvatarImage.setImage(avatar);
-            } catch (Exception e) {
-                loadDefaultHeaderAvatar();
-            }
-        } else {
-            loadDefaultHeaderAvatar();
+        loadDefaultHeaderAvatar(); // Set default avatar immediately
+
+        // Assuming UserViewModel has getAvatarId()
+        String avatarId = user.getAvatarId();
+
+        if (avatarId != null && !avatarId.isEmpty()) {
+            fileDownloadService.getFile(avatarId).thenAccept(file -> {
+                Platform.runLater(() -> {
+                    // Check if the current user is still the one we initiated this download for
+                    if (currentSelectedUser != null && avatarId.equals(currentSelectedUser.getAvatarId())) {
+                        try {
+                            Image avatar = new Image(file.toURI().toString());
+                            headerAvatarImage.setImage(avatar);
+                        } catch (Exception e) {
+                            System.err.println("Failed to load downloaded avatar: " + e.getMessage());
+                            loadDefaultHeaderAvatar(); // Fallback to default on error
+                        }
+                    }
+                });
+            }).exceptionally(e -> {
+                System.err.println("Failed to download avatar " + avatarId + ": " + e.getMessage());
+                // The default avatar is already showing, so no UI action needed on failure.
+                return null;
+            });
         }
     }
 
@@ -845,21 +906,20 @@ public class MainChatController implements Initializable {
      *
      * @param user The UserViewModel to load messages for.
      */
-    private void loadMessages(UserViewModel user) {
+    /**
+     * Loads messages for the selected user, now with support for media messages.
+     *
+     * @param user The UserViewModel to load messages for.
+     */
+
+    public void loadMessages(UserViewModel user) {
         messagesContainer.getChildren().clear();
         if (user == null || user.getUserId() == null) {
             showEmptyChatState();
             return;
         }
 
-        Task<RpcResponse<GetMessageOutputModel[]>> getMessagesTask = new Task<>() {
-            @Override
-            protected RpcResponse<GetMessageOutputModel[]> call() throws Exception {
-                GetMessageByChatInputModel input = new GetMessageByChatInputModel();
-                input.setChatId(UUID.fromString(user.getUserId()));
-                return rpcCaller.getMessagesByChat(input);
-            }
-        };
+        Task<RpcResponse<GetMessageOutputModel[]>> getMessagesTask = chatService.fetchMessagesForChat(UUID.fromString(user.getUserId()));
 
         getMessagesTask.setOnSucceeded(event -> {
             RpcResponse<GetMessageOutputModel[]> response = getMessagesTask.getValue();
@@ -872,13 +932,29 @@ public class MainChatController implements Initializable {
                     }
 
                     for (GetMessageOutputModel msg : response.getPayload()) {
-
-
                         LocalDateTime timestamp = LocalDateTime.parse(msg.getTimestamp());
-                        if (msg.getTextContent() != null) {
-                            addMessageBubble(msg.getTextContent(), msg.getOutgoing(), timestamp.format(DateTimeFormatter.ofPattern("HH:mm")), "read", msg.getOutgoing() ? null : msg.getSenderName());
+                        String formattedTime = timestamp.format(DateTimeFormatter.ofPattern("HH:mm"));
+                        String senderName = msg.getOutgoing() ? null : msg.getSenderName();
+
+                        if (msg.getMessageType() == MessageType.TEXT && msg.getTextContent() != null) {
+                            addMessageBubble(msg.getTextContent(), msg.getOutgoing(), formattedTime, "read", senderName);
+                        } else if (msg.getMessageType() == MessageType.MEDIA && msg.getMediaId() != null) {
+                            final String fileId = msg.getFileId();
+                            // Asynchronously fetch file info to build the bubble without blocking the UI thread.
+                            fileDownloadService.getFileInfo(fileId).thenAcceptAsync(transferInfo -> {
+                                if (transferInfo != null) {
+                                    DocumentInfo docInfo = new DocumentInfo(transferInfo);
+                                    docInfo.setSenderName(senderName);
+                                    Platform.runLater(() -> addDocumentMessageBubble(docInfo, msg.getOutgoing(), formattedTime, "read"));
+                                } else {
+                                    System.err.println("Could not retrieve info for fileId: " + fileId);
+                                }
+                            }).exceptionally(ex -> {
+                                System.err.println("Failed to get TransferInfo for fileId: " + fileId);
+                                ex.printStackTrace();
+                                return null;
+                            });
                         }
-                        // TODO: Add logic for media messages here
                     }
                     scrollToBottom();
                 });
@@ -919,12 +995,7 @@ public class MainChatController implements Initializable {
         input.setTextContent(text);
         input.setMessageType(MessageType.TEXT);
 
-        Task<RpcResponse<SendMessageOutputModel>> sendMessageTask = new Task<>() {
-            @Override
-            protected RpcResponse<SendMessageOutputModel> call() throws Exception {
-                return rpcCaller.sendMessage(input);
-            }
-        };
+        Task<RpcResponse<SendMessageOutputModel>> sendMessageTask = chatService.sendMessage(input);
 
         sendMessageTask.setOnSucceeded(event -> {
             RpcResponse<SendMessageOutputModel> response = sendMessageTask.getValue();
@@ -989,7 +1060,7 @@ public class MainChatController implements Initializable {
     private void uploadFileAndSendMessage(File file, DocumentInfo docInfo) {
         IProgressListener listener = (transferred, total) -> {
             double progress = (total > 0) ? ((double) transferred / total) * 100 : 0;
-            System.out.printf("Upload Progress: %.2f%%\n", progress);
+            System.out.printf("Upload Progress: %.2f%%\\n", progress);
             // TODO: Update UI with progress indicator on the message bubble
         };
 
@@ -997,9 +1068,25 @@ public class MainChatController implements Initializable {
         ExecutorService backgroundExecutor = app.getBackgroundExecutor();
         backgroundExecutor.submit(() -> {
             try {
+                // Step 1: Initiate upload to get FileId. This is a custom protocol message, not RPC.
                 FileInfoModel info = app.getFileTransferManager().initiateUpload(file);
                 String fileId = info.FileId;
 
+                // Step 2: Create the Media DB entry via RPC.
+                CreateMediaInputModel createMediaInput = new CreateMediaInputModel(
+                        UUID.fromString(fileId),
+                        file.length(),
+                        getFileExtension(file)
+                );
+                RpcResponse<UUID> createMediaResponse = rpcCaller.createMediaEntry(createMediaInput);
+
+                if (createMediaResponse.getStatusCode() != StatusCode.OK) {
+                    System.err.println("Failed to create media entry on server: " + createMediaResponse.getMessage());
+                    Platform.runLater(() -> showTemporaryNotification("Error preparing upload."));
+                    return; // Abort upload
+                }
+
+                // Step 3: Start the actual upload task
                 UploadTask uploadTask = new UploadTask(app.getFileTransferManager(), info, file, listener);
                 app.registerTask(fileId, uploadTask);
 
@@ -1007,17 +1094,13 @@ public class MainChatController implements Initializable {
                     app.unregisterTask(fileId);
                     System.out.println("Upload successful. Media ID: " + fileId);
 
+                    // Step 4: Send the message pointing to the Media ID
                     SendMessageInputModel messageInput = new SendMessageInputModel();
                     messageInput.setChatId(UUID.fromString(currentSelectedUser.getUserId()));
                     messageInput.setMessageType(MessageType.MEDIA);
-                    messageInput.setMediaId(UUID.fromString(fileId));
+                    messageInput.setMediaId(createMediaResponse.getPayload());
 
-                    Task<RpcResponse<SendMessageOutputModel>> sendMessageTask = new Task<>() {
-                        @Override
-                        protected RpcResponse<SendMessageOutputModel> call() throws Exception {
-                            return rpcCaller.sendMessage(messageInput);
-                        }
-                    };
+                    Task<RpcResponse<SendMessageOutputModel>> sendMessageTask = chatService.sendMessage(messageInput);
                     sendMessageTask.setOnSucceeded(event -> {
                         if (sendMessageTask.getValue().getStatusCode() == StatusCode.OK) {
                             System.out.println("Media message sent successfully.");
@@ -1042,11 +1125,12 @@ public class MainChatController implements Initializable {
                 backgroundExecutor.submit(uploadTask);
 
             } catch (Exception ex) {
-                System.err.println("Error initiating file upload: " + ex.getMessage());
+                System.err.println("Error initiating file upload or creating media entry: " + ex.getMessage());
+                ex.printStackTrace();
                 Platform.runLater(() -> showTemporaryNotification("Error starting upload."));
             }
         });
-    }
+        }
 
     // ============ MESSAGE HANDLING ============
 
@@ -1463,40 +1547,120 @@ public class MainChatController implements Initializable {
         return icon;
     }
 
+    private boolean isVideoFile(String extension) {
+        if (extension == null) return false;
+        return switch (extension.toLowerCase()) {
+            case "mp4", "avi", "mkv", "mov", "flv" -> true;
+            default -> false;
+        };
+    }
+
     /**
-     * Opens a document using the system's default application
+     * Loads the video player FXML and displays it in a new stage.
+     * @param videoFile The video file to play.
      */
-    private void openDocument(DocumentInfo docInfo) {
+    private void openVideoPlayer(File videoFile) {
         try {
-            File file = new File(docInfo.getStoredPath());
-            if (!file.exists()) {
-                showTemporaryNotification("File Not Found\nThe document file could not be found.\n");
-                return;
-            }
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/Client/fxml/videoPlayerDialog.fxml"));
+            VideoPlayerController controller = new VideoPlayerController();
+            loader.setController(controller);
 
-            // Check if Desktop is supported
-            if (!Desktop.isDesktopSupported()) {
-                showTemporaryNotification("Not Supported\nOpening files is not supported on this system.\n");
-                return;
-            }
+            Parent root = loader.load();
+            controller.setVideoFile(videoFile);
 
-            Desktop desktop = Desktop.getDesktop();
+            Stage videoStage = new Stage();
+            videoStage.initModality(Modality.APPLICATION_MODAL);
+            videoStage.initStyle(StageStyle.DECORATED);
+            videoStage.setTitle(videoFile.getName());
+            videoStage.setScene(new Scene(root));
+            videoStage.setOnCloseRequest(event -> controller.cleanup());
 
-            // Check if the open action is supported
-            if (!desktop.isSupported(Desktop.Action.OPEN)) {
-                showTemporaryNotification("Not Supported\nOpening files is not supported on this system.\n");
-                return;
-            }
-
-            // Open the file with the system's default application
-            desktop.open(file);
-
-            System.out.println("Opening document: " + docInfo.getFileName());
-
-        } catch (Exception e) {
-            System.err.println("Error opening document: " + e.getMessage());
-            showTemporaryNotification("Open Error\nFailed to open the document: " + e.getMessage() + "\n");
+            videoStage.show();
+        } catch (IOException e) {
+            System.err.println("Failed to open video player: " + e.getMessage());
+            e.printStackTrace();
+            showTemporaryNotification("Error opening video player.");
         }
+    }
+    private void openDocument(DocumentInfo docInfo) {
+        if (docInfo.getStoredPath() != null) {
+            if (isVideoFile(docInfo.getFileExtension())) {
+                File localVideoFile = (docInfo.getStoredPath() != null) ? new File(docInfo.getStoredPath()) : null;
+
+                if (localVideoFile != null && localVideoFile.exists()) {
+                    openVideoPlayer(localVideoFile);
+                    return;
+                }
+
+                if (docInfo.getFileId() != null && !docInfo.getFileId().isEmpty()) {
+                    showTemporaryNotification("Opening " + docInfo.getFileName() + "...");
+                    fileDownloadService.getFile(docInfo.getFileId()).thenAcceptAsync(downloadedFile -> {
+                        Platform.runLater(() -> {
+                            if (downloadedFile != null && downloadedFile.exists()) {
+                                openVideoPlayer(downloadedFile);
+                            } else {
+                                showTemporaryNotification("Download Error\nVideo not found after download.");
+                            }
+                        });
+                    }).exceptionally(ex -> {
+                        Platform.runLater(() -> {
+                            showTemporaryNotification("Download Failed\nCould not retrieve the video.");
+                            ex.printStackTrace();
+                        });
+                        return null;
+                    });
+                } else {
+                    showTemporaryNotification("File Not Found\nCannot locate or download the video.");
+                }
+                return;
+            }
+            File localFile = new File(docInfo.getStoredPath());
+            if (localFile.exists()) {
+                try {
+                    if (Desktop.isDesktopSupported()) {
+                        Desktop.getDesktop().open(localFile);
+                        System.out.println("Opening existing local document: " + docInfo.getFileName());
+                        return;
+                    }
+                } catch (IOException e) {
+                    System.err.println("Could not open local file, will try to download. Error: " + e.getMessage());
+                }
+            }
+        }
+
+        // If no local path or it fails, use the fileId to download/get from cache.
+        if (docInfo.getFileId() == null || docInfo.getFileId().isEmpty()) {
+            showTemporaryNotification("File Not Found\nCannot locate or download the file.");
+            return;
+        }
+
+        showTemporaryNotification("Opening " + docInfo.getFileName() + "...");
+
+        fileDownloadService.getFile(docInfo.getFileId()).thenAcceptAsync(file -> {
+            Platform.runLater(() -> {
+                try {
+                    if (file != null && file.exists()) {
+                        if (Desktop.isDesktopSupported()) {
+                            Desktop.getDesktop().open(file);
+                        } else {
+                            showTemporaryNotification("Not Supported\nOpening files is not supported on this system.");
+                        }
+                    } else {
+                        showTemporaryNotification("Download Error\nFile not found after download.");
+                    }
+                } catch (IOException e) {
+                    System.err.println("Error opening downloaded document: " + e.getMessage());
+                    showTemporaryNotification("Open Error\nCould not open the downloaded file.");
+                }
+            });
+        }).exceptionally(ex -> {
+            Platform.runLater(() -> {
+                System.err.println("Failed to download or open file: " + ex.getMessage());
+                ex.printStackTrace();
+                showTemporaryNotification("Download Failed\nCould not retrieve the file.");
+            });
+            return null;
+        });
     }
 
     /**
@@ -1511,16 +1675,37 @@ public class MainChatController implements Initializable {
         File saveLocation = fileChooser.showSaveDialog(currentStage);
 
         if (saveLocation != null) {
-            try {
-                File sourceFile = new File(docInfo.getStoredPath());
-                Files.copy(sourceFile.toPath(), saveLocation.toPath(), StandardCopyOption.REPLACE_EXISTING);
-
-                showTemporaryNotification("Document saved to " + saveLocation.getName());
-
-            } catch (Exception e) {
-                System.err.println("Error saving document: " + e.getMessage());
-                showTemporaryNotification("Save Error\nFailed to save the document: " + e.getMessage() + "\n");
+            CompletableFuture<File> sourceFileFuture;
+            // Case 1: File was uploaded by this client and path is known and valid.
+            if (docInfo.getStoredPath() != null && new File(docInfo.getStoredPath()).exists()) {
+                sourceFileFuture = CompletableFuture.completedFuture(new File(docInfo.getStoredPath()));
             }
+            // Case 2: File needs to be fetched from server/cache via its ID.
+            else if (docInfo.getFileId() != null) {
+                showTemporaryNotification("Downloading file to save...");
+                sourceFileFuture = fileDownloadService.getFile(docInfo.getFileId());
+            }
+            // Case 3: No way to locate the file.
+            else {
+                showTemporaryNotification("Save Error\nCould not locate the source file.");
+                return;
+            }
+
+            sourceFileFuture.thenAcceptAsync(sourceFile -> {
+                try {
+                    Files.copy(sourceFile.toPath(), saveLocation.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    Platform.runLater(() -> showTemporaryNotification("Document saved to " + saveLocation.getName()));
+                } catch (IOException e) {
+                    System.err.println("Error saving document: " + e.getMessage());
+                    Platform.runLater(() -> showTemporaryNotification("Save Error\nFailed to copy the file."));
+                }
+            }).exceptionally(ex -> {
+                Platform.runLater(() -> {
+                    System.err.println("Error getting source file for saving: " + ex.getMessage());
+                    showTemporaryNotification("Save Error\nCould not retrieve the file for saving.");
+                });
+                return null;
+            });
         }
     }
 
@@ -1880,16 +2065,29 @@ public class MainChatController implements Initializable {
      */
     private void updateProfileAvatar(UserViewModel user) {
         if (profileAvatarImage == null) return;
+        loadDefaultProfileAvatar(); // Set default avatar immediately
 
-        if (user.getAvatarPath() != null && !user.getAvatarPath().isEmpty()) {
-            try {
-                Image avatar = new Image(user.getAvatarPath());
-                profileAvatarImage.setImage(avatar);
-            } catch (Exception e) {
-                loadDefaultProfileAvatar();
-            }
-        } else {
-            loadDefaultProfileAvatar();
+        // Assuming UserViewModel has getAvatarId()
+        String avatarId = user.getAvatarId();
+
+        if (avatarId != null && !avatarId.isEmpty()) {
+            fileDownloadService.getFile(avatarId).thenAccept(file -> {
+                Platform.runLater(() -> {
+                    // Check if the right panel is still visible and for the same user
+                    if (isRightPanelVisible && currentSelectedUser != null && avatarId.equals(currentSelectedUser.getAvatarId())) {
+                        try {
+                            Image avatar = new Image(file.toURI().toString());
+                            profileAvatarImage.setImage(avatar);
+                        } catch (Exception e) {
+                            System.err.println("Failed to load downloaded profile avatar: " + e.getMessage());
+                            loadDefaultProfileAvatar();
+                        }
+                    }
+                });
+            }).exceptionally(e -> {
+                System.err.println("Failed to download profile avatar " + avatarId + ": " + e.getMessage());
+                return null;
+            });
         }
     }
 

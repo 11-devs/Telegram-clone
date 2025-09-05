@@ -28,6 +28,7 @@ public class ClientApplicationBuilder {
         return services;
     }
     public ClientApplicationBuilder addEventSubscriber(Class<?> subscribeType){
+        services.AddSingleton(subscribeType);
         subscribers.subscribe(subscribeType);
         return this;
     }

@@ -14,7 +14,7 @@ public class UserIsTypingEvent extends EventBase {
     }
 
     @Override
-    public void Invoke(String receiverId,Object... args) throws IOException {
+    public void Invoke(ServerSessionManager serverSessionManager,String receiverId,Object... args) throws IOException {
         Message message = createEventMessage("UserIsTypingEvent",args);
         serverSessionManager.publishMessage(receiverId,message);
     }

@@ -1,6 +1,5 @@
 package Shared.Api.Models.ChatController;
 
-import Shared.Models.Chat.ChatType;
 import java.util.UUID;
 
 public class GetChatInfoOutputModel {
@@ -9,6 +8,12 @@ public class GetChatInfoOutputModel {
     private String title;
     private String profilePictureId;
 
+    // --- NEW FIELDS ---
+    private String lastMessage;
+    private String lastMessageTimestamp;
+    private String lastMessageSenderName;
+
+    //<editor-fold desc="Getters and Setters">
     public UUID getId() {
         return id;
     }
@@ -40,4 +45,29 @@ public class GetChatInfoOutputModel {
     public void setProfilePictureId(String profilePictureId) {
         this.profilePictureId = profilePictureId;
     }
+
+    public String getLastMessage() {
+        return lastMessage;
+    }
+
+    public void setLastMessage(String lastMessage) {
+        this.lastMessage = lastMessage;
+    }
+
+    public String getLastMessageTimestamp() {
+        return lastMessageTimestamp;
+    }
+
+    public void setLastMessageTimestamp(String lastMessageTimestamp) {
+        this.lastMessageTimestamp = lastMessageTimestamp;
+    }
+
+    public String getLastMessageSenderName() {
+        return lastMessageSenderName;
+    }
+
+    public void setLastMessageSenderName(String lastMessageSenderName) {
+        this.lastMessageSenderName = lastMessageSenderName;
+    }
+    //</editor-fold>
 }

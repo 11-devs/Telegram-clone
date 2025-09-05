@@ -8,7 +8,7 @@ public class UserViewModel {
     private final StringProperty lastMessage = new SimpleStringProperty();
     private final StringProperty time = new SimpleStringProperty();
     private final StringProperty notificationsNumber = new SimpleStringProperty("0");
-    private final StringProperty avatarPath = new SimpleStringProperty();
+    private final StringProperty avatarId = new SimpleStringProperty();
     private final BooleanProperty isOnline = new SimpleBooleanProperty(false);
     private final BooleanProperty isMuted = new SimpleBooleanProperty(false);
     private final BooleanProperty isPinned = new SimpleBooleanProperty(false);
@@ -35,7 +35,7 @@ public class UserViewModel {
     public StringProperty lastMessageProperty() { return lastMessage; }
     public StringProperty timeProperty() { return time; }
     public StringProperty notificationsNumberProperty() { return notificationsNumber; }
-    public StringProperty avatarPathProperty() { return avatarPath; }
+    public StringProperty avatarIdProperty() { return avatarId; }
     public BooleanProperty isOnlineProperty() { return isOnline; }
     public BooleanProperty isMutedProperty() { return isMuted; }
     public BooleanProperty isPinnedProperty() { return isPinned; }
@@ -58,7 +58,7 @@ public class UserViewModel {
     public String getLastMessage() { return lastMessage.get(); }
     public String getTime() { return time.get(); }
     public String getNotificationsNumber() { return notificationsNumber.get(); }
-    public String getAvatarPath() { return avatarPath.get(); }
+    public String getAvatarId() { return avatarId.get(); }
     public boolean isOnline() { return isOnline.get(); }
     public boolean isMuted() { return isMuted.get(); }
     public boolean isPinned() { return isPinned.get(); }
@@ -81,7 +81,7 @@ public class UserViewModel {
     public void setLastMessage(String lastMessage) { this.lastMessage.set(lastMessage); }
     public void setTime(String time) { this.time.set(time); }
     public void setNotificationsNumber(String notificationsNumber) { this.notificationsNumber.set(notificationsNumber); }
-    public void setAvatarPath(String avatarPath) { this.avatarPath.set(avatarPath); }
+    public void setAvatarId(String avatarId) { this.avatarId.set(avatarId); }
     public void setOnline(boolean isOnline) { this.isOnline.set(isOnline); }
     public void setMuted(boolean isMuted) { this.isMuted.set(isMuted); }
     public void setPinned(boolean isPinned) { this.isPinned.set(isPinned); }

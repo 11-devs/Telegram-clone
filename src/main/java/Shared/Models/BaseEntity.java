@@ -10,7 +10,7 @@ public abstract class BaseEntity {
     private UUID id;
 
     @Version
-    private Long version;
+    private Long version = 0L;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -48,6 +48,9 @@ public abstract class BaseEntity {
     }
 
     // Getters and setters
+    public void setId(UUID id){
+        this.id = id;
+    }
     public UUID getId() { return id; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

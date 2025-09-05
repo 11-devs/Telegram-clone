@@ -1,42 +1,22 @@
-package Shared.Api.Models.MessageController;
+package Shared.Events.Models;
 
 import Shared.Models.Message.MessageType;
 
 import java.util.UUID;
 
-public class GetMessageOutputModel {
+public class NewMessageEventModel {
     private UUID messageId;
     private UUID senderId;
     private String senderName;
     private UUID chatId;
-    private String timestamp; // Changed from LocalDateTime to String
-    private boolean isOutgoing;
+    private String timestamp;
     private boolean isEdited;
     private MessageType messageType;
     private String textContent;
-
-    public boolean getOutgoing() {
-        return isOutgoing;
-    }
-
-    public void setOutgoing(boolean outgoing) {
-        isOutgoing = outgoing;
-    }
-
-
     private UUID mediaId;
-
-    public String getFileId() {
-        return fileId;
-    }
-
-    public void setFileId(String fileId) {
-        this.fileId = fileId;
-    }
-
     private String fileId;
 
-    //<editor-fold desc="Getters and Setters">
+
     public UUID getMessageId() {
         return messageId;
     }
@@ -69,11 +49,11 @@ public class GetMessageOutputModel {
         this.chatId = chatId;
     }
 
-    public String getTimestamp() { // Changed getter return type
+    public String getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(String timestamp) { // Changed setter parameter type
+    public void setTimestamp(String timestamp) {
         this.timestamp = timestamp;
     }
 
@@ -108,4 +88,13 @@ public class GetMessageOutputModel {
     public void setMediaId(UUID mediaId) {
         this.mediaId = mediaId;
     }
+
+    public String getFileId() {
+        return fileId;
+    }
+
+    public void setFileId(String fileId) {
+        this.fileId = fileId;
+    }
+
 }
