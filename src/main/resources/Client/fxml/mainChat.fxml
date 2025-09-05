@@ -344,7 +344,7 @@
 
     <!-- Right Panel -->
     <right>
-        <VBox fx:id="rightPanel" maxWidth="420.0" minWidth="300.0" prefWidth="350.0" styleClass="right-panel">
+        <VBox fx:id="rightPanel" maxWidth="420.0" minWidth="249.0" prefHeight="798.0" prefWidth="249.0" styleClass="right-panel">
             <!-- Profile Header -->
             <VBox alignment="CENTER" spacing="16.0" styleClass="profile-header-section">
                 <padding>
@@ -479,14 +479,14 @@
                     </HBox>
 
                     <!-- More Options -->
-                    <HBox alignment="CENTER_LEFT" spacing="16.0" styleClass="profile-setting-item">
+                    <HBox fx:id="MoreHBox" alignment="CENTER_LEFT" spacing="16.0" styleClass="profile-setting-item">
                         <padding>
                             <Insets bottom="16.0" left="24.0" right="24.0" top="16.0" />
                         </padding>
                         <children>
-                            <ImageView fitHeight="16.0" fitWidth="16.0" styleClass="chevron-icon">
+                            <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="chevron-icon">
                                 <image>
-                                    <Image url="@../images/chevron-right-icon.png" />
+                                    <Image url="@../images/GitHub-icon2.png" />
                                 </image>
                         <HBox.margin>
                            <Insets />

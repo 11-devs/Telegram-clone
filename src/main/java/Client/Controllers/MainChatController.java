@@ -32,6 +32,7 @@ import javafx.util.Duration;
 
 import java.awt.*;
 import java.io.File;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -64,6 +65,10 @@ public class MainChatController implements Initializable {
      * The left sidebar containing the chat list and controls.
      */
     @FXML private VBox leftSidebar;
+    /**
+     * The SplitPane that holds the left, center, and right panels.
+     */
+    private SplitPane splitPane;
     /**
      * Button to toggle the sidebar menu.
      */
@@ -242,6 +247,10 @@ public class MainChatController implements Initializable {
      * Button to toggle notifications in the right panel.
      */
     @FXML private Button notificationsToggle;
+    /**
+     * Handle about HBox click
+     */
+    @FXML private HBox MoreHBox;
 
     // ============ DATA AND STATE ============
 
@@ -337,37 +346,25 @@ public class MainChatController implements Initializable {
         loadInitialState();
     }
 
-    // ============ INITIALIZATION METHODS ============
-
     /**
-     * Initializes the sidebar layout by converting the BorderPane to a SplitPane
-     * for draggable panel resizing. Sets minimum and maximum widths and divider positions.
+     * Initializes the sidebar layout by creating a SplitPane and setting it as the center of the BorderPane.
+     * The right panel is initially removed to be shown on demand.
      */
     private void initializeSidebarsSplitPane() {
-        SplitPane splitPane = new SplitPane();
-        splitPane.getItems().addAll(leftSidebar, mainChatContainer.getCenter(), rightPanel);
+        splitPane = new SplitPane();
+        VBox chatArea = (VBox) mainChatContainer.getCenter();
+        splitPane.getItems().addAll(leftSidebar, chatArea);
         mainChatContainer.setCenter(splitPane);
 
         // Setting minimum and maximum widths for panels
-        SplitPane.setResizableWithParent(leftSidebar, Boolean.TRUE);
-        SplitPane.setResizableWithParent(rightPanel, Boolean.TRUE);
+        SplitPane.setResizableWithParent(leftSidebar, Boolean.FALSE); // Prevent resizing of the parent
+        SplitPane.setResizableWithParent(rightPanel, Boolean.FALSE); // Prevent resizing of the parent
         leftSidebar.setMinWidth(300.0);
         leftSidebar.setMaxWidth(420.0);
         rightPanel.setMinWidth(300.0);
         rightPanel.setMaxWidth(420.0);
 
-        // Ensuring panels don't take up the entire screen
-        splitPane.setDividerPositions(0.25, 0.75); // 25% left, 50% center, 25% right
-        splitPane.getDividers().get(0).positionProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal.doubleValue() < 0.2 || newVal.doubleValue() > 0.4) {
-                splitPane.setDividerPosition(0, oldVal.doubleValue()); // Expansion limit
-            }
-        });
-        splitPane.getDividers().get(1).positionProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal.doubleValue() < 0.6 || newVal.doubleValue() > 0.8) {
-                splitPane.setDividerPosition(1, oldVal.doubleValue()); // Expansion limit
-            }
-        });
+        // We will set divider positions dynamically when showing/hiding panels
     }
 
     /**
@@ -518,6 +515,7 @@ public class MainChatController implements Initializable {
         profileVideoButton.setOnAction(e -> startVideoCall());
         profileSearchButton.setOnAction(e -> showSearchInChat());
         notificationsToggle.setOnAction(e -> toggleNotifications());
+        MoreHBox.setOnMouseClicked(e -> handleAbout());
 
         // Scroll listener for messages
         messagesScrollPane.vvalueProperty().addListener((obs, oldVal, newVal) -> {
@@ -578,8 +576,11 @@ public class MainChatController implements Initializable {
         // Show welcome state
         showWelcomeState();
 
-        // Initialize right panel state
-        hideRightPanel();
+        rightPanel.setVisible(false);
+        rightPanel.setManaged(false);
+
+        // Set the initial position of the first divider after the scene is shown
+        Platform.runLater(() -> splitPane.setDividerPosition(0, 0.25));
     }
 
     /**
@@ -1602,37 +1603,76 @@ public class MainChatController implements Initializable {
     }
 
     /**
-     * Shows the right panel with an animation.
+     * Shows the right panel by adding it to the SplitPane and animating the divider positions
+     * to maintain the main chat area as the largest component.
      */
     private void showRightPanel() {
-        if (rightPanel == null || currentSelectedUser == null) return;
+        if (rightPanel == null || currentSelectedUser == null || splitPane.getItems().contains(rightPanel)) {
+            return;
+        }
 
         updateRightPanel(currentSelectedUser);
-
         rightPanel.setManaged(true);
-        rightPanel.setTranslateX(350);
+        rightPanel.setVisible(true);
 
-        TranslateTransition slideIn = new TranslateTransition(Duration.millis(250), rightPanel);
-        slideIn.setToX(0);
-        slideIn.setInterpolator(Interpolator.EASE_OUT);
-        slideIn.setOnFinished(e -> isRightPanelVisible = true);
-        slideIn.play();
+        // Get the current position of the first divider
+        double firstDividerPosition = splitPane.getDividers().get(0).getPosition();
+
+        // Add the right panel to the SplitPane
+        splitPane.getItems().add(rightPanel);
+
+        // === CRITICAL FIX: Set initial divider positions BEFORE animating ===
+        // Set the starting positions for the animation to prevent the "jump".
+        // The second divider starts at the far right.
+        splitPane.setDividerPositions(firstDividerPosition, 1.0);
+
+        // Define the target positions for the dividers
+        double targetLeftPanelPercentage = 0.25;
+        double targetRightPanelPercentage = 0.25;
+        double targetSecondDividerPosition = 1.0 - targetRightPanelPercentage;
+
+        // Animate the dividers to their new target positions
+        Timeline timeline = new Timeline(
+                new KeyFrame(Duration.millis(250),
+                        new KeyValue(splitPane.getDividers().get(0).positionProperty(), targetLeftPanelPercentage, Interpolator.EASE_OUT),
+                        new KeyValue(splitPane.getDividers().get(1).positionProperty(), targetSecondDividerPosition, Interpolator.EASE_OUT)
+                )
+        );
+
+        timeline.setOnFinished(e -> {
+            isRightPanelVisible = true;
+        });
+        timeline.play();
     }
 
+
     /**
-     * Hides the right panel with an animation.
+     * Hides the right panel by animating the second divider to the edge
+     * and then removing the panel from the SplitPane, allowing the chat area to expand.
      */
     private void hideRightPanel() {
-        if (rightPanel == null) return;
+        if (rightPanel == null || !splitPane.getItems().contains(rightPanel)) {
+            return;
+        }
 
-        TranslateTransition slideOut = new TranslateTransition(Duration.millis(250), rightPanel);
-        slideOut.setToX(350);
-        slideOut.setInterpolator(Interpolator.EASE_IN);
-        slideOut.setOnFinished(e -> {
-            rightPanel.setManaged(false);
+        // Animate only the second divider sliding out
+        final SplitPane.Divider secondDivider = splitPane.getDividers().get(1);
+        Timeline timeline = new Timeline(
+                new KeyFrame(Duration.millis(250),
+                        new KeyValue(secondDivider.positionProperty(), 1.0, Interpolator.EASE_IN)
+                )
+        );
+
+        // After the animation finishes, remove the panel
+        timeline.setOnFinished(e -> {
+            splitPane.getItems().remove(rightPanel);
+            // The first divider's position will be automatically preserved
             isRightPanelVisible = false;
+            rightPanel.setManaged(false);
+            rightPanel.setVisible(false);
         });
-        slideOut.play();
+
+        timeline.play();
     }
 
     /**
@@ -2090,6 +2130,19 @@ public class MainChatController implements Initializable {
         // Visual feedback
         String message = (newMuteState ? "Muted" : "Unmuted") + " " + currentSelectedUser.getUserName();
         showTemporaryNotification(message);
+    }
+
+    /**
+     * Handle about HBox click
+     */
+    @FXML
+    private void handleAbout() {
+        System.out.println("About clicked");
+        try {
+            Desktop.getDesktop().browse(new URI("https://github.com/11-devs/Telegram-clone"));
+        } catch (Exception e) {
+            System.out.println("Failed to open link: " + e.getMessage());
+        }
     }
 
     /**
