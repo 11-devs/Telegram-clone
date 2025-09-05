@@ -1,6 +1,7 @@
 package JSocket2.Protocol.Rpc;
 
 import JSocket2.Core.Server.ServerSession;
+import JSocket2.Core.Server.ServerSessionManager;
 import JSocket2.DI.ServiceProvider;
 import JSocket2.Protocol.Authentication.UserIdentity;
 import com.google.gson.Gson;
@@ -21,7 +22,7 @@ public class RpcDispatcher {
     private final ServiceProvider provider;
 
     private final Gson gson = new Gson();
-    public RpcResponse<?> dispatch(RpcCallMetadata metadata, String payload_json, UserIdentity activeUser) {
+    public RpcResponse<?> dispatch(RpcCallMetadata metadata, String payload_json, ServerSessionManager serverSessionManager, UserIdentity activeUser) {
         String controllerName =  metadata.getController().toLowerCase();
         String ActionName = metadata.getAction().toLowerCase();
         Class<?> controllerType = controllers.get(controllerName);
@@ -29,6 +30,9 @@ public class RpcDispatcher {
         if (controller == null) throw new RuntimeException("Controller not registered: " + controllerName);
         if(controller instanceof RpcControllerBase rpcController){
             rpcController.setCurrentUser(activeUser);
+            if(rpcController.getServerSessionManager() == null) {
+                rpcController.setServerSessionManager(serverSessionManager);
+            }
         Object[] methodModels = gson.fromJson(payload_json, Object[].class);
         try {
             if(methodModels == null){

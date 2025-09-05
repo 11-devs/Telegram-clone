@@ -10,6 +10,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ServerSession extends Session {
+    public ServerSessionManager getServerSessionManager() {
+        return serverSessionManager;
+    }
+
     private final ServerSessionManager serverSessionManager;
     private final ClientHandler clientHandler;
     private final Map<String, UserIdentity> subscribedUsers = new ConcurrentHashMap<>();

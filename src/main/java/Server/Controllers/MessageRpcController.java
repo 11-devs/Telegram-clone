@@ -3,7 +3,9 @@ package Server.Controllers;
 import JSocket2.Protocol.Rpc.RpcControllerBase;
 import JSocket2.Protocol.Rpc.RpcResponse;
 import Server.DaoManager;
+import Server.Events.NewMessageEvent;
 import Shared.Api.Models.MessageController.*;
+import Shared.Events.Models.NewMessageEventModel;
 import Shared.Models.Account.Account;
 import Shared.Models.Chat.Chat;
 import Shared.Models.Media.Media;
@@ -21,9 +23,11 @@ import java.util.stream.Collectors;
 
 public class MessageRpcController extends RpcControllerBase {
     private final DaoManager daoManager;
+    private final NewMessageEvent newMessageEvent;
 
-    public MessageRpcController(DaoManager daoManager) {
+    public MessageRpcController(DaoManager daoManager, NewMessageEvent newMessageEvent) {
         this.daoManager = daoManager;
+        this.newMessageEvent = newMessageEvent;
     }
 
 
@@ -132,7 +136,18 @@ public class MessageRpcController extends RpcControllerBase {
         newMessage.setType(model.getMessageType());
 
         daoManager.getMessageDAO().insert(newMessage);
-
+        NewMessageEventModel eventModel = createEventModelFromMessage(newMessage);
+        daoManager.getMembershipDAO().findAllByField("chat.id", chat.getId()).forEach(membership -> {
+            String recipientId = membership.getAccount().getId().toString();
+            if (!recipientId.equals(sender.getId().toString())) {
+                try {
+                    newMessageEvent.Invoke(getServerSessionManager(),recipientId, eventModel);
+                } catch (Exception e) {
+                    System.err.println("Failed to send NewMessageEvent to user " + recipientId + ": " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        });
         // Pass LocalDateTime to the SendMessageOutputModel constructor, which now handles conversion to String
         SendMessageOutputModel output = new SendMessageOutputModel(
                 newMessage.getId(),
@@ -141,5 +156,27 @@ public class MessageRpcController extends RpcControllerBase {
         );
 
         return Ok(output);
+    }
+    private NewMessageEventModel createEventModelFromMessage(Message message) {
+        NewMessageEventModel model = new NewMessageEventModel();
+        model.setMessageId(message.getId());
+        model.setChatId(message.getChat().getId());
+        model.setSenderId(message.getSender().getId());
+        String senderName = message.getSender().getFirstName() + (message.getSender().getLastName() != null ? " " + message.getSender().getLastName() : "");
+        model.setSenderName(senderName.trim());
+        model.setTimestamp(message.getTimestamp().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+        model.setEdited(message.isEdited());
+        model.setMessageType(message.getType());
+
+        if (message instanceof TextMessage) {
+            model.setTextContent(((TextMessage) message).getTextContent());
+        } else if (message instanceof MediaMessage) {
+            Media media = ((MediaMessage) message).getMedia();
+            if (media != null) {
+                model.setMediaId(media.getId());
+                model.setFileId(media.getFileId());
+            }
+        }
+        return model;
     }
 }

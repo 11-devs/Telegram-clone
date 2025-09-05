@@ -4,6 +4,7 @@ import Client.AppConnectionManager;
 import Client.RpcCaller;
 import Client.Services.ChatService;
 import Client.Services.FileDownloadService;
+import Client.Services.UI.ChatUIService;
 import Client.Tasks.UploadTask;
 import JSocket2.Core.Client.ConnectionManager;
 import JSocket2.Protocol.Rpc.RpcResponse;
@@ -16,6 +17,7 @@ import Shared.Api.Models.MediaController.CreateMediaInputModel;
 import Shared.Api.Models.MessageController.GetMessageOutputModel;
 import Shared.Api.Models.MessageController.SendMessageInputModel;
 import Shared.Api.Models.MessageController.SendMessageOutputModel;
+import Shared.Events.Models.NewMessageEventModel;
 import Shared.Models.*;
 //import Shared.Utils.SidebarUtil;
 import Shared.Models.Message.MessageType;
@@ -363,6 +365,7 @@ public class MainChatController implements Initializable {
     private ConnectionManager connectionManager;
     private RpcCaller rpcCaller;
     private ChatService chatService;
+    private ChatUIService chatUIService;
     private FileDownloadService fileDownloadService;
     //private UserIdentity currentUser;
     private final Gson gson = new Gson();
@@ -437,6 +440,8 @@ public class MainChatController implements Initializable {
         chatService = new ChatService(rpcCaller);
         fileDownloadService = FileDownloadService.getInstance();
         fileDownloadService.initialize();;
+        chatUIService = connectionManager.getClient().getServiceProvider().GetService(ChatUIService.class);
+        chatUIService.setActiveChatController(this);
         //currentUser = connectionManager.getClient().getUserIdentity();
         initializeSidebarsSplitPane();
         initializeData();
@@ -446,6 +451,48 @@ public class MainChatController implements Initializable {
         setupAnimations();
         // TODO: Implement keyboard shortcut setup for enhanced navigation.
         loadInitialState();
+    }
+    public void handleIncomingMessage(NewMessageEventModel message) {
+        // Check if the message belongs to the currently opened chat
+        if (currentSelectedUser != null && currentSelectedUser.getUserId().equals(message.getChatId().toString())) {
+            String formattedTime = LocalDateTime.parse(message.getTimestamp()).format(DateTimeFormatter.ofPattern("HH:mm"));
+
+            if (message.getMessageType() == MessageType.TEXT) {
+                addMessageBubble(message.getTextContent(), false, formattedTime, "received", message.getSenderName());
+            } else if (message.getMessageType() == MessageType.MEDIA) {
+                fileDownloadService.getFileInfo(message.getFileId()).thenAcceptAsync(transferInfo -> {
+                    if (transferInfo != null) {
+                        DocumentInfo docInfo = new DocumentInfo(transferInfo);
+                        docInfo.setSenderName(message.getSenderName());
+                        Platform.runLater(() -> addDocumentMessageBubble(docInfo, false, formattedTime, "received"));
+                    }
+                });
+            }
+
+            if (messagesScrollPane.getVvalue() > 0.9) {
+                scrollToBottom();
+            }
+        }
+
+        // Update the corresponding chat item in the list
+        allChatUsers.stream()
+                .filter(user -> user.getUserId().equals(message.getChatId().toString()))
+                .findFirst()
+                .ifPresent(user -> {
+                    user.setLastMessage(message.getTextContent() != null ? message.getTextContent() : "Media");
+                    user.setTime(message.getTimestamp());
+
+                    // Increment unread count only if the chat is not currently active
+                    if (currentSelectedUser == null || !currentSelectedUser.getUserId().equals(user.getUserId())) {
+                        try {
+                            int currentCount = Integer.parseInt(user.getNotificationsNumber());
+                            user.setNotificationsNumber(String.valueOf(currentCount + 1));
+                        } catch (NumberFormatException e) {
+                            user.setNotificationsNumber("1");
+                        }
+                    }
+                    reorderAndRefreshChatList(user);
+                });
     }
 // Add these two new methods anywhere inside the MainChatController class.
 

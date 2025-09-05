@@ -1,6 +1,7 @@
 package JSocket2.Protocol.Rpc;
 
 import JSocket2.Core.Server.ServerSession;
+import JSocket2.Core.Server.ServerSessionManager;
 import JSocket2.Protocol.Authentication.UserIdentity;
 import JSocket2.Protocol.StatusCode;
 
@@ -14,6 +15,8 @@ public abstract class RpcControllerBase {
             this.currentUser = currentUser;
         }
     }
+    private ServerSessionManager serverSessionManager = null;
+
     protected final <T> RpcResponse<T> response(StatusCode statusCode,String message, T content) {
         return new RpcResponse<>(statusCode,message, content);
     }
@@ -37,5 +40,13 @@ public abstract class RpcControllerBase {
 
     protected final <T> RpcResponse<T> Ok(T content) {
         return response(StatusCode.OK, content);
+    }
+
+    protected ServerSessionManager getServerSessionManager() {
+        return serverSessionManager;
+    }
+
+    protected void setServerSessionManager(ServerSessionManager serverSessionManager) {
+        this.serverSessionManager = serverSessionManager;
     }
 }

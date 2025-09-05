@@ -32,7 +32,7 @@ public class ServerApplicationBuilder {
         return this;
     }
     public <T> ServerApplicationBuilder addController(Class<T> controllerType) {
-        this.services.AddSingleton(controllerType);
+        this.services.AddScoped(controllerType);
         this.rpcControllerCollection.registerController(controllerType);
         return this;
     }

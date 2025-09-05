@@ -1,5 +1,6 @@
 package JSocket2.Protocol.EventHub;
 
+import JSocket2.Core.Server.ServerSessionManager;
 import JSocket2.Example.UserIsTypingEventModel;
 import JSocket2.Protocol.Message;
 import JSocket2.Protocol.MessageHeader;
@@ -10,7 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 public abstract class EventBase {
-    public abstract void Invoke(String receiverId,Object... args) throws IOException;
+    public abstract void Invoke(ServerSessionManager serverSessionManager,String receiverId, Object... args) throws IOException;
     protected Gson gson = new Gson();
     protected Message createEventMessage(String eventName, Object[] payloadObject) {
         EventMetadata metadata = new EventMetadata(eventName);
