@@ -589,29 +589,12 @@
     -fx-text-fill: #92A3AF;
     -fx-font-size: 12px;
 }
+/* ============ JFX TOGGLE BUTTON STYLING (TELEGRAM LOOK) ============ */
 
-.toggle-switch {
-    -fx-background-color: #4FC3F7;
-    -fx-text-fill: white;
-    -fx-border-color: transparent;
-    -fx-background-radius: 12px;
-    -fx-font-size: 11px;
-    -fx-font-weight: 600;
-    -fx-padding: 4 8 4 8;
-    -fx-cursor: hand;
-    -fx-min-width: 44px;
-}
-
-.toggle-switch:hover {
-    -fx-background-color: #29B6F6;
-}
-
-.toggle-switch.off {
-    -fx-background-color: #92A3AF;
-}
-
-.toggle-switch.off:hover {
-    -fx-background-color: #708090;
+.notificationsToggle {
+    -jfx-toggle-color: #2A3947;
+    -jfx-toggle-line-color: #5288C1;
+    -jfx-untoggle-line-color: #999999;
 }
 
 /* ============ MESSAGE BUBBLES ============ */

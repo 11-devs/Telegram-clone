@@ -19,7 +19,7 @@ dependencies {
     implementation 'org.openjfx:javafx-controls:23.0.2'
     implementation 'org.openjfx:javafx-fxml:23.0.2'
     implementation 'com.google.code.gson:gson:2.10.1'
-    implementation 'com.jfoenix:jfoenix:9.0.10' // TODO: use jfoenix components in the future
+    implementation 'com.jfoenix:jfoenix:9.0.10'
     implementation 'org.postgresql:postgresql:42.6.0' // or latest version
     implementation 'jakarta.persistence:jakarta.persistence-api:3.1.0'
     implementation 'org.hibernate.orm:hibernate-core:6.4.2.Final'

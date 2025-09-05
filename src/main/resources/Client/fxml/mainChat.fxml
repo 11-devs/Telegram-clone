@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import com.jfoenix.controls.JFXToggleButton?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ContextMenu?>
@@ -322,7 +323,10 @@
                         <!-- Message Input Field Container -->
                         <VBox prefWidth="433.0" styleClass="input-field-container" HBox.hgrow="ALWAYS">
                             <children>
-                                <TextArea fx:id="messageInputField" prefRowCount="1" prefWidth="433.0" promptText="Write a message..." styleClass="message-input-field" wrapText="true" />
+                                <TextArea fx:id="messageInputField" prefRowCount="1" prefWidth="433.0" promptText="Write a message..." styleClass="message-input-field" wrapText="true">
+                           <padding>
+                              <Insets top="3.0" />
+                           </padding></TextArea>
                             </children>
                         </VBox>
 
@@ -438,7 +442,7 @@
             <VBox styleClass="profile-settings-section">
                 <children>
                     <!-- Notifications -->
-                    <HBox alignment="CENTER_LEFT" spacing="16.0" styleClass="profile-setting-item">
+                    <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" prefHeight="60.0" prefWidth="249.0" spacing="16.0" styleClass="profile-setting-item">
                         <padding>
                             <Insets bottom="16.0" left="24.0" right="24.0" top="16.0" />
                         </padding>
@@ -454,12 +458,12 @@
                                     <Label fx:id="notificationStatusLabel" styleClass="setting-subtitle" text="Enabled" />
                                 </children>
                             </VBox>
-                            <Button fx:id="notificationsToggle" styleClass="toggle-switch" />
+                            <JFXToggleButton fx:id="notificationsToggle" graphicTextGap="0.0" prefWidth="82.0" styleClass="notificationsToggle" />
                         </children>
                     </HBox>
 
                     <!-- Encryption -->
-                    <HBox alignment="CENTER_LEFT" spacing="16.0" styleClass="profile-setting-item">
+                    <HBox alignment="CENTER_LEFT" prefWidth="249.0" spacing="16.0" styleClass="profile-setting-item">
                         <padding>
                             <Insets bottom="16.0" left="24.0" right="24.0" top="16.0" />
                         </padding>

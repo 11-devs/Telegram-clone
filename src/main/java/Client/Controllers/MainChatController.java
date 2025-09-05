@@ -29,6 +29,7 @@ import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import com.jfoenix.controls.JFXToggleButton;
 
 import java.awt.*;
 import java.io.File;
@@ -246,7 +247,7 @@ public class MainChatController implements Initializable {
     /**
      * Button to toggle notifications in the right panel.
      */
-    @FXML private Button notificationsToggle;
+    @FXML private JFXToggleButton notificationsToggle;
     /**
      * Handle about HBox click
      */
@@ -2114,21 +2115,18 @@ public class MainChatController implements Initializable {
 
     /**
      * Toggles the notification mute state for the current user.
+     * This method now listens to the toggle button's action.
      */
     private void toggleNotifications() {
         if (currentSelectedUser == null) return;
 
-        boolean newMuteState = !currentSelectedUser.isMuted();
-        currentSelectedUser.setMuted(newMuteState);
+        boolean isEnabled = notificationsToggle.isSelected();
+        currentSelectedUser.setMuted(!isEnabled);
 
-        updateNotificationToggle(!newMuteState);
-        notificationStatusLabel.setText(newMuteState ? "Disabled" : "Enabled");
+        notificationStatusLabel.setText(isEnabled ? "Enabled" : "Disabled");
+        mutedIcon.setVisible(!isEnabled);
 
-        // Update header
-        mutedIcon.setVisible(newMuteState);
-
-        // Visual feedback
-        String message = (newMuteState ? "Muted" : "Unmuted") + " " + currentSelectedUser.getUserName();
+        String message = (isEnabled ? "Unmuted" : "Muted") + " " + currentSelectedUser.getUserName();
         showTemporaryNotification(message);
     }
 
@@ -2146,17 +2144,14 @@ public class MainChatController implements Initializable {
     }
 
     /**
-     * Updates the notification toggle button's state.
+     * Updates the notification toggle button's state based on user data.
+     * This is called when the right panel is shown or the user changes.
      *
-     * @param enabled True to enable, false to disable.
+     * @param enabled True if notifications are enabled, false if disabled (muted).
      */
     private void updateNotificationToggle(boolean enabled) {
         if (notificationsToggle == null) return;
-
-        notificationsToggle.getStyleClass().removeAll("off");
-        if (!enabled) {
-            notificationsToggle.getStyleClass().add("off");
-        }
+        notificationsToggle.setSelected(enabled);
     }
 
     /**
@@ -2415,7 +2410,7 @@ public class MainChatController implements Initializable {
      * @param message The message to display in the notification.
      */
     private void showTemporaryNotification(String message) {
-        Stage parentStage = (Stage) menuButton.getScene().getWindow();
+        Stage parentStage = (Stage) mainChatContainer.getScene().getWindow();
         showNotificationDialog(parentStage, message);
     }
 
