@@ -134,7 +134,8 @@ public class UserCustomCellController {
 
     private String formatDraftText(String lastMessage) {
         if (lastMessage != null && !lastMessage.isEmpty()) {
-            return "Draft: " + (lastMessage.length() > 35 ? lastMessage.substring(0, 32) + "..." : lastMessage);
+            String strippedMessage = stripFormattingForPreview(lastMessage);
+            return "Draft: " + (strippedMessage.length() > 35 ? strippedMessage.substring(0, 32) + "..." : strippedMessage);
         } else {
             return "Draft: No draft";
         }
@@ -142,7 +143,8 @@ public class UserCustomCellController {
 
     private String formatLastMessageText(String lastMessage) {
         if (lastMessage != null && !lastMessage.isEmpty()) {
-            return lastMessage.length() > 35 ? lastMessage.substring(0, 32) + "..." : lastMessage;
+            String strippedMessage = stripFormattingForPreview(lastMessage);
+            return strippedMessage.length() > 35 ? strippedMessage.substring(0, 32) + "..." : strippedMessage;
         } else {
             return "No messages yet";
         }
@@ -278,6 +280,27 @@ public class UserCustomCellController {
         }
     }
 
+    private String stripFormattingForPreview(String text) {
+        if (text == null || text.isEmpty()) {
+            return text;
+        }
+
+        String result = text;
+
+        // 1. Spoilers: ||content|| -> ██████
+        result = result.replaceAll("\\|\\|.*?\\|\\|", "██████");
+
+        // 2. Bold: **content** -> content
+        result = result.replaceAll("\\*\\*(.*?)\\*\\*", "$1");
+
+        // 3. Italic: __content__ -> content
+        result = result.replaceAll("__(.*?)__", "$1");
+
+        // 4. Underline: ++content++ -> content
+        result = result.replaceAll("\\+\\+(.*?)\\+\\+", "$1");
+
+        return result;
+    }
     // Update cell appearance and content
 
     private void updateCellContent() {
