@@ -1,7 +1,6 @@
 package JSocket2.Protocol.EventHub;
 
 import JSocket2.Core.Server.ServerSessionManager;
-import JSocket2.Example.UserIsTypingEventModel;
 import JSocket2.Protocol.Message;
 import JSocket2.Protocol.MessageHeader;
 import com.google.gson.Gson;

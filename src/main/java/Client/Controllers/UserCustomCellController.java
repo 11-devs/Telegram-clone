@@ -93,13 +93,18 @@ public class UserCustomCellController {
         if (lastMessageLabel == null) return;
 
         lastMessageLabel.textProperty().bind(
-                currentUser.isTypingProperty().flatMap(isTyping ->
-                        currentUser.isDraftProperty().flatMap(isDraft ->
+                currentUser.isTypingProperty().flatMap(isTyping -> {
+                    if (Boolean.TRUE.equals(isTyping)) {
+                        // When typing, the text depends on the typing user's name.
+                        return currentUser.typingUserNameProperty().map(typingUser -> {
+                            lastMessageLabel.getStyleClass().setAll("last-message-label", "typing-indicator");
+                            return generateTypingText();
+                        });
+                    } else {
+                        // When not typing, the text depends on draft status and the last message.
+                        return currentUser.isDraftProperty().flatMap(isDraft ->
                                 currentUser.lastMessageProperty().map(lastMessage -> {
-                                    if (Boolean.TRUE.equals(isTyping)) {
-                                        lastMessageLabel.getStyleClass().setAll("last-message-label", "typing-indicator");
-                                        return generateTypingText();
-                                    } else if (Boolean.TRUE.equals(isDraft)) {
+                                    if (Boolean.TRUE.equals(isDraft)) {
                                         lastMessageLabel.getStyleClass().setAll("last-message-label", "draft-indicator");
                                         return formatDraftText(lastMessage);
                                     } else {
@@ -107,19 +112,20 @@ public class UserCustomCellController {
                                         return formatLastMessageText(lastMessage);
                                     }
                                 })
-                        )
-                )
+                        );
+                    }
+                })
         );
     }
-
     private String generateTypingText() {
         UserType type = currentUser.getType();
         if (type == UserType.GROUP || type == UserType.SUPERGROUP) {
-            String userName = currentUser.getUserName();
-            if (userName != null) {
-                return (userName.length() > 10 ? userName.substring(0, 10) : userName) + ":Typing...";
+            String typingUserName = currentUser.getTypingUserName();
+            if (typingUserName != null && !typingUserName.isEmpty()) {
+                String truncatedName = typingUserName.length() > 10 ? typingUserName.substring(0, 10) + "..." : typingUserName;
+                return truncatedName + " is typing...";
             } else {
-                return "Someone:Typing...";
+                return "Someone is typing...";
             }
         }
         return "Typing...";

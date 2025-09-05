@@ -3,10 +3,7 @@ package Client.Services;
 import Client.RpcCaller;
 import JSocket2.Protocol.Rpc.RpcResponse;
 import Shared.Api.Models.ChatController.GetChatInfoOutputModel;
-import Shared.Api.Models.MessageController.GetMessageByChatInputModel;
-import Shared.Api.Models.MessageController.GetMessageOutputModel;
-import Shared.Api.Models.MessageController.SendMessageInputModel;
-import Shared.Api.Models.MessageController.SendMessageOutputModel;
+import Shared.Api.Models.MessageController.*;
 import Shared.Models.Message.MessageType;
 import javafx.concurrent.Task;
 
@@ -60,6 +57,54 @@ public class ChatService {
             @Override
             protected RpcResponse<SendMessageOutputModel> call() throws Exception {
                 return rpcCaller.sendMessage(model);
+            }
+        };
+    }
+    // ... existing service methods
+    public Task<Void> sendTypingStatus(UUID chatId, boolean isTyping) {
+        return new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                TypingNotificationInputModel input = new TypingNotificationInputModel();
+                input.setChatId(chatId);
+                input.setTyping(isTyping);
+                rpcCaller.sendTypingStatus(input);
+                return null;
+            }
+        };
+    }
+
+    public Task<RpcResponse<Object>> editMessage(UUID messageId, String newContent) {
+        return new Task<>() {
+            @Override
+            protected RpcResponse<Object> call() throws Exception {
+                EditMessageInputModel input = new EditMessageInputModel();
+                input.setMessageId(messageId);
+                input.setNewContent(newContent);
+                return rpcCaller.editMessage(input);
+            }
+        };
+    }
+
+    public Task<RpcResponse<Object>> deleteMessage(UUID messageId) {
+        return new Task<>() {
+            @Override
+            protected RpcResponse<Object> call() throws Exception {
+                DeleteMessageInputModel input = new DeleteMessageInputModel();
+                input.setMessageId(messageId);
+                return rpcCaller.deleteMessage(input);
+            }
+        };
+    }
+
+    public Task<Void> markChatAsRead(UUID chatId) {
+        return new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                MarkChatAsReadInputModel input = new MarkChatAsReadInputModel();
+                input.setChatId(chatId);
+                 rpcCaller.markChatAsRead(input);
+                 return null;
             }
         };
     }

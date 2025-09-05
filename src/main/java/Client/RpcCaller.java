@@ -6,10 +6,7 @@ import JSocket2.Protocol.Rpc.RpcResponse;
 import Shared.Api.Models.ChatController.GetChatInfoOutputModel;
 import Shared.Api.Models.ChatController.getChatsByUserInputModel;
 import Shared.Api.Models.MediaController.CreateMediaInputModel;
-import Shared.Api.Models.MessageController.GetMessageByChatInputModel;
-import Shared.Api.Models.MessageController.GetMessageOutputModel;
-import Shared.Api.Models.MessageController.SendMessageInputModel;
-import Shared.Api.Models.MessageController.SendMessageOutputModel;
+import Shared.Api.Models.MessageController.*;
 import Shared.Models.Chat.Chat;
 import com.google.gson.Gson;
 import Shared.Api.Models.AccountController.*;
@@ -77,5 +74,21 @@ public class RpcCaller extends RpcCallerBase {
     }
     public RpcResponse<UUID> createMediaEntry(CreateMediaInputModel model) throws IOException {
         return callRpcAndGetResponse("MediaRpcController", "createMediaEntry", UUID.class, model);
+    }
+
+    public void sendTypingStatus(TypingNotificationInputModel model) throws IOException {
+         callRpc("MessageRpcController", "sendTypingStatus", model);
+    }
+
+    public RpcResponse<Object> editMessage(EditMessageInputModel model) throws IOException {
+        return callRpcAndGetResponse("MessageRpcController", "editMessage", Object.class, model);
+    }
+
+    public RpcResponse<Object> deleteMessage(DeleteMessageInputModel model) throws IOException {
+        return callRpcAndGetResponse("MessageRpcController", "deleteMessage", Object.class, model);
+    }
+
+    public void markChatAsRead(MarkChatAsReadInputModel model) throws IOException {
+         callRpc("MessageRpcController", "markChatAsRead", model);
     }
 }

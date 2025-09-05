@@ -25,11 +25,11 @@ public class UserViewModel {
     private final StringProperty bio = new SimpleStringProperty();
     private final StringProperty phoneNumber = new SimpleStringProperty();
     private final IntegerProperty membersCount = new SimpleIntegerProperty(0);
+    private final StringProperty typingUserName = new SimpleStringProperty();
 
     public UserViewModel() {
         userId.addListener((obs, oldVal, newVal) -> updateIsMessageSentByCurrentUser());
     }
-
     // Property getters
     public StringProperty userNameProperty() { return userName; }
     public StringProperty lastMessageProperty() { return lastMessage; }
@@ -52,7 +52,7 @@ public class UserViewModel {
     public StringProperty bioProperty() { return bio; }
     public StringProperty phoneNumberProperty() { return phoneNumber; }
     public IntegerProperty membersCountProperty() { return membersCount; }
-
+    public StringProperty typingUserNameProperty() { return typingUserName; }
     // Getters
     public String getUserName() { return userName.get(); }
     public String getLastMessage() { return lastMessage.get(); }
@@ -75,7 +75,7 @@ public class UserViewModel {
     public String getBio() { return bio.get(); }
     public String getPhoneNumber() { return phoneNumber.get(); }
     public int getMembersCount() { return membersCount.get(); }
-
+    public String getTypingUserName() { return typingUserName.get(); }
     // Setters
     public void setUserName(String userName) { this.userName.set(userName); }
     public void setLastMessage(String lastMessage) { this.lastMessage.set(lastMessage); }
@@ -98,7 +98,7 @@ public class UserViewModel {
     public void setBio(String bio) { this.bio.set(bio); }
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber.set(phoneNumber); }
     public void setMembersCount(int membersCount) { this.membersCount.set(membersCount); }
-
+    public void setTypingUserName(String typingUserName) { this.typingUserName.set(typingUserName); }
     // Utility methods
     private void updateIsMessageSentByCurrentUser() {
         String currentUserId = "currentUserId"; // TODO: Replace with real logic
