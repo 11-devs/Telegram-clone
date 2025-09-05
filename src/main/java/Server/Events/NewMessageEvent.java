@@ -1,13 +1,16 @@
 package Server.Events;
 
 import JSocket2.Core.Server.ServerSessionManager;
+import JSocket2.DI.Inject;
 import JSocket2.Protocol.EventHub.EventBase;
 import JSocket2.Protocol.Message;
+import Shared.Events.Models.NewMessageEventModel;
 
 import java.io.IOException;
 
 public class NewMessageEvent extends EventBase {
 
+    @Inject
     public NewMessageEvent() {
     }
 

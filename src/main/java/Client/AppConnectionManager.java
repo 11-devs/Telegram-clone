@@ -1,7 +1,12 @@
 package Client;
 
 import Client.Services.UI.ChatUIService;
+import Client.Subscribers.MessageDeletedSubscriber;
+import Client.Subscribers.MessageDeliveredSubscriber;
+import Client.Subscribers.MessageEditedSubscriber;
+import Client.Subscribers.MessageReadSubscriber;
 import Client.Subscribers.NewMessageSubscriber;
+import Client.Subscribers.UserTypingSubscriber;
 import JSocket2.Core.Client.ClientApplicationBuilder;
 import JSocket2.Core.Client.ConnectionManager;
 import JSocket2.DI.ServiceCollection;
@@ -26,6 +31,11 @@ public class AppConnectionManager {
         ClientApplicationBuilder builder = new ClientApplicationBuilder();
         builder.setEndpoint("localhost", 8586);
         builder.addEventSubscriber(NewMessageSubscriber.class);
+        builder.addEventSubscriber(MessageDeliveredSubscriber.class);
+        builder.addEventSubscriber(MessageEditedSubscriber.class);
+        builder.addEventSubscriber(MessageDeletedSubscriber.class);
+        builder.addEventSubscriber(MessageReadSubscriber.class);
+        builder.addEventSubscriber(UserTypingSubscriber.class);
         builder.getServices().AddSingleton(ChatUIService.class);
 
         // 3. Conceptually, the builder is enhanced to use the DI and event system.
