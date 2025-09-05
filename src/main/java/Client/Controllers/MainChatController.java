@@ -552,14 +552,13 @@ public class MainChatController implements Initializable {
             if (response.getStatusCode() == StatusCode.OK && response.getPayload() != null) {
                 List<UserViewModel> userViewModels = new ArrayList<>();
                 for (GetChatInfoOutputModel chat : response.getPayload()) {
-                    // NOTE: This mapping is simplified due to server API limitations (no last message/sender info).
-                    // In a real application, the server should return a richer ViewModel/DTO.
+                    // --- MODIFIED LOGIC: Use real data from the server ---
                     UserViewModel uvm = new UserViewModelBuilder()
-                            .userId(chat.getId().toString()) // Use userId field to store the Chat ID
+                            .userId(chat.getId().toString())
                             .avatarId(chat.getProfilePictureId())
                             .userName(chat.getTitle() != null ? chat.getTitle() : "Private Chat")
-                            .lastMessage("...") // Placeholder for last message
-                            .time(" ") // chat.getUpdatedAt() != null ? chat.getUpdatedAt().format(DateTimeFormatter.ofPattern("HH:mm")) :
+                            .lastMessage(chat.getLastMessage()) // Use real last message
+                            .time(chat.getLastMessageTimestamp())     // Use real timestamp
                             .type(chat.getType())
                             .build();
                     userViewModels.add(uvm);
@@ -576,6 +575,8 @@ public class MainChatController implements Initializable {
         getChatsTask.setOnFailed(event -> getChatsTask.getException().printStackTrace());
         new Thread(getChatsTask).start();
     }
+
+
     /**
      * Sets up the chat list with a custom cell factory and selection listener.
      */

@@ -7,11 +7,27 @@ import jakarta.persistence.*;
 @Table(name = "private_chats")
 public class PrivateChat extends Chat {
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    public Account getUser1() {
+        return user1;
+    }
+
+    public void setUser1(Account user1) {
+        this.user1 = user1;
+    }
+
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user1_id", nullable = false)
     private Account user1;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    public Account getUser2() {
+        return user2;
+    }
+
+    public void setUser2(Account user2) {
+        this.user2 = user2;
+    }
+
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user2_id", nullable = false)
     private Account user2;
 
