@@ -108,20 +108,21 @@ public class ServerMessageProcessor implements IMessageProcessor {
         var metadata = gson.fromJson(new String(message.getMetadata(), StandardCharsets.UTF_8), RpcCallMetadata.class);
         var payloadJson = new String(message.getPayload(), StandardCharsets.UTF_8);
         var response = rpcDispatcher.dispatch(metadata, payloadJson,serverSession.getServerSessionManager(),serverSession.getActiveUser());
+        if(response != null) {
+            var rpcResponseMetadataString = gson.toJson(new RpcResponseMetadata(response.getStatusCode().code, response.getMessage()));
+            var rpcResponsePayloadString = gson.toJson(response.getPayload());
 
-        var rpcResponseMetadataString = gson.toJson(new RpcResponseMetadata(response.getStatusCode().code, response.getMessage()));
-        var rpcResponsePayloadString = gson.toJson(response.getPayload());
+            byte[] responseMetadataBytes = rpcResponseMetadataString.getBytes(StandardCharsets.UTF_8);
+            byte[] responsePayloadBytes = rpcResponsePayloadString.getBytes(StandardCharsets.UTF_8);
 
-        byte[] responseMetadataBytes = rpcResponseMetadataString.getBytes(StandardCharsets.UTF_8);
-        byte[] responsePayloadBytes = rpcResponsePayloadString.getBytes(StandardCharsets.UTF_8);
+            var msg = new Message(
+                    MessageHeader.BuildRpcResponseHeader(message.header.uuid, false, responseMetadataBytes.length, responsePayloadBytes.length),
+                    responseMetadataBytes,
+                    responsePayloadBytes
+            );
 
-        var msg = new Message(
-                MessageHeader.BuildRpcResponseHeader(message.header.uuid, false, responseMetadataBytes.length, responsePayloadBytes.length),
-                responseMetadataBytes,
-                responsePayloadBytes
-        );
-
-        messageHandler.write(msg);
+            messageHandler.write(msg);
+        }
     }
 
     private void handleUploadRequest(Message message) throws IOException {

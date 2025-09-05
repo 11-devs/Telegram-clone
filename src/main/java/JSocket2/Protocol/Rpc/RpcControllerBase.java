@@ -34,6 +34,12 @@ public abstract class RpcControllerBase {
     protected final RpcResponse<Object> BadRequest(String message) {
         return response(StatusCode.BAD_REQUEST, message,null);
     }
+    protected final RpcResponse<Object> Forbidden() {
+        return response(StatusCode.FORBIDDEN, null);
+    }
+    protected final RpcResponse<Object> Forbidden(String message) {
+        return response(StatusCode.FORBIDDEN, message,null);
+    }
     protected final RpcResponse<Object> Ok() {
         return response(StatusCode.OK, null);
     }

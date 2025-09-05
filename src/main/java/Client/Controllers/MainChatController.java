@@ -357,7 +357,11 @@ public class MainChatController implements Initializable {
      * Controller for the sidebar menu.
      */
     private SidebarMenuController sidebarController;
-
+    private Timer typingTimer;
+    private TimerTask typingStopTask;
+    private boolean isCurrentlyTyping = false;
+    private VBox editingMessageBubble;
+    private String originalEditText;
     /**
      * Initializes the controller after the FXML file is loaded.
      * Sets up the UI components, data, event handlers, and initial state.
@@ -445,6 +449,7 @@ public class MainChatController implements Initializable {
         fileDownloadService.initialize();;
         chatUIService = connectionManager.getClient().getServiceProvider().GetService(ChatUIService.class);
         chatUIService.setActiveChatController(this);
+        typingTimer = new Timer(true);
         //currentUser = connectionManager.getClient().getUserIdentity();
         initializeSidebarsSplitPane();
         initializeData();
@@ -618,8 +623,16 @@ public class MainChatController implements Initializable {
         allChatUsers.stream()
                 .filter(user -> user.getUserId().equals(eventModel.getChatId().toString()))
                 .findFirst()
-                .ifPresent(user -> Platform.runLater(() -> user.setTyping(eventModel.isTyping())));
+                .ifPresent(user -> Platform.runLater(() -> {
+                    user.setTyping(eventModel.isTyping());
+                    if (eventModel.isTyping()) {
+                        user.setTypingUserName(eventModel.getSenderName());
+                    } else {
+                        user.setTypingUserName(null);
+                    }
+                }));
     }
+
 
 // Add these two new methods anywhere inside the MainChatController class.
 
@@ -967,6 +980,18 @@ public class MainChatController implements Initializable {
     private void selectChat(UserViewModel user) {
         if (user == null) return;
 
+        // *** ADD THIS BLOCK TO FIX THE TYPING INDICATOR ***
+        // When switching chats, cancel any pending typing-stop task for the old chat.
+        if (typingStopTask != null) {
+            typingStopTask.cancel();
+        }
+        // If the user was marked as typing in the previous chat, send a "stop" event now.
+        if (isCurrentlyTyping) {
+            sendTypingStatus(false);
+            isCurrentlyTyping = false;
+        }
+        // *** END OF ADDED BLOCK ***
+
         currentSelectedUser = user;
 
         // Update UI state
@@ -976,8 +1001,11 @@ public class MainChatController implements Initializable {
         loadMessages(user);
         enableChatControls();
 
-        // Clear notifications
+        // Clear notifications and mark chat as read
         user.clearUnreadCount();
+        Task<Void> markAsReadTask = chatService.markChatAsRead(UUID.fromString(user.getUserId()));
+        new Thread(markAsReadTask).start();
+
 
         // Update right panel if visible
         if (isRightPanelVisible) {
@@ -1018,31 +1046,6 @@ public class MainChatController implements Initializable {
         // Start online status animation if user is online
         if (user.isOnline() && onlineStatusTimeline != null) {
             onlineStatusTimeline.play();
-        }
-    }
-
-    /**
-     * Updates the chat subtitle based on the user's online status or typing state.
-     *
-     * @param user The UserViewModel to update the subtitle for.
-     */
-    private void updateChatSubtitle(UserViewModel user) {
-        if (user.isTyping()) {
-            chatSubtitleLabel.setText(user.getUserName() + " is typing...");
-            chatSubtitleLabel.getStyleClass().setAll("chat-subtitle", "typing-indicator");
-            showTypingIndicator(user.getUserName());
-        } else if (user.isOnline() && user.getType() == UserType.USER) {
-            chatSubtitleLabel.setText("online");
-            chatSubtitleLabel.getStyleClass().setAll("chat-subtitle");
-            hideTypingIndicator();
-        } else if (user.getLastSeen() != null && !user.getLastSeen().isEmpty()) {
-            chatSubtitleLabel.setText(user.getLastSeen());
-            chatSubtitleLabel.getStyleClass().setAll("chat-subtitle");
-            hideTypingIndicator();
-        } else {
-            chatSubtitleLabel.setText("offline");
-            chatSubtitleLabel.getStyleClass().setAll("chat-subtitle");
-            hideTypingIndicator();
         }
     }
 
@@ -1412,9 +1415,14 @@ public class MainChatController implements Initializable {
         }
 
         bubble.getChildren().addAll(messageText, timeContainer);
-
-        // Add click handler for message options
+        bubble.setOnContextMenuRequested(event -> {
+            ContextMenu contextMenu = createMessageContextMenu(bubble);
+            contextMenu.show(bubble, event.getScreenX(), event.getScreenY());
+            event.consume(); // Consume the event to prevent it from bubbling up
+        });
+        // Add click handler for message options AND attach the context menu
         bubble.setOnMouseClicked(this::handleMessageClick);
+
 
         return bubble;
     }
@@ -1458,9 +1466,6 @@ public class MainChatController implements Initializable {
             // Double-click to reply
             VBox bubble = (VBox) event.getSource();
             showReplyPreview(bubble);
-        } else if (event.isSecondaryButtonDown()) {
-            // Right-click for context menu
-            showMessageContextMenu(event);
         }
     }
 
@@ -1520,6 +1525,11 @@ public class MainChatController implements Initializable {
             replyPreviewContainer.setManaged(false);
             replyToMessage = null;
         });
+        replyToMessage = null;
+        editingMessageBubble = null;
+        originalEditText = null;
+
+        messageInputField.clear();
         hideReply.play();
     }
 
@@ -1697,7 +1707,11 @@ public class MainChatController implements Initializable {
         }
 
         bubble.getChildren().addAll(docContainer, timeContainer);
-
+        bubble.setOnContextMenuRequested(event -> {
+            ContextMenu contextMenu = createMessageContextMenu(bubble);
+            contextMenu.show(bubble, event.getScreenX(), event.getScreenY());
+            event.consume();
+        });
         // Add click handler for message options
         bubble.setOnMouseClicked(this::handleMessageClick);
 
@@ -1997,7 +2011,16 @@ public class MainChatController implements Initializable {
      */
     private void handleSendAction() {
         String text = messageInputField.getText().trim();
-        if (!text.isEmpty()) {
+        if (editingMessageBubble != null) {
+            if (!text.isEmpty() && !text.equals(originalEditText)) {
+                UUID messageId = (UUID) editingMessageBubble.getProperties().get("messageId");
+                if (messageId != null) {
+                    editMessage(messageId, text);
+                }
+            }
+            closeReplyPreview();
+        }
+        else if (!text.isEmpty()) {
             sendMessage();
         } else {
             // Handle voice message recording
@@ -2098,14 +2121,31 @@ public class MainChatController implements Initializable {
      * TODO (Server): Implement server-side typing status transmission.
      */
     private void handleTypingDetection() {
-        // Implement typing detection logic
-        // This would typically send typing status to server
-        if (currentSelectedUser != null && !messageInputField.getText().trim().isEmpty()) {
-            // TODO (Server): Send typing indicator to other users via server.
+        if (currentSelectedUser == null) return;
+
+        // If not already marked as typing, send the "is typing" status immediately
+        if (!isCurrentlyTyping) {
+            isCurrentlyTyping = true;
             sendTypingStatus(true);
-        } else if (currentSelectedUser != null && messageInputField.getText().trim().isEmpty() && isTypingIndicatorVisible) {
-            sendTypingStatus(false);
         }
+
+        // Cancel the previously scheduled "stop typing" task
+        if (typingStopTask != null) {
+            typingStopTask.cancel();
+        }
+
+        // Create and schedule a new task to send "stopped typing" after 2 seconds of inactivity
+        typingStopTask = new TimerTask() {
+            @Override
+            public void run() {
+                // This check is important in case the state changes elsewhere
+                if (isCurrentlyTyping) {
+                    isCurrentlyTyping = false;
+                    sendTypingStatus(false);
+                }
+            }
+        };
+        typingTimer.schedule(typingStopTask, 1000); // 2-second delay
     }
 
     // ============ UI STATE MANAGEMENT ============
@@ -2152,7 +2192,37 @@ public class MainChatController implements Initializable {
         messagesScrollPane.setVisible(false);
         welcomeStateContainer.setVisible(false);
     }
+    private void showEditPreview() {
+        if (replyPreviewContainer == null || editingMessageBubble == null) return;
 
+        // Configure the preview bar for "Edit" mode
+        replyToLabel.setText("Edit Message");
+        replyMessageLabel.setText(originalEditText.length() > 50 ?
+                originalEditText.substring(0, 47) + "..." : originalEditText);
+
+        // Populate the input field
+        messageInputField.setText(originalEditText);
+        messageInputField.positionCaret(originalEditText.length());
+
+        replyPreviewContainer.setVisible(true);
+        replyPreviewContainer.setManaged(true);
+
+        // Animate reply preview
+        replyPreviewContainer.setTranslateY(-30);
+        replyPreviewContainer.setOpacity(0);
+
+        TranslateTransition slideDown = new TranslateTransition(Duration.millis(200), replyPreviewContainer);
+        slideDown.setToY(0);
+
+        FadeTransition fadeIn = new FadeTransition(Duration.millis(200), replyPreviewContainer);
+        fadeIn.setToValue(1.0);
+
+        ParallelTransition showEdit = new ParallelTransition(slideDown, fadeIn);
+        showEdit.play();
+
+        // Focus message input
+        messageInputField.requestFocus();
+    }
     /**
      * Enables chat controls when a chat is selected.
      */
@@ -2369,21 +2439,47 @@ public class MainChatController implements Initializable {
         }
     }
 
-    public void hideTypingIndicator() {
-        if (chatSubtitleLabel == null || !isTypingIndicatorVisible) return;
+    private void updateChatSubtitle(UserViewModel user) {
+        // FIX for Bug 2 (Part 1): Add a guard. This method should NOT run if the
+        // typing indicator is active. The `hideTypingIndicator` method will call
+        // this when it's time to restore the normal subtitle.
+        if (isTypingIndicatorVisible) {
+            return;
+        }
 
-        // Restore original subtitle based on current user status
-        if (currentSelectedUser != null) {
-            updateChatSubtitle(currentSelectedUser);
+        if (user.isOnline() && user.getType() == UserType.USER) {
+            chatSubtitleLabel.setText("online");
+            chatSubtitleLabel.getStyleClass().setAll("chat-subtitle");
+        } else if (user.getLastSeen() != null && !user.getLastSeen().isEmpty() && user.getType() == UserType.USER) {
+            chatSubtitleLabel.setText(user.getLastSeen());
+            chatSubtitleLabel.getStyleClass().setAll("chat-subtitle");
+        } else if (user.getType() == UserType.GROUP || user.getType() == UserType.SUPERGROUP) {
+            // For groups, the subtitle is either the member count or empty.
+            // Since member count is in its own label, we can clear this one.
+            chatSubtitleLabel.setText("");
+            chatSubtitleLabel.getStyleClass().setAll("chat-subtitle");
         } else {
-            chatSubtitleLabel.setText("Click on a chat to start messaging");
+            chatSubtitleLabel.setText("offline");
             chatSubtitleLabel.getStyleClass().setAll("chat-subtitle");
         }
+    }
+
+    public void hideTypingIndicator() {
+        if (chatSubtitleLabel == null || !isTypingIndicatorVisible) return;
 
         isTypingIndicatorVisible = false;
         if (typingAnimationTimeline != null) {
             typingAnimationTimeline.stop();
             chatSubtitleLabel.setOpacity(1.0); // Reset opacity
+        }
+
+        // FIX for Bug 2 (Part 2): Restore the original subtitle after stopping the animation.
+        // This call is now safe because the new updateChatSubtitle has a guard.
+        if (currentSelectedUser != null) {
+            updateChatSubtitle(currentSelectedUser);
+        } else {
+            chatSubtitleLabel.setText("");
+            chatSubtitleLabel.getStyleClass().setAll("chat-subtitle");
         }
     }
 
@@ -2879,28 +2975,151 @@ public class MainChatController implements Initializable {
      *
      * @param event The MouseEvent triggering the menu.
      */
-    private void showMessageContextMenu(MouseEvent event) {
+    private void showMessageContextMenu(MouseEvent event, VBox messageBubble) {
         ContextMenu menu = new ContextMenu();
 
+        // Extract message properties stored in the node
+        UUID messageId = (UUID) messageBubble.getProperties().get("messageId");
+        boolean isOutgoing = messageBubble.getStyleClass().contains("outgoing");
+        boolean isTextMessage = messageBubble.getChildren().stream()
+                .anyMatch(node -> node instanceof Label && node.getStyleClass().contains("message-text"));
+
         MenuItem replyItem = new MenuItem("Reply");
-        replyItem.setOnAction(e -> showReplyPreview((VBox) event.getSource()));
+        replyItem.setOnAction(e -> showReplyPreview(messageBubble));
 
         MenuItem forwardItem = new MenuItem("Forward");
-        forwardItem.setOnAction(e -> forwardMessage());
+        forwardItem.setOnAction(e -> forwardMessage(messageId));
+        forwardItem.setDisable(messageId == null);
 
         MenuItem editItem = new MenuItem("Edit");
-        editItem.setOnAction(e -> editMessage());
+        editItem.setOnAction(e -> promptForEdit(messageBubble));
+        // Can only edit outgoing text messages
+        editItem.setDisable(!isOutgoing || !isTextMessage);
 
         MenuItem deleteItem = new MenuItem("Delete");
-        deleteItem.setOnAction(e -> deleteMessage());
+        deleteItem.setOnAction(e -> confirmAndDeleteMessage(messageId));
+        // Can only delete outgoing messages
+        deleteItem.setDisable(!isOutgoing);
 
         MenuItem copyItem = new MenuItem("Copy Text");
-        copyItem.setOnAction(e -> copyMessageText());
+        copyItem.setOnAction(e -> copyMessageText(messageBubble));
+        // Can only copy text from text messages
+        copyItem.setDisable(!isTextMessage);
 
         menu.getItems().addAll(replyItem, forwardItem, editItem, new SeparatorMenuItem(), copyItem, deleteItem);
         menu.show(mainChatContainer, event.getScreenX(), event.getScreenY());
     }
 
+    private void promptForEdit(VBox messageBubble) {
+        // Ensure we're not already replying or editing something else
+        if (replyPreviewContainer.isVisible()) {
+            closeReplyPreview();
+        }
+
+        UUID messageId = (UUID) messageBubble.getProperties().get("messageId");
+        if (messageId == null) return;
+
+        Label messageTextLabel = (Label) messageBubble.getChildren().stream()
+                .filter(node -> node instanceof Label && node.getStyleClass().contains("message-text"))
+                .findFirst().orElse(null);
+
+        if (messageTextLabel == null) return;
+
+        // Set the state for editing
+        this.editingMessageBubble = messageBubble;
+        this.originalEditText = messageTextLabel.getText();
+
+        // Show the edit preview bar and populate the input field
+        showEditPreview();
+    }
+
+
+    /**
+     * Edits a message by sending a request to the server.
+     * The UI will be updated by the MessageEditedEvent.
+     */
+    private void editMessage(UUID messageId, String newContent) {
+        Task<RpcResponse<Object>> editTask = chatService.editMessage(messageId, newContent);
+
+        editTask.setOnSucceeded(event -> {
+            RpcResponse<Object> response = editTask.getValue();
+            if (response.getStatusCode() != StatusCode.OK) {
+                Platform.runLater(() -> showTemporaryNotification("Failed to edit message: " + response.getMessage()));
+            }
+        });
+        editTask.setOnFailed(event -> {
+            editTask.getException().printStackTrace();
+            Platform.runLater(() -> showTemporaryNotification("Error editing message."));
+        });
+        new Thread(editTask).start();
+    }
+
+    private void confirmAndDeleteMessage(UUID messageId) {
+        if (messageId == null) return;
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Delete Message");
+        alert.setHeaderText("Are you sure you want to delete this message?");
+        alert.setContentText("This action cannot be undone.");
+
+        alert.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.OK) {
+                deleteMessage(messageId);
+            }
+        });
+    }
+
+    /**
+     * Deletes a message by sending a request to the server.
+     * The UI will be updated by the MessageDeletedEvent.
+     */
+    private void deleteMessage(UUID messageId) {
+        Task<RpcResponse<Object>> deleteTask = chatService.deleteMessage(messageId);
+
+        deleteTask.setOnSucceeded(event -> {
+            RpcResponse<Object> response = deleteTask.getValue();
+            if (response.getStatusCode() != StatusCode.OK) {
+                Platform.runLater(() -> showTemporaryNotification("Failed to delete message: " + response.getMessage()));
+            }
+        });
+        deleteTask.setOnFailed(event -> {
+            deleteTask.getException().printStackTrace();
+            Platform.runLater(() -> showTemporaryNotification("Error deleting message."));
+        });
+        new Thread(deleteTask).start();
+    }
+
+    /**
+     * Copies the text of a message to the clipboard.
+     */
+    private void copyMessageText(VBox messageBubble) {
+        Label messageTextLabel = (Label) messageBubble.getChildren().stream()
+                .filter(node -> node instanceof Label && node.getStyleClass().contains("message-text"))
+                .findFirst().orElse(null);
+
+        if (messageTextLabel != null) {
+            final javafx.scene.input.Clipboard clipboard = javafx.scene.input.Clipboard.getSystemClipboard();
+            final javafx.scene.input.ClipboardContent content = new javafx.scene.input.ClipboardContent();
+            content.putString(messageTextLabel.getText());
+            clipboard.setContent(content);
+            showTemporaryNotification("Text copied to clipboard.");
+        }
+    }
+
+    /**
+     * Forwards a message (placeholder).
+     */
+    private void forwardMessage(UUID messageId) {
+        System.out.println("Forwarding message: " + messageId);
+        // TODO: Implement message forwarding UI and logic.
+    }
+
+    protected void sendTypingStatus(boolean isTyping) {
+        if (currentSelectedUser == null) return;
+        Task<Void> typingTask = chatService.sendTypingStatus(UUID.fromString(currentSelectedUser.getUserId()), isTyping);
+        // We run this in the background and don't need to handle success/failure explicitly on the UI
+        typingTask.setOnFailed(e -> System.err.println("Failed to send typing status: " + typingTask.getException().getMessage()));
+        new Thread(typingTask).start();
+    }
     // ============ ATTACHMENT METHODS ============
 
     /**
@@ -3010,18 +3229,6 @@ public class MainChatController implements Initializable {
         showNotificationDialog(parentStage, message);
     }
 
-    /**
-     * Sends the typing status to the server.
-     * TODO (Server): Implement server-side communication to update other users' interfaces.
-     *
-     * @param isTyping True if the user is typing, false otherwise.
-     */
-    private void sendTypingStatus(boolean isTyping) {
-        // In a real implementation, this would send typing status to server
-        System.out.println("Typing status: " + isTyping);
-        // TODO (Server): Establish a WebSocket or REST call to send typing status to the server.
-        // TODO (UI): Update local UI to reflect typing state if needed (e.g., show indicator).
-    }
 
     // ============ PUBLIC API METHODS ============
 
@@ -3180,5 +3387,42 @@ public class MainChatController implements Initializable {
         messagesContainer.getChildren().clear();
         // TODO (UI): Ensure all event listeners are removed to prevent memory leaks.
         // TODO (Server): Notify server of cleanup or session end if applicable.
+    }
+    // Add this new method to create the context menu
+    private ContextMenu createMessageContextMenu(VBox messageBubble) {
+        ContextMenu menu = new ContextMenu();
+
+        // Extract message properties stored in the node
+        UUID messageId = (UUID) messageBubble.getProperties().get("messageId");
+        boolean isOutgoing = messageBubble.getStyleClass().contains("outgoing");
+
+        // Determine if it's a text or document bubble to enable/disable "Copy Text"
+        boolean isTextMessage = messageBubble.getChildren().stream()
+                .anyMatch(node -> node instanceof Label && ((Label) node).getStyleClass().contains("message-text"));
+
+        MenuItem replyItem = new MenuItem("Reply");
+        replyItem.setOnAction(e -> showReplyPreview(messageBubble));
+
+        MenuItem forwardItem = new MenuItem("Forward");
+        forwardItem.setOnAction(e -> forwardMessage(messageId));
+        forwardItem.setDisable(messageId == null); // Disable if no messageId is available
+
+        MenuItem editItem = new MenuItem("Edit");
+        editItem.setOnAction(e -> promptForEdit(messageBubble));
+        // Can only edit outgoing text messages
+        editItem.setDisable(!isOutgoing || !isTextMessage);
+
+        MenuItem deleteItem = new MenuItem("Delete");
+        deleteItem.setOnAction(e -> confirmAndDeleteMessage(messageId));
+        // Can only delete your own (outgoing) messages
+        deleteItem.setDisable(!isOutgoing || messageId == null);
+
+        MenuItem copyItem = new MenuItem("Copy Text");
+        copyItem.setOnAction(e -> copyMessageText(messageBubble));
+        // Can only copy text from text messages
+        copyItem.setDisable(!isTextMessage);
+
+        menu.getItems().addAll(replyItem, forwardItem, editItem, new SeparatorMenuItem(), copyItem, deleteItem);
+        return menu;
     }
 }

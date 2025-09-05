@@ -6,10 +6,7 @@ import JSocket2.Protocol.Rpc.RpcResponse;
 import Shared.Api.Models.ChatController.GetChatInfoOutputModel;
 import Shared.Api.Models.ChatController.getChatsByUserInputModel;
 import Shared.Api.Models.MediaController.CreateMediaInputModel;
-import Shared.Api.Models.MessageController.GetMessageByChatInputModel;
-import Shared.Api.Models.MessageController.GetMessageOutputModel;
-import Shared.Api.Models.MessageController.SendMessageInputModel;
-import Shared.Api.Models.MessageController.SendMessageOutputModel;
+import Shared.Api.Models.MessageController.*;
 import Shared.Models.Chat.Chat;
 import com.google.gson.Gson;
 import Shared.Api.Models.AccountController.*;
@@ -54,10 +51,6 @@ public class RpcCaller extends RpcCallerBase {
         return callRpcAndGetResponse("AccountRpcController", "setPassword",Object.class,password);
     }
 
-    public RpcResponse<Object> resetPassword(ResetPasswordInputModel model) throws IOException {
-        return callRpcAndGetResponse("AccountRpcController", "resetPassword", Object.class, model);
-    }
-
     public RpcResponse<Object> setUsername(String username) throws IOException {
         return callRpcAndGetResponse("AccountRpcController", "setUsername",Object.class, username);
     }
@@ -70,6 +63,9 @@ public class RpcCaller extends RpcCallerBase {
     }
 
     public RpcResponse<GetMessageOutputModel[]> getMessagesByChat(GetMessageByChatInputModel model) throws IOException {
+        // The server returns a list of its own inner class model.
+        // We will get it as a generic list of objects (likely LinkedTreeMaps from Gson)
+        // and parse it manually in the controller.
         return callRpcAndGetResponse("MessageRpcController", "getMessagesByChat", GetMessageOutputModel[].class,model);
     }
 
@@ -78,5 +74,21 @@ public class RpcCaller extends RpcCallerBase {
     }
     public RpcResponse<UUID> createMediaEntry(CreateMediaInputModel model) throws IOException {
         return callRpcAndGetResponse("MediaRpcController", "createMediaEntry", UUID.class, model);
+    }
+
+    public void sendTypingStatus(TypingNotificationInputModel model) throws IOException {
+         callRpc("MessageRpcController", "sendTypingStatus", model);
+    }
+
+    public RpcResponse<Object> editMessage(EditMessageInputModel model) throws IOException {
+        return callRpcAndGetResponse("MessageRpcController", "editMessage", Object.class, model);
+    }
+
+    public RpcResponse<Object> deleteMessage(DeleteMessageInputModel model) throws IOException {
+        return callRpcAndGetResponse("MessageRpcController", "deleteMessage", Object.class, model);
+    }
+
+    public void markChatAsRead(MarkChatAsReadInputModel model) throws IOException {
+         callRpc("MessageRpcController", "markChatAsRead", model);
     }
 }

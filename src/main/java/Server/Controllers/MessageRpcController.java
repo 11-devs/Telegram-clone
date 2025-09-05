@@ -3,17 +3,18 @@ package Server.Controllers;
 import JSocket2.Protocol.Rpc.RpcControllerBase;
 import JSocket2.Protocol.Rpc.RpcResponse;
 import Server.DaoManager;
-import Server.Events.NewMessageEvent;
+import Server.Events.*;
 import Shared.Api.Models.MessageController.*;
-import Shared.Events.Models.NewMessageEventModel;
+import Shared.Events.Models.*;
 import Shared.Models.Account.Account;
 import Shared.Models.Chat.Chat;
 import Shared.Models.Media.Media;
+import Shared.Models.Membership.Membership;
 import Shared.Models.Message.MediaMessage;
 import Shared.Models.Message.Message;
-import Shared.Models.Message.MessageType;
 import Shared.Models.Message.TextMessage;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter; // Import for formatting
 import java.util.List;
@@ -24,10 +25,18 @@ import java.util.stream.Collectors;
 public class MessageRpcController extends RpcControllerBase {
     private final DaoManager daoManager;
     private final NewMessageEvent newMessageEvent;
+    private final MessageEditedEvent messageEditedEvent;
+    private final MessageDeletedEvent messageDeletedEvent;
+    private final MessageReadEvent messageReadEvent;
+    private final UserTypingEvent userTypingEvent;
 
-    public MessageRpcController(DaoManager daoManager, NewMessageEvent newMessageEvent) {
+    public MessageRpcController(DaoManager daoManager, NewMessageEvent newMessageEvent, MessageEditedEvent messageEditedEvent, MessageDeletedEvent messageDeletedEvent, MessageReadEvent messageReadEvent, UserTypingEvent userTypingEvent) {
         this.daoManager = daoManager;
         this.newMessageEvent = newMessageEvent;
+        this.messageEditedEvent = messageEditedEvent;
+        this.messageDeletedEvent = messageDeletedEvent;
+        this.messageReadEvent = messageReadEvent;
+        this.userTypingEvent = userTypingEvent;
     }
 
 
@@ -88,9 +97,44 @@ public class MessageRpcController extends RpcControllerBase {
         return Ok(outputList);
     }
 
-    // Return type already correct
+
+    private void broadcastNewMessageEvent(Message message) {
+        List<Membership> members = daoManager.getMembershipDAO().findAllByField("chat.id", message.getChat().getId());
+        String senderId = message.getSender().getId().toString();
+
+        NewMessageEventModel eventModel = new NewMessageEventModel();
+        eventModel.setMessageId(message.getId());
+        eventModel.setSenderId(message.getSender().getId());
+        String senderName = message.getSender().getFirstName() + (message.getSender().getLastName() != null ? " " + message.getSender().getLastName() : "");
+        eventModel.setSenderName(senderName.trim());
+        eventModel.setChatId(message.getChat().getId());
+        eventModel.setTimestamp(message.getTimestamp().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+        eventModel.setEdited(message.isEdited());
+        eventModel.setMessageType(message.getType());
+
+        if (message instanceof TextMessage) {
+            eventModel.setTextContent(((TextMessage) message).getTextContent());
+        } else if (message instanceof MediaMessage) {
+            Media media = ((MediaMessage) message).getMedia();
+            if (media != null) {
+                eventModel.setMediaId(media.getId());
+                eventModel.setFileId(media.getFileId());
+            }
+        }
+
+        for (Membership member : members) {
+            if (!member.getAccount().getId().toString().equals(senderId)) {
+                try {
+                    newMessageEvent.Invoke(getServerSessionManager(), member.getAccount().getId().toString(), eventModel);
+                } catch (IOException e) {
+                    System.err.println("Failed to send new message event to " + member.getAccount().getId() + ": " + e.getMessage());
+                }
+            }
+        }
+    }
+
     public RpcResponse<Object> sendMessage(SendMessageInputModel model) {
-        Account sender = daoManager.getAccountDAO().findById(UUID.fromString( getCurrentUser().getUserId()));
+        Account sender = daoManager.getAccountDAO().findById(UUID.fromString(getCurrentUser().getUserId()));
         if (sender == null) {
             return BadRequest("Sender account not found.");
         }
@@ -136,47 +180,122 @@ public class MessageRpcController extends RpcControllerBase {
         newMessage.setType(model.getMessageType());
 
         daoManager.getMessageDAO().insert(newMessage);
-        NewMessageEventModel eventModel = createEventModelFromMessage(newMessage);
-        daoManager.getMembershipDAO().findAllByField("chat.id", chat.getId()).forEach(membership -> {
-            String recipientId = membership.getAccount().getId().toString();
-            if (!recipientId.equals(sender.getId().toString())) {
-                try {
-                    newMessageEvent.Invoke(getServerSessionManager(),recipientId, eventModel);
-                } catch (Exception e) {
-                    System.err.println("Failed to send NewMessageEvent to user " + recipientId + ": " + e.getMessage());
-                    e.printStackTrace();
-                }
-            }
-        });
-        // Pass LocalDateTime to the SendMessageOutputModel constructor, which now handles conversion to String
+
+        broadcastNewMessageEvent(newMessage);
+
         SendMessageOutputModel output = new SendMessageOutputModel(
                 newMessage.getId(),
-                newMessage.getTimestamp(), // This will be converted to String inside the constructor
+                newMessage.getTimestamp(),
                 "Message sent successfully"
         );
 
         return Ok(output);
     }
-    private NewMessageEventModel createEventModelFromMessage(Message message) {
-        NewMessageEventModel model = new NewMessageEventModel();
-        model.setMessageId(message.getId());
-        model.setChatId(message.getChat().getId());
-        model.setSenderId(message.getSender().getId());
-        String senderName = message.getSender().getFirstName() + (message.getSender().getLastName() != null ? " " + message.getSender().getLastName() : "");
-        model.setSenderName(senderName.trim());
-        model.setTimestamp(message.getTimestamp().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-        model.setEdited(message.isEdited());
-        model.setMessageType(message.getType());
 
-        if (message instanceof TextMessage) {
-            model.setTextContent(((TextMessage) message).getTextContent());
-        } else if (message instanceof MediaMessage) {
-            Media media = ((MediaMessage) message).getMedia();
-            if (media != null) {
-                model.setMediaId(media.getId());
-                model.setFileId(media.getFileId());
+    public RpcResponse<Object> editMessage(EditMessageInputModel model) {
+        Message message = daoManager.getMessageDAO().findById(model.getMessageId());
+        if (message == null) {
+            return NotFound();
+        }
+        if (!message.getSender().getId().toString().equals(getCurrentUser().getUserId())) {
+            return Forbidden("You can only edit your own messages.");
+        }
+        if (!(message instanceof TextMessage textMessage)) {
+            return BadRequest("Only text messages can be edited.");
+        }
+
+        textMessage.setTextContent(model.getNewContent());
+        textMessage.setEdited(true);
+        daoManager.getMessageDAO().update(textMessage);
+
+        List<Membership> members = daoManager.getMembershipDAO().findAllByField("chat.id", message.getChat().getId());
+        MessageEditedEventModel eventModel = new MessageEditedEventModel(
+                message.getId(),
+                message.getChat().getId(),
+                message.getSender().getId(),
+                model.getNewContent(),
+                LocalDateTime.now()
+        );
+
+        for (Membership member : members) {
+            try {
+                messageEditedEvent.Invoke(getServerSessionManager(), member.getAccount().getId().toString(), eventModel);
+            } catch (IOException e) {
+                System.err.println("Failed to send message edited event to " + member.getAccount().getId() + ": " + e.getMessage());
             }
         }
-        return model;
+        return Ok("Message edited successfully.");
     }
+
+    public RpcResponse<Object> deleteMessage(DeleteMessageInputModel model) {
+        Message message = daoManager.getMessageDAO().findById(model.getMessageId());
+        if (message == null) {
+            return NotFound();
+        }
+        if (!message.getSender().getId().toString().equals(getCurrentUser().getUserId())) {
+            return Forbidden("You can only delete your own messages.");
+        }
+
+        daoManager.getMessageDAO().delete(message);
+
+        List<Membership> members = daoManager.getMembershipDAO().findAllByField("chat.id", message.getChat().getId());
+        MessageDeletedEventModel eventModel = new MessageDeletedEventModel(
+                message.getId(),
+                message.getChat().getId(),
+                message.getSender().getId()
+        );
+        for (Membership member : members) {
+            try {
+                messageDeletedEvent.Invoke(getServerSessionManager(), member.getAccount().getId().toString(), eventModel);
+            } catch (IOException e) {
+                System.err.println("Failed to send message deleted event to " + member.getAccount().getId() + ": " + e.getMessage());
+            }
+        }
+        return Ok("Message deleted successfully.");
+    }
+
+    public void markChatAsRead(MarkChatAsReadInputModel model) {
+        UUID readerId = UUID.fromString(getCurrentUser().getUserId());
+        Chat chat = daoManager.getChatDAO().findById(model.getChatId());
+        if (chat == null) return;
+
+        if (chat.getType() == Shared.Models.Chat.ChatType.PRIVATE) {
+            List<Membership> members = daoManager.getMembershipDAO().findAllByField("chat.id", model.getChatId());
+            members.stream()
+                    .map(Membership::getAccount)
+                    .filter(account -> !account.getId().equals(readerId))
+                    .findFirst()
+                    .ifPresent(otherUser -> {
+                        MessageReadEventModel eventModel = new MessageReadEventModel(
+                                null,
+                                model.getChatId(),
+                                readerId,
+                                LocalDateTime.now()
+                        );
+                        try {
+                            messageReadEvent.Invoke(getServerSessionManager(), otherUser.getId().toString(), eventModel);
+                        } catch (IOException e) {
+                            System.err.println("Failed to send message read event to " + otherUser.getId() + ": " + e.getMessage());
+                        }
+                    });
+        }
+    }
+    public void sendTypingStatus(TypingNotificationInputModel model) {
+        List<Membership> members = daoManager.getMembershipDAO().findAllByField("chat.id", model.getChatId());
+        String senderId = getCurrentUser().getUserId();
+        String senderName = getCurrentUser().getFirstName();
+
+        UserIsTypingEventModel eventPayload = new UserIsTypingEventModel(model.getChatId(), UUID.fromString(senderId), senderName, model.isTyping());
+
+        for (Membership member : members) {
+            if (!member.getAccount().getId().toString().equals(senderId)) {
+                try {
+                    userTypingEvent.Invoke(getServerSessionManager(), member.getAccount().getId().toString(), eventPayload);
+                } catch (IOException e) {
+                    System.err.println("Error sending typing event to user " + member.getAccount().getId() + ": " + e.getMessage());
+                }
+            }
+        }
+    }
+
 }

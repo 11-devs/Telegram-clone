@@ -35,6 +35,7 @@ public class Server {
         builder.addController(ContactRpcController.class);
         builder.addController(ViewRpcController.class);
         builder.addController(MediaRpcController.class);
+
         ServerApplication app = builder.build();
         app.Run();
     }
