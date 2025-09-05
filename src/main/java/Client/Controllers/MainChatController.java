@@ -924,8 +924,8 @@ public class MainChatController implements Initializable {
         );
 
         replyToLabel.setText(currentSelectedUser != null ? currentSelectedUser.getUserName() : "User");
-        replyMessageLabel.setText(messageText.getText().length() > 50 ?
-                messageText.getText().substring(0, 47) + "..." : messageText.getText());
+        replyMessageLabel.setText(messageText.getText().length() > 100 ?
+                messageText.getText().substring(0, 97) + "..." : messageText.getText());
 
         replyPreviewContainer.setVisible(true);
 

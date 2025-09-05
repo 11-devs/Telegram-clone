@@ -222,7 +222,7 @@
 }
 
 .messages-scroll-pane {
-    -fx-background-color: transparent;
+    -fx-background-color: #0E1621;
     -fx-border-color: transparent;
     -fx-focus-color: transparent;
     -fx-faint-focus-color: transparent;
@@ -363,14 +363,14 @@
 }
 
 .close-reply-button:pressed {
+    -fx-background-color: transparent;
     -fx-scale-x: 0.95;
     -fx-scale-y: 0.95;
     -fx-opacity: 0.8;
 }
 
 .close-reply-button:focused {
-    -fx-background-color: derive(#ffffff, -20%);
-    -fx-background-radius: 50%;
+    -fx-background-color: derive(transparent, -20%);
 }
 
 /* ============ MESSAGE INPUT ============ */
@@ -382,7 +382,7 @@
 }
 
 .message-input-area {
-    -fx-background-color: #202B36;
+    -fx-background-color: #17212B;
     -fx-alignment: bottom-center;
 }
 
@@ -415,27 +415,26 @@
 }
 
 .message-input-field {
-    -fx-background-color: #202B36;
+    -fx-background-color: #17212B;
     -fx-border-color: transparent;
     -fx-text-fill: #FFFFFF;
     -fx-prompt-text-fill: #92A3AF;
     -fx-font-size: 14px;
-    -fx-font-weight: 400;
-    -fx-padding: 8 16 8 16;
+    -fx-font-weight: 600;
     -fx-min-height: 40px;
     -fx-pref-height: 40px;
-    -fx-max-height: 120px;
+    -fx-max-height: 80px;
     -fx-wrap-text: true;
     -fx-focus-color: transparent;
     -fx-faint-focus-color: transparent;
 }
 
 .message-input-field:selected {
-    -fx-background-color: #202B36;
+    -fx-background-color: #17212B;
 }
 
 .message-input-field:focused {
-    -fx-background-color: #202B36;
+    -fx-background-color: #17212B;
 }
 
 .message-input-field .content {
@@ -452,34 +451,29 @@
 }
 
 .send-button {
-    -fx-background-color: #4FC3F7;
+    -fx-background-color: transparent;
     -fx-border-color: transparent;
-    -fx-background-radius: 50%;
     -fx-cursor: hand;
     -fx-min-width: 40px;
     -fx-min-height: 40px;
     -fx-pref-width: 40px;
     -fx-pref-height: 40px;
-    -fx-padding: 8;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.12), 0, 0, 0, 0) 0 1px 3px, dropshadow(gaussian, rgba(0, 0, 0, 0.24), 0, 0, 0, 0) 0 1px 2px;
 }
 
 .send-button:hover {
-    -fx-background-color: #29B6F6;
-    -fx-scale-x: 1.05;
-    -fx-scale-y: 1.05;
+    -fx-background-color: transparent;
 }
 
 .send-button:pressed {
-    -fx-background-color: #0288D1;
+    -fx-background-color: transparent;
 }
 
 .send-button.voice-mode {
-    -fx-background-color: #92A3AF;
+    -fx-background-color: transparent;
 }
 
 .send-button.voice-mode:hover {
-    -fx-background-color: #708090;
+    -fx-background-color: transparent;
 }
 
 /* ============ RIGHT PANEL STYLING ============ */
@@ -989,25 +983,27 @@
 }
 
 /* ============ SCROLLBAR STYLING ============ */
+.scroll-bar {
+    -fx-background-color: transparent;
+}
+
 .scroll-bar:vertical {
     -fx-background-color: transparent;
-    -fx-border-color: transparent;
-    -fx-pref-width: 6px;
-    -fx-max-width: 6px;
-    -fx-min-width: 6px;
+    -fx-pref-width: 8px;
+    -fx-padding: 2;
 }
 
 .scroll-bar:vertical .track {
     -fx-background-color: transparent;
     -fx-border-color: transparent;
-    -fx-opacity: 0;
+    -fx-background-radius: 4px;
+    -fx-border-radius: 4px;
 }
 
 .scroll-bar:vertical .thumb {
     -fx-background-color: rgba(146, 163, 175, 0.3);
-    -fx-background-radius: 3px;
-    -fx-border-radius: 3px;
-    -fx-border-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 4px;
 }
 
 .scroll-bar:vertical .thumb:hover {
@@ -1018,17 +1014,27 @@
     -fx-background-color: rgba(146, 163, 175, 0.7);
 }
 
-.scroll-bar:vertical .increment-button,
-.scroll-bar:vertical .decrement-button {
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
     -fx-background-color: transparent;
-    -fx-border-color: transparent;
-    -fx-pref-height: 0;
+    -fx-background-radius: 0;
+    -fx-padding: 0;
+    -fx-min-width: 0;
     -fx-pref-width: 0;
+    -fx-min-height: 0;
+    -fx-pref-height: 0;
+}
+
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-shape: "";
+    -fx-padding: 0;
 }
 
 .scroll-bar:horizontal {
     -fx-pref-height: 0;
     -fx-max-height: 0;
+    -fx-opacity: 0;
 }
 
 /* ============ CONTEXT MENU STYLING ============ */
