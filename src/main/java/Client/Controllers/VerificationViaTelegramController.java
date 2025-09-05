@@ -35,6 +35,7 @@ public class VerificationViaTelegramController {
     private ConnectionManager connectionManager;
     private RpcCaller rpcCaller;
     private TextField[] textFields;
+    private boolean isForgotPasswordMode = false;
 
     @FXML
     private VBox root;
@@ -60,6 +61,10 @@ public class VerificationViaTelegramController {
     public void setRequestCodeOutputModel(RequestCodePhoneNumberOutputModel requestCodePhoneNumberOutputModel) {
         this.requestCodePhoneNumberOutputModel = requestCodePhoneNumberOutputModel;
         phoneLabel.setText(requestCodePhoneNumberOutputModel.getPhoneNumber());
+    }
+
+    public void setForgotPasswordMode(boolean forgotPasswordMode) {
+        isForgotPasswordMode = forgotPasswordMode;
     }
 
     @FXML
@@ -105,7 +110,7 @@ public class VerificationViaTelegramController {
                     } else {
                         handleNext();
                     }
-                } else if (!text.isEmpty()){
+                } else if (!text.isEmpty()) {
                     shakeField(currentField);
                     javafx.application.Platform.runLater(currentField::clear);
                 }
@@ -191,11 +196,12 @@ public class VerificationViaTelegramController {
         if (code.length() == 5 && code.matches("\\d{5}")) {
             setLoadingState(true);
 
+            String purpose = isForgotPasswordMode ? "password_reset" : "login";
             Task<RpcResponse<VerifyCodeOutputModel>> otpTask = new Task<>() {
                 @Override
                 protected RpcResponse<VerifyCodeOutputModel> call() throws IOException {
                     var deviceInfo = DeviceUtil.getDeviceInfo();
-                    return rpcCaller.verifyOTP(new VerifyCodeInputModel(requestCodePhoneNumberOutputModel.getPendingId(), requestCodePhoneNumberOutputModel.getPhoneNumber(), code, deviceInfo));
+                    return rpcCaller.verifyOTP(new VerifyCodeInputModel(requestCodePhoneNumberOutputModel.getPendingId(), requestCodePhoneNumberOutputModel.getPhoneNumber(), code, deviceInfo, purpose));
                 }
             };
 
@@ -246,6 +252,12 @@ public class VerificationViaTelegramController {
                     });
                 }
                 break;
+            case "password_reset_required":
+                changeSceneWithSameSize(root, "/Client/fxml/resetPassword.fxml", (ResetPasswordController controller) -> {
+                    controller.setPhoneNumber(payload.getPhoneNumber());
+                    controller.setPendingId(payload.getPendingId());
+                });
+                break;
         }
     }
 
@@ -292,10 +304,11 @@ public class VerificationViaTelegramController {
     @FXML
     private void handleSmsLinkClick() {
         setFieldsDisabled(true);
+        String purpose = isForgotPasswordMode ? "password_reset" : "login";
         Task<RpcResponse<RequestCodePhoneNumberOutputModel>> smsTask = new Task<>() {
             @Override
             protected RpcResponse<RequestCodePhoneNumberOutputModel> call() throws IOException {
-                return rpcCaller.requestOTP(new RequestCodePhoneNumberInputModel(requestCodePhoneNumberOutputModel.getPhoneNumber(), "sms", DeviceUtil.getDeviceInfo()));
+                return rpcCaller.requestOTP(new RequestCodePhoneNumberInputModel(requestCodePhoneNumberOutputModel.getPhoneNumber(), "sms", DeviceUtil.getDeviceInfo(), purpose));
             }
         };
 
@@ -304,6 +317,7 @@ public class VerificationViaTelegramController {
             if (response.getStatusCode() == StatusCode.OK) {
                 SceneUtil.changeSceneWithSameSize(code1, "/Client/fxml/VerificationViaSms.fxml", (VerificationViaSmsController controller) -> {
                     controller.setRequestCodeOutputModel(response.getPayload());
+                    controller.setForgotPasswordMode(isForgotPasswordMode);
                 });
             } else {
                 TelegramValidationMessage.setText("Failed to send SMS. Please try again.");

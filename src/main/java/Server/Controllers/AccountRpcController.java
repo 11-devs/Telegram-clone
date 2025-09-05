@@ -33,6 +33,13 @@ public RpcResponse<Boolean> isPhoneNumberRegistered(String phoneNumber){
                 .filter(p -> p.getDeviceInfo() != null && p.getDeviceInfo().equals(model.getDeviceInfo()))
                 .findFirst();
         PendingAuth pending = optionalPending.orElse(null);
+
+        // Check if account exists for password reset purpose
+        Account account = daoManager.getAccountDAO().findByField("phoneNumber", model.getPhoneNumber());
+        if ("password_reset".equals(model.getPurpose()) && account == null) {
+            return BadRequest("account_not_found");
+        }
+
         if (pending != null) {
             if (Instant.now().isBefore(pending.getLastRequestAt().plus(OTP_RESEND_COOLDOWN))) {
                 cooldown = true;
@@ -45,37 +52,39 @@ public RpcResponse<Boolean> isPhoneNumberRegistered(String phoneNumber){
             pending.setPhoneNumber(model.getPhoneNumber());
             pending.setStage("initial");
             pending.setDeviceInfo(model.getDeviceInfo());
+            pending.setPurpose(model.getPurpose()); // Set the purpose
         }
-if(!cooldown) {
-    var otp = generateOTP();
-    pending.setOtp(otp);
-    pending.setOtpExpiresAt(Instant.now().plus(OTP_EXPIRY_DURATION));
-    pending.setLastRequestAt(Instant.now());
-    pending.setAttempts(0);
-    pending.setLockoutUntil(null);
 
-    if (pending.getId() == null) {
-        daoManager.getPendingAuthDAO().insert(pending);
-    } else {
-        daoManager.getPendingAuthDAO().update(pending);
-    }
+        if (!cooldown) {
+            var otp = generateOTP();
+            pending.setOtp(otp);
+            pending.setOtpExpiresAt(Instant.now().plus(OTP_EXPIRY_DURATION));
+            pending.setLastRequestAt(Instant.now());
+            pending.setAttempts(0);
+            pending.setLockoutUntil(null);
+            pending.setPurpose(model.getPurpose()); // Ensure purpose is updated/set
 
-    // Send OTP via the specified channel (telegram/sms)
-    switch (model.getVia()) {
-        case "telegram":
-            // Logic to send telegram message
-            System.out.println("Telegram message sent to phoneNumber:" + model.getPhoneNumber() + " OTP:" + pending.getOtp());
-            break;
-        case "sms":
-            // Logic to send SMS
-            System.out.println("SMS sent to phoneNumber:" + model.getPhoneNumber() + " OTP:" + pending.getOtp());
-            break;
-        default:
-            return BadRequest("invalid_via_channel");
-    }
-}
+            if (pending.getId() == null) {
+                daoManager.getPendingAuthDAO().insert(pending);
+            } else {
+                daoManager.getPendingAuthDAO().update(pending);
+            }
+
+            // Send OTP via the specified channel (telegram/sms)
+            switch (model.getVia()) {
+                case "telegram":
+                    System.out.println("Telegram message sent to phoneNumber:" + model.getPhoneNumber() + " OTP:" + pending.getOtp() + " for purpose: " + model.getPurpose());
+                    break;
+                case "sms":
+                    System.out.println("SMS sent to phoneNumber:" + model.getPhoneNumber() + " OTP:" + pending.getOtp() + " for purpose: " + model.getPurpose());
+                    break;
+                default:
+                    return BadRequest("invalid_via_channel");
+            }
+        }
+
         RequestCodePhoneNumberOutputModel outputModel = new RequestCodePhoneNumberOutputModel();
-        outputModel.setStatus( !cooldown ? "code_sent" : "cooldown");
+        outputModel.setStatus(!cooldown ? "code_sent" : "cooldown");
         outputModel.setPendingId(pending.getId().toString());
         outputModel.setPhoneNumber(model.getPhoneNumber());
         return Ok(outputModel);
@@ -86,6 +95,10 @@ if(!cooldown) {
 
         if (pending == null) {
             return BadRequest("invalid_pending_id");
+        }
+
+        if (!pending.getPhoneNumber().equals(model.getPhoneNumber())) {
+            return BadRequest("phone_number_mismatch");
         }
 
         if (Instant.now().isAfter(pending.getOtpExpiresAt())) {
@@ -107,22 +120,33 @@ if(!cooldown) {
             return BadRequest("invalid_otp");
         }
 
-        daoManager.getPendingAuthDAO().delete(pending);
+        // OTP is valid
+        daoManager.getPendingAuthDAO().delete(pending); // OTP consumed
 
-        var account = daoManager.getAccountDAO().findByField("phoneNumber", model.getPhoneNumber());
         VerifyCodeOutputModel output = new VerifyCodeOutputModel();
+        output.setPhoneNumber(model.getPhoneNumber());
+        output.setPendingId(model.getPendingId()); // Keep pendingId for next step if needed
 
-        if (account == null) {
-            output.setStatus("need_register");
-        } else if (account.getHashedPassword() != null && !account.getHashedPassword().isEmpty()) {
-            output.setStatus("need_password");
+        if ("password_reset".equals(pending.getPurpose())) {
+            // For password reset, just indicate that it's verified and allow password reset
+            output.setStatus("password_reset_required");
         } else {
-            var accessKey = generateAccessKey(account, model.getDeviceInfo());
-            output.setStatus("logged_in");
-            output.setAccessKey(accessKey);
+            // Existing login/registration flow
+            var account = daoManager.getAccountDAO().findByField("phoneNumber", model.getPhoneNumber());
+
+            if (account == null) {
+                output.setStatus("need_register");
+            } else if (account.getHashedPassword() != null && !account.getHashedPassword().isEmpty()) {
+                output.setStatus("need_password");
+            } else {
+                var accessKey = generateAccessKey(account, model.getDeviceInfo());
+                output.setStatus("logged_in");
+                output.setAccessKey(accessKey);
+            }
         }
         return Ok(output);
     }
+
     public RpcResponse<Object> login(LoginInputModel model) {
 
         var account = daoManager.getAccountDAO().findByField("phoneNumber",model.getPhoneNumber());
@@ -156,7 +180,6 @@ if(!cooldown) {
 
 
         } catch (Exception e) {
-            // Log the detailed error
             System.err.println("Error generating access key: " + e.getMessage());
             e.printStackTrace();
             throw new RuntimeException();
@@ -236,12 +259,35 @@ if(!cooldown) {
         daoManager.getAccountDAO().update(account);
         return Ok();
     }
+
     public RpcResponse<Object> setPassword(String password){
         var account = daoManager.getAccountDAO().findById(getCurrentUser().getUserId());
         account.setHashedPassword(PasswordUtil.hash(password));
         daoManager.getAccountDAO().update(account);
         return Ok();
     }
+
+    public RpcResponse<Object> resetPassword(ResetPasswordInputModel model) {
+        PendingAuth pending = daoManager.getPendingAuthDAO().findById(UUID.fromString(model.getPendingId()));
+
+        if (pending == null || !"password_reset".equals(pending.getPurpose()) || !pending.getPhoneNumber().equals(model.getPhoneNumber())) {
+            return BadRequest("invalid_reset_request");
+        }
+
+        Account account = daoManager.getAccountDAO().findByField("phoneNumber", model.getPhoneNumber());
+        if (account == null) {
+            return BadRequest("account_not_found");
+        }
+
+        // Hash the new password and update the account
+        account.setHashedPassword(PasswordUtil.hash(model.getNewPassword()));
+        daoManager.getAccountDAO().update(account);
+
+        daoManager.getPendingAuthDAO().delete(pending); // Consume the pending auth entry
+
+        return Ok("password_reset_successful");
+    }
+
     public RpcResponse<Object> setUsername(String username){
         var account = daoManager.getAccountDAO().findById(getCurrentUser().getUserId());
         account.setUsername(username);

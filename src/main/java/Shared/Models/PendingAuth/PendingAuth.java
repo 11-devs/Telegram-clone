@@ -58,7 +58,10 @@ public class PendingAuth {
 
     @Column(name = "lockoutUntil")
     private Instant lockoutUntil;
-    @Column(name = "lockoutUntil")
+
+    @Column(name = "purpose") // Added for different OTP purposes (e.g., login, password_reset)
+    private String purpose;
+
     public Instant getLockoutUntil() {
         return lockoutUntil;
     }
@@ -75,9 +78,7 @@ public class PendingAuth {
     public Instant getLastRequestAt() {
         return lastRequestAt;
     }
-    public void setLastRequestAt(Instant lastRequestAt) {
-        this.lastRequestAt = lastRequestAt;
-    }
+    public void setLastRequestAt(Instant lastRequestAt) { this.lastRequestAt = lastRequestAt; }
     // Hibernate requires a no-arg constructor
     public PendingAuth() {
     }
@@ -121,5 +122,13 @@ public class PendingAuth {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getPurpose() {
+        return purpose;
+    }
+
+    public void setPurpose(String purpose) {
+        this.purpose = purpose;
     }
 }

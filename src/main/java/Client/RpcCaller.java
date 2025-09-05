@@ -54,6 +54,10 @@ public class RpcCaller extends RpcCallerBase {
         return callRpcAndGetResponse("AccountRpcController", "setPassword",Object.class,password);
     }
 
+    public RpcResponse<Object> resetPassword(ResetPasswordInputModel model) throws IOException {
+        return callRpcAndGetResponse("AccountRpcController", "resetPassword", Object.class, model);
+    }
+
     public RpcResponse<Object> setUsername(String username) throws IOException {
         return callRpcAndGetResponse("AccountRpcController", "setUsername",Object.class, username);
     }
@@ -66,9 +70,6 @@ public class RpcCaller extends RpcCallerBase {
     }
 
     public RpcResponse<GetMessageOutputModel[]> getMessagesByChat(GetMessageByChatInputModel model) throws IOException {
-        // The server returns a list of its own inner class model.
-        // We will get it as a generic list of objects (likely LinkedTreeMaps from Gson)
-        // and parse it manually in the controller.
         return callRpcAndGetResponse("MessageRpcController", "getMessagesByChat", GetMessageOutputModel[].class,model);
     }
 

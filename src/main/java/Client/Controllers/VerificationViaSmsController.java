@@ -6,6 +6,7 @@ import Client.RpcCaller;
 import JSocket2.Core.Client.ConnectionManager;
 import JSocket2.Protocol.Rpc.RpcResponse;
 import JSocket2.Protocol.StatusCode;
+import Shared.Api.Models.AccountController.RequestCodePhoneNumberInputModel;
 import Shared.Api.Models.AccountController.RequestCodePhoneNumberOutputModel;
 import Shared.Api.Models.AccountController.VerifyCodeInputModel;
 import Shared.Api.Models.AccountController.VerifyCodeOutputModel;
@@ -34,6 +35,7 @@ public class VerificationViaSmsController {
     private RpcCaller rpcCaller;
     private RequestCodePhoneNumberOutputModel requestCodePhoneNumberOutputModel;
     private TextField[] textFields;
+    private boolean isForgotPasswordMode = false;
 
     @FXML
     private VBox root;
@@ -59,6 +61,10 @@ public class VerificationViaSmsController {
     public void setRequestCodeOutputModel(RequestCodePhoneNumberOutputModel requestCodePhoneNumberOutputModel) {
         this.requestCodePhoneNumberOutputModel = requestCodePhoneNumberOutputModel;
         phoneLabel.setText(requestCodePhoneNumberOutputModel.getPhoneNumber());
+    }
+
+    public void setForgotPasswordMode(boolean forgotPasswordMode) {
+        isForgotPasswordMode = forgotPasswordMode;
     }
 
     @FXML
@@ -190,11 +196,12 @@ public class VerificationViaSmsController {
         if (code.length() == 5 && code.matches("\\d{5}")) {
             setLoadingState(true);
 
+            String purpose = isForgotPasswordMode ? "password_reset" : "login";
             Task<RpcResponse<VerifyCodeOutputModel>> otpTask = new Task<>() {
                 @Override
                 protected RpcResponse<VerifyCodeOutputModel> call() throws IOException {
                     var deviceInfo = DeviceUtil.getDeviceInfo();
-                    return rpcCaller.verifyOTP(new VerifyCodeInputModel(requestCodePhoneNumberOutputModel.getPendingId(), requestCodePhoneNumberOutputModel.getPhoneNumber(), code, deviceInfo));
+                    return rpcCaller.verifyOTP(new VerifyCodeInputModel(requestCodePhoneNumberOutputModel.getPendingId(), requestCodePhoneNumberOutputModel.getPhoneNumber(), code, deviceInfo, purpose));
                 }
             };
 
@@ -245,6 +252,12 @@ public class VerificationViaSmsController {
                     });
                 }
                 break;
+            case "password_reset_required":
+                changeSceneWithSameSize(root, "/Client/fxml/resetPassword.fxml", (ResetPasswordController controller) -> {
+                    controller.setPhoneNumber(payload.getPhoneNumber());
+                    controller.setPendingId(payload.getPendingId());
+                });
+                break;
         }
     }
 
@@ -283,6 +296,46 @@ public class VerificationViaSmsController {
             nextButton.setText("Verifying...");
         } else {
             nextButton.setText("Next");
+        }
+    }
+
+
+    @FXML
+    private void handleSmsLinkClick() {
+        setFieldsDisabled(true);
+        String purpose = isForgotPasswordMode ? "password_reset" : "login";
+        Task<RpcResponse<RequestCodePhoneNumberOutputModel>> smsTask = new Task<>() {
+            @Override
+            protected RpcResponse<RequestCodePhoneNumberOutputModel> call() throws IOException {
+                return rpcCaller.requestOTP(new RequestCodePhoneNumberInputModel(requestCodePhoneNumberOutputModel.getPhoneNumber(), "sms", DeviceUtil.getDeviceInfo(), purpose));
+            }
+        };
+
+        smsTask.setOnSucceeded(event -> {
+            var response = smsTask.getValue();
+            if (response.getStatusCode() == StatusCode.OK) {
+                SceneUtil.changeSceneWithSameSize(code1, "/Client/fxml/VerificationViaSms.fxml", (VerificationViaSmsController controller) -> {
+                    controller.setRequestCodeOutputModel(response.getPayload());
+                    controller.setForgotPasswordMode(isForgotPasswordMode);
+                });
+            } else {
+                TelegramValidationMessage.setText("Failed to send SMS. Please try again.");
+                setFieldsDisabled(false);
+            }
+        });
+
+        smsTask.setOnFailed(event -> {
+            smsTask.getException().printStackTrace();
+            TelegramValidationMessage.setText("An error occurred while requesting SMS.");
+            setFieldsDisabled(false);
+        });
+
+        new Thread(smsTask).start();
+    }
+
+    private void setFieldsDisabled(boolean disabled) {
+        for (TextField field : textFields) {
+            field.setDisable(disabled);
         }
     }
 }

@@ -67,6 +67,12 @@ public class PhoneNumberController {
     private ObservableList<CountryCode> allCountries;
     private String currentFormatPattern = "############";
 
+    private boolean isForgotPasswordMode = false;
+
+    public void setForgotPasswordMode(boolean forgotPasswordMode) {
+        isForgotPasswordMode = forgotPasswordMode;
+    }
+
     public void initialize() {
         connectionManager = AppConnectionManager.getInstance().getConnectionManager();
         rpcCaller = AppConnectionManager.getInstance().getRpcCaller();
@@ -93,7 +99,6 @@ public class PhoneNumberController {
             if (newText.startsWith("+") && newText.substring(1).matches("\\d{0,6}")) {
                 return change;
             } else if (!newText.startsWith("+")) {
-                // This logic prevents the user from deleting the "+" sign
                 change.setText("+");
                 change.setRange(0, change.getControlText().length());
                 change.setCaretPosition(1);
@@ -121,13 +126,14 @@ public class PhoneNumberController {
             if (defaultCountry.isPresent()) {
                 CountryCode country = defaultCountry.get();
                 setCountryCode(country.getCode(), country.getCountry());
-                return; // Exit after setting the specific default
+                return;
             }
         }
         countryPreCode.setText("+");
         selectCountryButton.setText("Country Code");
         applyPhoneNumberFormatting("############");
     }
+
     private void applyPhoneNumberFormatting(String formatPattern) {
         this.currentFormatPattern = formatPattern;
         phoneNumberField.setPromptText(formatPattern.replace('#', '-'));
@@ -210,12 +216,10 @@ public class PhoneNumberController {
         phoneNumberField.setTextFormatter(new TextFormatter<>(filter));
     }
 
-
-
     private ObservableList<CountryCode> loadCountryCodes() {
         ObservableList<CountryCode> codes = FXCollections.observableArrayList();
         Gson gson = new Gson();
-        Type listType = new TypeToken<List<CountryCode>>(){}.getType();
+        Type listType = new TypeToken<List<CountryCode>>() {}.getType();
 
         try (Reader reader = new InputStreamReader(Objects.requireNonNull(getClass().getResourceAsStream("/client/json/country_codes.json")))) {
             List<CountryCode> countryList = gson.fromJson(reader, listType);
@@ -235,7 +239,11 @@ public class PhoneNumberController {
 
     @FXML
     private void handleBack() {
-        changeSceneWithSameSize(root, "/Client/fxml/Welcome.fxml");
+        if (isForgotPasswordMode) {
+            changeSceneWithSameSize(root, "/Client/fxml/CloudPasswordCheck.fxml");
+        } else {
+            changeSceneWithSameSize(root, "/Client/fxml/Welcome.fxml");
+        }
     }
 
     @FXML
@@ -245,38 +253,52 @@ public class PhoneNumberController {
         int requiredLength = currentFormatPattern.replaceAll("[^#]", "").length();
         if (phoneNumberDigits.length() < requiredLength) {
             System.out.println("Phone number is too short!");
-            AnimationUtil.showErrorAnimation(phoneNumberField,errorPseudoClass);
+            AnimationUtil.showErrorAnimation(phoneNumberField, errorPseudoClass);
             return;
         }
 
         if (preCode.length() < 2) {
             System.out.println("Country code is invalid!");
-            AnimationUtil.showErrorAnimation(countryPreCode,errorPseudoClass);
+            AnimationUtil.showErrorAnimation(countryPreCode, errorPseudoClass);
             return;
         }
 
+        final String fullPhoneNumber = preCode + phoneNumberDigits;
         final boolean[] isRegistered = new boolean[1];
+        final String purpose = isForgotPasswordMode ? "password_reset" : "login";
+
         Task<RpcResponse<RequestCodePhoneNumberOutputModel>> otpTask = new Task<>() {
             @Override
             protected RpcResponse<RequestCodePhoneNumberOutputModel> call() throws Exception {
-                String fullPhoneNumber = preCode + phoneNumberDigits;
                 isRegistered[0] = rpcCaller.isPhoneNumberRegistered(fullPhoneNumber).getPayload();
-                return rpcCaller.requestOTP(new RequestCodePhoneNumberInputModel(fullPhoneNumber, isRegistered[0] ? "telegram" : "sms", DeviceUtil.getDeviceInfo()));
+                return rpcCaller.requestOTP(new RequestCodePhoneNumberInputModel(fullPhoneNumber, isRegistered[0] ? "telegram" : "sms", DeviceUtil.getDeviceInfo(), purpose));
             }
         };
         otpTask.setOnSucceeded(event -> {
             try {
                 var response = otpTask.getValue();
-                if(response.getStatusCode() == StatusCode.OK){
-                    if(isRegistered[0]){
-                        changeSceneWithSameSize(root, "/Client/fxml/verificationViaTelegram.fxml",(VerificationViaTelegramController controller) -> {
+                if (response.getStatusCode() == StatusCode.OK) {
+                    if (isRegistered[0] && !isForgotPasswordMode) { // Normal login flow for registered user
+                        changeSceneWithSameSize(root, "/Client/fxml/verificationViaTelegram.fxml", (VerificationViaTelegramController controller) -> {
                             controller.setRequestCodeOutputModel(response.getPayload());
+                            controller.setForgotPasswordMode(isForgotPasswordMode);
                         });
-                    }else{
-                        changeSceneWithSameSize(root, "/Client/fxml/verificationViaSms.fxml",(VerificationViaSmsController controller) -> {
+                    } else if (isForgotPasswordMode) { // Forgot password flow
+                        changeSceneWithSameSize(root, "/Client/fxml/verificationViaTelegram.fxml", (VerificationViaTelegramController controller) -> {
                             controller.setRequestCodeOutputModel(response.getPayload());
+                            controller.setForgotPasswordMode(true);
+                        });
+                    } else { // New registration flow
+                        changeSceneWithSameSize(root, "/Client/fxml/verificationViaSms.fxml", (VerificationViaSmsController controller) -> {
+                            controller.setRequestCodeOutputModel(response.getPayload());
+                            controller.setForgotPasswordMode(isForgotPasswordMode);
                         });
                     }
+                } else {
+                    // Handle error from requestOTP, e.g., account not found for password reset
+                    // For now, just print to console
+                    System.err.println("Request OTP failed: " + response.getMessage());
+                    // Optionally show a dialog to the user
                 }
             } catch (Exception e) {
                 e.printStackTrace();

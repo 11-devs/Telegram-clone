@@ -1,7 +1,14 @@
 package Client.Controllers;
 
+import Client.AppConnectionManager;
+import Client.RpcCaller;
+import JSocket2.Protocol.Rpc.RpcResponse;
+import JSocket2.Protocol.StatusCode;
+import Shared.Api.Models.AccountController.ResetPasswordInputModel;
 import javafx.animation.Timeline;
 import javafx.animation.KeyFrame;
+import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.css.PseudoClass;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -12,6 +19,18 @@ import javafx.util.Duration;
 import static Shared.Utils.SceneUtil.changeSceneWithSameSize;
 
 public class ResetPasswordController {
+
+    private RpcCaller rpcCaller;
+    private String phoneNumber;
+    private String pendingId;
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public void setPendingId(String pendingId) {
+        this.pendingId = pendingId;
+    }
 
     @FXML
     private VBox root;
@@ -34,7 +53,8 @@ public class ResetPasswordController {
 
     @FXML
     private void initialize() {
-        // Apply entrance animations similar to other controllers
+        rpcCaller = AppConnectionManager.getInstance().getRpcCaller();
+
         if (infoBox != null) {
             infoBox.setTranslateX(75);
             var transition = new javafx.animation.TranslateTransition(Duration.seconds(0.5), infoBox);
@@ -48,7 +68,6 @@ public class ResetPasswordController {
             transition.play();
         }
 
-        // Add listeners to clear error state on text change
         newPasswordField.textProperty().addListener((obs, oldVal, newVal) -> clearErrorState());
         confirmPasswordField.textProperty().addListener((obs, oldVal, newVal) -> clearErrorState());
 
@@ -63,7 +82,6 @@ public class ResetPasswordController {
 
     @FXML
     private void handleBack() {
-        // Navigate back to the appropriate previous screen, e.g., login or phone number
         changeSceneWithSameSize(root, "/Client/fxml/CloudPasswordCheck.fxml");
     }
 
@@ -82,23 +100,57 @@ public class ResetPasswordController {
             return;
         }
 
+        if (phoneNumber == null || pendingId == null) {
+            setErrorState("Error: Missing phone number or pending ID for password reset.");
+            return;
+        }
+
         clearErrorState();
-        statusLabel.setText("Password reset successfully!");
-        statusLabel.pseudoClassStateChanged(errorPseudoClass, false); // In case you want a success style later
+        statusLabel.setText("Resetting password...");
+        submitButton.setDisable(true);
 
-        System.out.println("Password reset successfully. New Password: " + newPassword);
+        Task<RpcResponse<Object>> resetPasswordTask = new Task<>() {
+            @Override
+            protected RpcResponse<Object> call() throws Exception {
+                return rpcCaller.resetPassword(new ResetPasswordInputModel(phoneNumber, pendingId, newPassword));
+            }
+        };
 
-        // TODO: Call an RPC method to update the password on the server.
-        // For example:
-        // rpcCaller.resetPassword(newPassword);
-        // Then navigate to the main application window upon success.
+        resetPasswordTask.setOnSucceeded(event -> {
+            Platform.runLater(() -> {
+                var response = resetPasswordTask.getValue();
+                if (response.getStatusCode() == StatusCode.OK) {
+                    statusLabel.setText("Password reset successfully!");
+                    statusLabel.pseudoClassStateChanged(errorPseudoClass, false);
+                    System.out.println("Password reset successfully.");
+                    // Navigate to CloudPasswordCheck.fxml after a short delay or immediately
+                    // For now, immediately:
+                    changeSceneWithSameSize(root, "/Client/fxml/CloudPasswordCheck.fxml", (CloudPasswordCheckController controller) -> {
+                        controller.setPhoneNumber(phoneNumber);
+                    });
+                } else {
+                    setErrorState("Failed to reset password: " + response.getMessage());
+                }
+                submitButton.setDisable(false);
+            });
+        });
+
+        resetPasswordTask.setOnFailed(event -> {
+            Platform.runLater(() -> {
+                statusLabel.setText("Error resetting password: " + resetPasswordTask.getException().getMessage());
+                statusLabel.pseudoClassStateChanged(errorPseudoClass, true);
+                resetPasswordTask.getException().printStackTrace();
+                submitButton.setDisable(false);
+            });
+        });
+
+        new Thread(resetPasswordTask).start();
     }
 
     private void setErrorState(String message) {
         newPasswordField.clear();
         confirmPasswordField.clear();
         newPasswordField.requestFocus();
-        // Apply error pseudo-class for CSS styling
         statusLabel.setText(message);
         newPasswordField.pseudoClassStateChanged(errorPseudoClass, true);
         confirmPasswordField.pseudoClassStateChanged(errorPseudoClass, true);

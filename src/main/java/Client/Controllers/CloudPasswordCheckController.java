@@ -143,8 +143,10 @@ public class CloudPasswordCheckController {
 
     @FXML
     private void handleForgotPassword() {
-        // TODO: Implement forgot password logic
         System.out.println("Forgot password link clicked.");
-        // Example: changeSceneWithSameSize(root, "Client/fxml/forgotPassword.fxml");
+        // Navigate to the phone number input screen, indicating it's for password reset
+        changeSceneWithSameSize(root, "/Client/fxml/phoneNumber.fxml", (PhoneNumberController controller) -> {
+            controller.setForgotPasswordMode(true);
+        });
     }
 }
