@@ -61,6 +61,18 @@ public class RpcCaller extends RpcCallerBase {
     public RpcResponse<Object> resetPassword(ResetPasswordInputModel model) throws IOException {
         return callRpcAndGetResponse("AccountRpcController", "resetPassword", Object.class, model);
     }
+
+    public RpcResponse<Object> requestPasswordReset(RequestCodePhoneNumberInputModel model) throws IOException {
+        return callRpcAndGetResponse("AccountRpcController", "requestPasswordReset", Object.class, model);
+    }
+
+    public RpcResponse<VerifyCodeOutputModel> verifyPasswordResetEmailOtp(VerifyCodeEmailInputModel model) throws IOException {
+        return callRpcAndGetResponse("AccountRpcController", "verifyPasswordResetEmailOtp", VerifyCodeOutputModel.class, model);
+    }
+
+    public RpcResponse<Object> resetAccount(String phoneNumber, String deviceInfo) throws IOException {
+        return callRpcAndGetResponse("AccountRpcController", "resetAccount", Object.class, phoneNumber, deviceInfo);
+    }
     public RpcResponse<GetChatInfoOutputModel[]> getChatsByUser() throws IOException {
         return callRpcAndGetResponse("ChatRpcController", "getChatsByUser", GetChatInfoOutputModel[].class);
     }

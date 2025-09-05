@@ -137,8 +137,7 @@ public class ResetPasswordController {
 
         resetPasswordTask.setOnFailed(event -> {
             Platform.runLater(() -> {
-                statusLabel.setText("Error resetting password: " + resetPasswordTask.getException().getMessage());
-                statusLabel.pseudoClassStateChanged(errorPseudoClass, true);
+                setErrorState("Error resetting password: " + resetPasswordTask.getException().getMessage());
                 resetPasswordTask.getException().printStackTrace();
                 submitButton.setDisable(false);
             });

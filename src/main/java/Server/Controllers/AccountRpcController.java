@@ -2,6 +2,7 @@ package Server.Controllers;
 
 import JSocket2.Protocol.Rpc.RpcControllerBase;
 import JSocket2.Protocol.Rpc.RpcResponse;
+import JSocket2.Protocol.StatusCode;
 import Server.DaoManager;
 import Shared.Api.Models.AccountController.*;
 import Shared.Models.Account.Account;
@@ -11,6 +12,9 @@ import Shared.Utils.PasswordUtil;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -90,6 +94,87 @@ public RpcResponse<Boolean> isPhoneNumberRegistered(String phoneNumber){
         return Ok(outputModel);
     }
 
+    public RpcResponse<Object> requestPasswordReset(RequestCodePhoneNumberInputModel model) {
+        Account account = daoManager.getAccountDAO().findByField("phoneNumber", model.getPhoneNumber());
+        if (account == null) {
+            return BadRequest("account_not_found");
+        }
+
+        if (account.getEmail() != null && !account.getEmail().isEmpty()) {
+            PendingAuth pending = new PendingAuth();
+            pending.setEmail(account.getEmail());
+            pending.setPhoneNumber(model.getPhoneNumber());
+            pending.setStage("password_reset_email_verification");
+            pending.setDeviceInfo(model.getDeviceInfo());
+            pending.setPurpose("password_reset");
+
+            var otp = generateOTP();
+            pending.setOtp(otp);
+            pending.setOtpExpiresAt(Instant.now().plus(OTP_EXPIRY_DURATION));
+            pending.setLastRequestAt(Instant.now());
+            pending.setAttempts(0);
+            daoManager.getPendingAuthDAO().insert(pending);
+
+            System.out.println("Email sent to: " + account.getEmail() + " OTP: " + pending.getOtp() + " for purpose: password_reset");
+
+            Map<String, String> payload = new HashMap<>();
+            payload.put("status", "email_code_sent");
+            payload.put("pendingId", pending.getId().toString());
+            payload.put("email", account.getEmail());
+            return Ok(payload);
+        } else {
+            Map<String, String> payload = new HashMap<>();
+            payload.put("status", "no_email_setup");
+            return Ok(payload);
+        }
+    }
+
+    public RpcResponse<VerifyCodeOutputModel> verifyPasswordResetEmailOtp(VerifyCodeEmailInputModel model) {
+        PendingAuth pending = daoManager.getPendingAuthDAO().findById(UUID.fromString(model.getPendingId()));
+        if (pending == null) return response(StatusCode.BAD_REQUEST, "invalid_pending_id", null);
+        if (!"password_reset_email_verification".equals(pending.getStage())) return response(StatusCode.BAD_REQUEST, "invalid_stage", null);
+
+        daoManager.getPendingAuthDAO().delete(pending);
+
+        PendingAuth resetPending = new PendingAuth();
+        resetPending.setPhoneNumber(pending.getPhoneNumber());
+        resetPending.setStage("password_reset_allowed");
+        resetPending.setPurpose("password_reset");
+        resetPending.setOtpExpiresAt(Instant.now().plus(Duration.ofMinutes(10)));
+        daoManager.getPendingAuthDAO().insert(resetPending);
+
+        VerifyCodeOutputModel output = new VerifyCodeOutputModel();
+        output.setStatus("password_reset_required");
+        output.setPendingId(resetPending.getId().toString());
+        output.setPhoneNumber(resetPending.getPhoneNumber());
+        return Ok(output);
+    }
+
+    public RpcResponse<Object> resetAccount(String phoneNumber, String deviceInfo) {
+        Account account = daoManager.getAccountDAO().findByField("phoneNumber", phoneNumber);
+        if (account == null) {
+            return BadRequest("account_not_found");
+        }
+
+        account.setHashedPassword(null);
+        account.setBio("");
+        account.setUsername(null);
+        account.setEmail(null);
+        daoManager.getAccountDAO().update(account);
+
+        List<Session> sessions = daoManager.getSessionDAO().findAllByField("account.id", account.getId());
+        for (Session session : sessions) {
+            daoManager.getSessionDAO().delete(session);
+        }
+
+        String accessKey = generateAccessKey(account, deviceInfo);
+
+        Map<String, String> payload = new HashMap<>();
+        payload.put("status", "account_reset_success");
+        payload.put("accessKey", accessKey);
+
+        return Ok(payload);
+    }
     public RpcResponse<Object> verifyOTP(VerifyCodeInputModel model) {
         PendingAuth pending = daoManager.getPendingAuthDAO().findById(UUID.fromString(model.getPendingId()));
 
@@ -270,8 +355,13 @@ public RpcResponse<Boolean> isPhoneNumberRegistered(String phoneNumber){
     public RpcResponse<Object> resetPassword(ResetPasswordInputModel model) {
         PendingAuth pending = daoManager.getPendingAuthDAO().findById(UUID.fromString(model.getPendingId()));
 
-        if (pending == null || !"password_reset".equals(pending.getPurpose()) || !pending.getPhoneNumber().equals(model.getPhoneNumber())) {
+        if (pending == null || !"password_reset_allowed".equals(pending.getStage()) || !pending.getPhoneNumber().equals(model.getPhoneNumber())) {
             return BadRequest("invalid_reset_request");
+        }
+
+        if(Instant.now().isAfter(pending.getOtpExpiresAt())){
+            daoManager.getPendingAuthDAO().delete(pending);
+            return BadRequest("reset_token_expired");
         }
 
         Account account = daoManager.getAccountDAO().findByField("phoneNumber", model.getPhoneNumber());

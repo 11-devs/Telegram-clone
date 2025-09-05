@@ -1,10 +1,12 @@
 package Client.Controllers;
 
+import Client.AccessKeyManager;
 import Client.AppConnectionManager;
 import Client.RpcCaller;
 import JSocket2.Core.Client.ConnectionManager;
 import JSocket2.Protocol.Rpc.RpcResponse;
 import JSocket2.Protocol.StatusCode;
+import Shared.Api.Models.AccountController.RequestCodeEmailOutputModel;
 import Shared.Api.Models.AccountController.RequestCodePhoneNumberInputModel;
 import Shared.Api.Models.AccountController.RequestCodePhoneNumberOutputModel;
 import Shared.Models.CountryCode;
@@ -26,9 +28,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.TextField;
-import javafx.scene.control.TextFormatter;
+import javafx.scene.control.*;
 import javafx.scene.effect.ColorAdjust;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
@@ -40,10 +40,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.lang.reflect.Type;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.UnaryOperator;
 
 import static Shared.Utils.SceneUtil.changeSceneWithSameSize;
@@ -66,12 +63,6 @@ public class PhoneNumberController {
     private final PseudoClass errorPseudoClass = PseudoClass.getPseudoClass("error");
     private ObservableList<CountryCode> allCountries;
     private String currentFormatPattern = "############";
-
-    private boolean isForgotPasswordMode = false;
-
-    public void setForgotPasswordMode(boolean forgotPasswordMode) {
-        isForgotPasswordMode = forgotPasswordMode;
-    }
 
     public void initialize() {
         connectionManager = AppConnectionManager.getInstance().getConnectionManager();
@@ -239,11 +230,7 @@ public class PhoneNumberController {
 
     @FXML
     private void handleBack() {
-        if (isForgotPasswordMode) {
-            changeSceneWithSameSize(root, "/Client/fxml/CloudPasswordCheck.fxml");
-        } else {
-            changeSceneWithSameSize(root, "/Client/fxml/Welcome.fxml");
-        }
+        changeSceneWithSameSize(root, "/Client/fxml/Welcome.fxml");
     }
 
     @FXML
@@ -264,41 +251,31 @@ public class PhoneNumberController {
         }
 
         final String fullPhoneNumber = preCode + phoneNumberDigits;
+
         final boolean[] isRegistered = new boolean[1];
-        final String purpose = isForgotPasswordMode ? "password_reset" : "login";
 
         Task<RpcResponse<RequestCodePhoneNumberOutputModel>> otpTask = new Task<>() {
             @Override
             protected RpcResponse<RequestCodePhoneNumberOutputModel> call() throws Exception {
                 isRegistered[0] = rpcCaller.isPhoneNumberRegistered(fullPhoneNumber).getPayload();
-                return rpcCaller.requestOTP(new RequestCodePhoneNumberInputModel(fullPhoneNumber, isRegistered[0] ? "telegram" : "sms", DeviceUtil.getDeviceInfo(), purpose));
+                return rpcCaller.requestOTP(new RequestCodePhoneNumberInputModel(fullPhoneNumber, isRegistered[0] ? "telegram" : "sms", DeviceUtil.getDeviceInfo(), "login"));
             }
         };
         otpTask.setOnSucceeded(event -> {
             try {
                 var response = otpTask.getValue();
                 if (response.getStatusCode() == StatusCode.OK) {
-                    if (isRegistered[0] && !isForgotPasswordMode) { // Normal login flow for registered user
+                    if (isRegistered[0]) {
                         changeSceneWithSameSize(root, "/Client/fxml/verificationViaTelegram.fxml", (VerificationViaTelegramController controller) -> {
                             controller.setRequestCodeOutputModel(response.getPayload());
-                            controller.setForgotPasswordMode(isForgotPasswordMode);
                         });
-                    } else if (isForgotPasswordMode) { // Forgot password flow
-                        changeSceneWithSameSize(root, "/Client/fxml/verificationViaTelegram.fxml", (VerificationViaTelegramController controller) -> {
-                            controller.setRequestCodeOutputModel(response.getPayload());
-                            controller.setForgotPasswordMode(true);
-                        });
-                    } else { // New registration flow
+                    } else {
                         changeSceneWithSameSize(root, "/Client/fxml/verificationViaSms.fxml", (VerificationViaSmsController controller) -> {
                             controller.setRequestCodeOutputModel(response.getPayload());
-                            controller.setForgotPasswordMode(isForgotPasswordMode);
                         });
                     }
                 } else {
-                    // Handle error from requestOTP, e.g., account not found for password reset
-                    // For now, just print to console
                     System.err.println("Request OTP failed: " + response.getMessage());
-                    // Optionally show a dialog to the user
                 }
             } catch (Exception e) {
                 e.printStackTrace();
