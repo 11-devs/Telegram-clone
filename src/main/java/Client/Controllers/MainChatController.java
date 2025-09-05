@@ -17,7 +17,12 @@ import Shared.Api.Models.MediaController.CreateMediaInputModel;
 import Shared.Api.Models.MessageController.GetMessageOutputModel;
 import Shared.Api.Models.MessageController.SendMessageInputModel;
 import Shared.Api.Models.MessageController.SendMessageOutputModel;
+import Shared.Events.Models.MessageDeletedEventModel;
+import Shared.Events.Models.MessageDeliveredEventModel;
+import Shared.Events.Models.MessageEditedEventModel;
+import Shared.Events.Models.MessageReadEventModel;
 import Shared.Events.Models.NewMessageEventModel;
+import Shared.Events.Models.UserIsTypingEventModel;
 import Shared.Models.*;
 //import Shared.Utils.SidebarUtil;
 import Shared.Models.Message.MessageType;
@@ -73,6 +78,7 @@ import java.util.ResourceBundle;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import javafx.scene.Node;
 
 import static JSocket2.Utils.FileUtil.getFileExtension;
 import static Shared.Utils.DialogUtil.showNotificationDialog;
@@ -494,6 +500,130 @@ public class MainChatController implements Initializable {
                     reorderAndRefreshChatList(user);
                 });
     }
+
+    public void handleMessageDelivered(MessageDeliveredEventModel eventModel) {
+        if (currentSelectedUser != null && currentSelectedUser.getUserId().equals(eventModel.getChatId().toString())) {
+            Platform.runLater(() -> {
+                // Find the message in the UI and update its status
+                // This is a simplified approach; in a real app, messages would have unique IDs in the UI as well.
+                // For now, we assume the last outgoing message is the one being delivered.
+                updateLastOutgoingMessageStatus("delivered", eventModel.getDeliveredTimestamp());
+            });
+        }
+        // Update chat list item status (e.g., change last message status icon)
+        allChatUsers.stream()
+                .filter(user -> user.getUserId().equals(eventModel.getChatId().toString()))
+                .findFirst()
+                .ifPresent(user -> user.setMessageStatus("delivered"));
+    }
+
+    public void handleMessageEdited(MessageEditedEventModel eventModel) {
+        if (currentSelectedUser != null && currentSelectedUser.getUserId().equals(eventModel.getChatId().toString())) {
+            Platform.runLater(() -> {
+                // Find the message bubble by its ID and update its text content.
+                // This requires message bubbles to be identifiable by their messageId.
+                // For this example, we'll iterate and update if the content matches (simplistic).
+                messagesContainer.getChildren().stream()
+                        .filter(node -> node instanceof HBox)
+                        .map(node -> (HBox) node)
+                        .flatMap(hBox -> hBox.getChildren().stream())
+                        .filter(node -> node instanceof VBox && node.getProperties().containsKey("messageId") && node.getProperties().get("messageId").equals(eventModel.getMessageId()))
+                        .map(node -> (VBox) node)
+                        .forEach(bubble -> {
+                            bubble.getChildren().stream()
+                                    .filter(node -> node instanceof Label && node.getStyleClass().contains("message-text"))
+                                    .map(node -> (Label) node)
+                                    .findFirst()
+                                    .ifPresent(messageTextLabel -> {
+                                        messageTextLabel.setText(eventModel.getNewContent() + " (edited)");
+                                        // Optionally add an 'edited' indicator
+                                    });
+                        });
+            });
+        }
+        // Update chat list item last message if it was the edited one
+        allChatUsers.stream()
+                .filter(user -> user.getUserId().equals(eventModel.getChatId().toString()))
+                .findFirst()
+                .ifPresent(user -> {
+                    // More complex logic might be needed here to check if the last message was indeed the one edited
+                    user.setLastMessage(eventModel.getNewContent() + " (edited)");
+                    user.setTime(eventModel.getTimestamp());
+                    reorderAndRefreshChatList(user);
+                });
+    }
+
+    public void handleMessageDeleted(MessageDeletedEventModel eventModel) {
+        if (currentSelectedUser != null && currentSelectedUser.getUserId().equals(eventModel.getChatId().toString())) {
+            Platform.runLater(() -> {
+                // Find the message bubble by its ID and remove it
+                messagesContainer.getChildren().removeIf(node ->
+                        node instanceof HBox && ((HBox) node).getChildren().stream()
+                                .anyMatch(child -> child instanceof VBox && child.getProperties().containsKey("messageId") && child.getProperties().get("messageId").equals(eventModel.getMessageId()))
+                );
+                if (messagesContainer.getChildren().isEmpty()) {
+                    showEmptyChatState();
+                }
+            });
+        }
+        // Potentially update the chat list if the deleted message was the last one
+        // This would require fetching the new last message for the chat.
+        allChatUsers.stream()
+                .filter(user -> user.getUserId().equals(eventModel.getChatId().toString()))
+                .findFirst()
+                .ifPresent(this::reorderAndRefreshChatList);
+    }
+
+    public void handleMessageRead(MessageReadEventModel eventModel) {
+        if (currentSelectedUser != null && currentSelectedUser.getUserId().equals(eventModel.getChatId().toString())) {
+            Platform.runLater(() -> {
+                // Find all outgoing messages before or at this timestamp and mark them as read
+                messagesContainer.getChildren().stream()
+                        .filter(node -> node instanceof HBox && node.getStyleClass().contains("outgoing"))
+                        .map(node -> (HBox) node)
+                        .flatMap(hBox -> hBox.getChildren().stream())
+                        .filter(node -> node instanceof VBox && node.getProperties().containsKey("messageTimestamp"))
+                        .map(node -> (VBox) node)
+                        .forEach(bubble -> {
+                            LocalDateTime messageTime = (LocalDateTime) bubble.getProperties().get("messageTimestamp");
+                            LocalDateTime readTime = LocalDateTime.parse(eventModel.getReadTimestamp());
+                            if (!messageTime.isAfter(readTime)) {
+                                // Find the actual HBox container for the status update
+                                HBox parentHBox = (HBox) bubble.getParent();
+                                updateMessageStatus(parentHBox, "read", null);
+                            }
+                        });
+            });
+        }
+
+        // Clear unread count for the relevant user in the chat list
+        allChatUsers.stream()
+                .filter(user -> user.getUserId().equals(eventModel.getChatId().toString()))
+                .findFirst()
+                .ifPresent(user -> {
+                    user.clearUnreadCount();
+                    reorderAndRefreshChatList(user);
+                });
+    }
+
+    public void handleUserTyping(UserIsTypingEventModel eventModel) {
+        if (currentSelectedUser != null && currentSelectedUser.getUserId().equals(eventModel.getChatId().toString())) {
+            // Update the subtitle in the chat header to show typing status
+            Platform.runLater(() -> {
+                if (eventModel.isTyping()) {
+                    showTypingIndicator(eventModel.getSenderName());
+                } else {
+                    hideTypingIndicator();
+                }
+            });
+        }
+        // Also update the typing status in the chat list preview
+        allChatUsers.stream()
+                .filter(user -> user.getUserId().equals(eventModel.getChatId().toString()))
+                .findFirst()
+                .ifPresent(user -> Platform.runLater(() -> user.setTyping(eventModel.isTyping())));
+    }
+
 // Add these two new methods anywhere inside the MainChatController class.
 
     /**
@@ -536,13 +666,34 @@ public class MainChatController implements Initializable {
         }
     }
 
+    private void updateLastOutgoingMessageStatus(String status, String timestamp) {
+        // Iterate messagesContainer from the end to find the last outgoing message
+        for (int i = messagesContainer.getChildren().size() - 1; i >= 0; i--) {
+            Node node = messagesContainer.getChildren().get(i);
+            if (node instanceof HBox && node.getStyleClass().contains("outgoing")) {
+                HBox lastOutgoingMessageHBox = (HBox) node;
+                updateMessageStatus(lastOutgoingMessageHBox, status, LocalDateTime.parse(timestamp).format(DateTimeFormatter.ofPattern("HH:mm")));
+                break; // Stop after updating the first (most recent) outgoing message
+            }
+        }
+    }
+
     /**
      * Refreshes the chat list to reflect the latest message.
      * A future enhancement could be to move the chat to the top of the list.
      * @param user The UserViewModel of the chat that was updated.
      */
     private void reorderAndRefreshChatList(UserViewModel user) {
-        refreshChatList();
+        // Reorder the chat list so the updated chat appears at the top
+        Platform.runLater(() -> {
+            allChatUsers.remove(user);
+            allChatUsers.add(0, user);
+            // Reapply filter if search is active
+            performSearch(searchField.getText());
+            // Select the user again to ensure UI reflects changes correctly
+            chatListView.getSelectionModel().select(user);
+            refreshChatList();
+        });
     }
     // ============ INITIALIZATION METHODS ============
 
@@ -721,6 +872,15 @@ public class MainChatController implements Initializable {
 
         // Online status animation
         onlineStatusTimeline = TelegramCellUtils.createOnlineStatusPulse(onlineIndicator);
+
+        // Typing animation (re-enabled)
+        typingAnimationTimeline = new Timeline(
+                new KeyFrame(Duration.ZERO, new KeyValue(chatSubtitleLabel.opacityProperty(), 1.0)),
+                new KeyFrame(Duration.millis(500), new KeyValue(chatSubtitleLabel.opacityProperty(), 0.5)),
+                new KeyFrame(Duration.millis(1000), new KeyValue(chatSubtitleLabel.opacityProperty(), 1.0))
+        );
+        typingAnimationTimeline.setCycleCount(Timeline.INDEFINITE);
+        typingAnimationTimeline.setAutoReverse(true);
     }
 
     /**
@@ -846,25 +1006,21 @@ public class MainChatController implements Initializable {
      */
     private void updateChatSubtitle(UserViewModel user) {
         if (user.isTyping()) {
-            chatSubtitleLabel.setText("typing...");
+            chatSubtitleLabel.setText(user.getUserName() + " is typing...");
             chatSubtitleLabel.getStyleClass().setAll("chat-subtitle", "typing-indicator");
-            // TODO: Optional - Implement showing typing indicator with user name.
-            // showTypingIndicator(user.getUserName());
+            showTypingIndicator(user.getUserName());
         } else if (user.isOnline() && user.getType() == UserType.USER) {
             chatSubtitleLabel.setText("online");
             chatSubtitleLabel.getStyleClass().setAll("chat-subtitle");
-            // TODO: Optional - Implement hiding typing indicator.
-            // hideTypingIndicator();
+            hideTypingIndicator();
         } else if (user.getLastSeen() != null && !user.getLastSeen().isEmpty()) {
             chatSubtitleLabel.setText(user.getLastSeen());
             chatSubtitleLabel.getStyleClass().setAll("chat-subtitle");
-            // TODO: Optional - Implement hiding typing indicator.
-            // hideTypingIndicator();
+            hideTypingIndicator();
         } else {
             chatSubtitleLabel.setText("offline");
             chatSubtitleLabel.getStyleClass().setAll("chat-subtitle");
-            // TODO: Optional - Implement hiding typing indicator.
-            // hideTypingIndicator();
+            hideTypingIndicator();
         }
     }
 
@@ -937,7 +1093,10 @@ public class MainChatController implements Initializable {
                         String senderName = msg.getOutgoing() ? null : msg.getSenderName();
 
                         if (msg.getMessageType() == MessageType.TEXT && msg.getTextContent() != null) {
-                            addMessageBubble(msg.getTextContent(), msg.getOutgoing(), formattedTime, "read", senderName);
+                            HBox messageNode = addMessageBubble(msg.getTextContent(), msg.getOutgoing(), formattedTime, "read", senderName);
+                            // Store messageId and timestamp for later updates
+                            ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageId", msg.getMessageId());
+                            ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageTimestamp", timestamp);
                         } else if (msg.getMessageType() == MessageType.MEDIA && msg.getMediaId() != null) {
                             final String fileId = msg.getFileId();
                             // Asynchronously fetch file info to build the bubble without blocking the UI thread.
@@ -945,7 +1104,10 @@ public class MainChatController implements Initializable {
                                 if (transferInfo != null) {
                                     DocumentInfo docInfo = new DocumentInfo(transferInfo);
                                     docInfo.setSenderName(senderName);
-                                    Platform.runLater(() -> addDocumentMessageBubble(docInfo, msg.getOutgoing(), formattedTime, "read"));
+                                    HBox messageNode = addDocumentMessageBubble(docInfo, msg.getOutgoing(), formattedTime, "read");
+                                    // Store messageId and timestamp for later updates
+                                    ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageId", msg.getMessageId());
+                                    ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageTimestamp", timestamp);
                                 } else {
                                     System.err.println("Could not retrieve info for fileId: " + fileId);
                                 }
@@ -1001,11 +1163,13 @@ public class MainChatController implements Initializable {
             RpcResponse<SendMessageOutputModel> response = sendMessageTask.getValue();
             if (response.getStatusCode() == StatusCode.OK) {
                 System.out.println("Message sent successfully. ID: " + response.getPayload().getMessageId());
-                Platform.runLater(() -> updateLastMessageStatus("delivered")); // Simulate delivery confirmation
                 LocalDateTime serverTimestamp = LocalDateTime.parse(response.getPayload().getTimestamp());
                 String formattedTime = serverTimestamp.format(DateTimeFormatter.ofPattern("HH:mm"));
                 Platform.runLater(() -> {
                 updateMessageStatus(messageNode, "delivered", formattedTime);
+                // Store the actual messageId and timestamp from server for later event updates
+                ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageId", response.getPayload().getMessageId());
+                ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageTimestamp", serverTimestamp);
                 currentSelectedUser.setLastMessage(text);
                 currentSelectedUser.setTime(formattedTime);
                 reorderAndRefreshChatList(currentSelectedUser);
@@ -1104,7 +1268,11 @@ public class MainChatController implements Initializable {
                     sendMessageTask.setOnSucceeded(event -> {
                         if (sendMessageTask.getValue().getStatusCode() == StatusCode.OK) {
                             System.out.println("Media message sent successfully.");
-                            Platform.runLater(() -> addDocumentMessageBubble(docInfo, true, getCurrentTime(), "delivered"));
+                            HBox messageNode = addDocumentMessageBubble(docInfo, true, getCurrentTime(), "delivered");
+                            // Store the actual messageId and timestamp from server for later event updates
+                            ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageId", sendMessageTask.getValue().getPayload().getMessageId());
+                            ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageTimestamp", LocalDateTime.parse(sendMessageTask.getValue().getPayload().getTimestamp()));
+
                         } else {
                             Platform.runLater(() -> showTemporaryNotification("Failed to send file message."));
                         }
@@ -1150,11 +1318,12 @@ public class MainChatController implements Initializable {
 
         if (isOutgoing) {
             messageContainer.setAlignment(Pos.CENTER_RIGHT);
+            messageContainer.getStyleClass().add("outgoing");
             VBox bubble = createMessageBubble(text, time, status, true, null);
             messageContainer.getChildren().add(bubble);
         } else {
             messageContainer.setAlignment(Pos.CENTER_LEFT);
-
+            messageContainer.getStyleClass().add("incoming");
             // Add sender avatar for group chats
             if (currentSelectedUser != null &&
                     (currentSelectedUser.getType() == UserType.GROUP || currentSelectedUser.getType() == UserType.SUPERGROUP)) {
@@ -1377,7 +1546,7 @@ public class MainChatController implements Initializable {
     /**
      * Creates a document message bubble with file info and controls
      */
-    private void addDocumentMessageBubble(DocumentInfo docInfo, boolean isOutgoing,
+    private HBox addDocumentMessageBubble(DocumentInfo docInfo, boolean isOutgoing,
                                           String time, String status) {
         HBox messageContainer = new HBox();
         messageContainer.setSpacing(12);
@@ -1385,10 +1554,12 @@ public class MainChatController implements Initializable {
 
         if (isOutgoing) {
             messageContainer.setAlignment(Pos.CENTER_RIGHT);
+            messageContainer.getStyleClass().add("outgoing");
             VBox bubble = createDocumentBubble(docInfo, time, status, true);
             messageContainer.getChildren().add(bubble);
         } else {
             messageContainer.setAlignment(Pos.CENTER_LEFT);
+            messageContainer.getStyleClass().add("incoming");
 
             // Add sender avatar for group chats
             if (currentSelectedUser != null &&
@@ -1406,6 +1577,7 @@ public class MainChatController implements Initializable {
         TelegramCellUtils.animateNewMessage(messageContainer);
 
         Platform.runLater(this::scrollToBottom);
+        return messageContainer;
     }
 
     /**
@@ -1743,6 +1915,7 @@ public class MainChatController implements Initializable {
      */
     private void performSearch(String searchText) {
         if (searchText == null || searchText.trim().isEmpty()) {
+            filteredChatUsers.setAll(allChatUsers);
             return;
         }
 
@@ -1899,6 +2072,8 @@ public class MainChatController implements Initializable {
         if (currentSelectedUser != null && !messageInputField.getText().trim().isEmpty()) {
             // TODO (Server): Send typing indicator to other users via server.
             sendTypingStatus(true);
+        } else if (currentSelectedUser != null && messageInputField.getText().trim().isEmpty() && isTypingIndicatorVisible) {
+            sendTypingStatus(false);
         }
     }
 
@@ -2148,34 +2323,38 @@ public class MainChatController implements Initializable {
 
     // ============ TYPING INDICATOR ============
 
-    // TODO: optional
-//    public void showTypingIndicator(String userName) {
-//        if (typingIndicatorContainer == null) return;
-//
-//        typingIndicatorLabel.setText(userName + " is typing...");
-//        typingIndicatorContainer.setVisible(true);
-//        isTypingIndicatorVisible = true;
-//
-//        if (typingAnimationTimeline != null) {
-//            typingAnimationTimeline.play();
-//        }
-//
-//        // Auto-hide after 5 seconds
-//        Timeline autoHide = new Timeline(new KeyFrame(Duration.seconds(5), e -> hideTypingIndicator()));
-//        autoHide.play();
-//    }
-//
-//    public void hideTypingIndicator() {
-//        if (typingIndicatorContainer == null || !isTypingIndicatorVisible) return;
-//
-//        typingIndicatorContainer.setVisible(false);
-//        isTypingIndicatorVisible = false;
-//
-//        if (typingAnimationTimeline != null) {
-//            typingAnimationTimeline.stop();
-//            typingIndicatorLabel.setOpacity(1.0);
-//        }
-//    }
+    public void showTypingIndicator(String userName) {
+        if (chatSubtitleLabel == null) return;
+
+        // Ensure subtitle is set to typing and style is applied
+        chatSubtitleLabel.setText(userName + " is typing...");
+        chatSubtitleLabel.getStyleClass().setAll("chat-subtitle", "typing-indicator");
+
+        if (!isTypingIndicatorVisible) {
+            isTypingIndicatorVisible = true;
+            if (typingAnimationTimeline != null) {
+                typingAnimationTimeline.play();
+            }
+        }
+    }
+
+    public void hideTypingIndicator() {
+        if (chatSubtitleLabel == null || !isTypingIndicatorVisible) return;
+
+        // Restore original subtitle based on current user status
+        if (currentSelectedUser != null) {
+            updateChatSubtitle(currentSelectedUser);
+        } else {
+            chatSubtitleLabel.setText("Click on a chat to start messaging");
+            chatSubtitleLabel.getStyleClass().setAll("chat-subtitle");
+        }
+
+        isTypingIndicatorVisible = false;
+        if (typingAnimationTimeline != null) {
+            typingAnimationTimeline.stop();
+            chatSubtitleLabel.setOpacity(1.0); // Reset opacity
+        }
+    }
 
     // ============ THEME MANAGEMENT ============ // TODO UI
 
@@ -2447,7 +2626,7 @@ public class MainChatController implements Initializable {
         chatListView.getSelectionModel().clearSelection();
         showWelcomeState();
         // TODO: Implement hiding typing indicator if implemented.
-        // hideTypingIndicator(); // TODO UI
+        hideTypingIndicator(); // TODO UI
         closeReplyPreview();
     }
 
@@ -2767,7 +2946,7 @@ public class MainChatController implements Initializable {
      */
     private void loadDefaultHeaderAvatar() {
         try {
-            Image defaultAvatar = new Image(Objects.requireNonNull(getClass().getResource("/Client/images/11Devs-white.png")).toExternalForm());
+            Image defaultAvatar = new Image(Objects.requireNonNull(getClass().getResource("/Client/images/11Devs-black.png")).toExternalForm());
             headerAvatarImage.setImage(defaultAvatar);
         } catch (Exception e) {
             System.err.println("Error loading default header avatar: " + e.getMessage());
