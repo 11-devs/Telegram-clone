@@ -139,5 +139,65 @@ public class ChatRpcController extends RpcControllerBase {
 
         return Ok(chatInfoList);
     }
-//... (rest of the file is unchanged)
+    public RpcResponse<Object> getChatByUsername(String username) {
+        UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
+
+        // 1. Find the target user by username
+        Account targetUser = daoManager.getAccountDAO().findByField("username", username.toLowerCase());
+        if (targetUser == null) {
+            return NotFound();
+        }
+
+        // Don't allow clicking on your own username to prevent confusion
+        if (targetUser.getId().equals(currentUserId)) {
+            return BadRequest("Cannot open a chat with yourself this way.");
+        }
+
+        // 2. Find if a private chat already exists between the two users
+        String jpql = "SELECT pc FROM PrivateChat pc WHERE " +
+                "(pc.user1.id = :user1Id AND pc.user2.id = :user2Id) OR " +
+                "(pc.user1.id = :user2Id AND pc.user2.id = :user1Id)";
+
+        PrivateChat privateChat = daoManager.getPrivateChatDAO().findOneByJpql(jpql, query -> {
+            query.setParameter("user1Id", currentUserId);
+            query.setParameter("user2Id", targetUser.getId());
+        });
+
+        // 3. If no chat exists, create one along with memberships
+        if (privateChat == null) {
+            Account currentUser = daoManager.getAccountDAO().findById(currentUserId);
+            if (currentUser == null) {
+                return BadRequest("Could not find current user account.");
+            }
+            privateChat = new PrivateChat(currentUser, targetUser);
+            daoManager.getPrivateChatDAO().insert(privateChat);
+
+            Membership currentUserMembership = new Membership();
+            currentUserMembership.setAccount(currentUser);
+            currentUserMembership.setChat(privateChat);
+            currentUserMembership.setType(MembershipType.MEMBER);
+            currentUserMembership.setJoinDate(LocalDateTime.now());
+            daoManager.getMembershipDAO().insert(currentUserMembership);
+
+            Membership targetUserMembership = new Membership();
+            targetUserMembership.setAccount(targetUser);
+            targetUserMembership.setChat(privateChat);
+            targetUserMembership.setType(MembershipType.MEMBER);
+            targetUserMembership.setJoinDate(LocalDateTime.now());
+            daoManager.getMembershipDAO().insert(targetUserMembership);
+        }
+
+        // 4. Map the chat to the output model for the client
+        GetChatInfoOutputModel output = new GetChatInfoOutputModel();
+        output.setId(privateChat.getId());
+        output.setType(privateChat.getType().toString());
+
+        String otherUserName = targetUser.getFirstName() + (targetUser.getLastName() != null ? " " + targetUser.getLastName() : "");
+        output.setTitle(otherUserName.trim());
+        output.setProfilePictureId(targetUser.getProfilePictureId());
+        output.setLastMessage("");
+        output.setUnreadCount(0);
+
+        return Ok(output);
+    }
 }

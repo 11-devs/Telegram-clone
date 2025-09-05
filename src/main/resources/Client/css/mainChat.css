@@ -1,5 +1,59 @@
-/* ============ TELEGRAM DESKTOP THEME ============ */
+.message-text {
+    -fx-font-size: 14px;
+    -fx-font-weight: 400;
+    -fx-line-spacing: 2px;
+}
 
+/* CORRECTED: Use -fx-fill for Text nodes */
+.message-text.outgoing {
+    -fx-fill: white;
+}
+
+/* CORRECTED: Use -fx-fill for Text nodes */
+.message-text.incoming {
+    -fx-fill: #FFFFFF;
+}
+
+.text-bold {
+    -fx-font-weight: bold;
+}
+
+.text-italic {
+    -fx-font-style: italic;
+}
+
+/* --- IMPROVED Spoiler formatting --- */
+.spoiler-wrapper {
+    /* Allows the spoiler to flow inline with other text */
+    -fx-display: inline;
+    -fx-cursor: hand;
+}
+
+.spoiler-overlay {
+    /* CORRECTED: Fully opaque background to hide text */
+    -fx-background-color: #5A6B7C;
+    -fx-background-radius: 4px;
+}
+
+.message-bubble.incoming .spoiler-overlay {
+    -fx-background-color: #2A3B4C;
+}
+
+.spoiler-hint-label {
+    -fx-text-fill: white;
+    -fx-font-size: 11px;
+    -fx-font-weight: 600;
+    -fx-padding: 1px 4px;
+    -fx-background-color: rgba(0, 0, 0, 0.15);
+    -fx-background-radius: 4px;
+}
+.message-bubble.incoming .spoiler-overlay {
+    -fx-background-color: #616E7A;
+}
+
+.spoiler-overlay:hover {
+    -fx-opacity: 1.0;
+}
 .main-chat-container {
     -fx-background-color: #17212B;
     -fx-border-color: #17212B;
@@ -628,21 +682,6 @@
 .message-bubble.incoming.last-in-group {
     -fx-background-radius: 18 18 18 4;
     -fx-border-radius: 18 18 18 4;
-}
-
-.message-text {
-    -fx-font-size: 14px;
-    -fx-font-weight: 400;
-    -fx-wrap-text: true;
-    -fx-line-spacing: 2px;
-}
-
-.message-text.outgoing {
-    -fx-text-fill: white;
-}
-
-.message-text.incoming {
-    -fx-text-fill: #FFFFFF;
 }
 
 .message-time {

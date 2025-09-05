@@ -19,7 +19,14 @@ public class ChatService {
     public ChatService(RpcCaller rpcCaller) {
         this.rpcCaller = rpcCaller;
     }
-
+    public Task<RpcResponse<GetChatInfoOutputModel>> findChatByUsername(String username) {
+        return new Task<>() {
+            @Override
+            protected RpcResponse<GetChatInfoOutputModel> call() throws Exception {
+                return rpcCaller.getChatByUsername(username);
+            }
+        };
+    }
     /**
      * Creates a background task to fetch all chats for the current user.
      * @return A Task that, when run, returns the RPC response with chat information.
