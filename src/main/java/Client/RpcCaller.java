@@ -58,6 +58,9 @@ public class RpcCaller extends RpcCallerBase {
     public RpcResponse<Object> setBio(String bio) throws IOException {
         return callRpcAndGetResponse("AccountRpcController", "setBio",Object.class, bio);
     }
+    public RpcResponse<Object> resetPassword(ResetPasswordInputModel model) throws IOException {
+        return callRpcAndGetResponse("AccountRpcController", "resetPassword", Object.class, model);
+    }
     public RpcResponse<GetChatInfoOutputModel[]> getChatsByUser() throws IOException {
         return callRpcAndGetResponse("ChatRpcController", "getChatsByUser", GetChatInfoOutputModel[].class);
     }
@@ -77,7 +80,7 @@ public class RpcCaller extends RpcCallerBase {
     }
 
     public void sendTypingStatus(TypingNotificationInputModel model) throws IOException {
-         callRpc("MessageRpcController", "sendTypingStatus", model);
+        callRpc("MessageRpcController", "sendTypingStatus", model);
     }
 
     public RpcResponse<Object> editMessage(EditMessageInputModel model) throws IOException {
@@ -89,6 +92,6 @@ public class RpcCaller extends RpcCallerBase {
     }
 
     public void markChatAsRead(MarkChatAsReadInputModel model) throws IOException {
-         callRpc("MessageRpcController", "markChatAsRead", model);
+        callRpc("MessageRpcController", "markChatAsRead", model);
     }
 }
