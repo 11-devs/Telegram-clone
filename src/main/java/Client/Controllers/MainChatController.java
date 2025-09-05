@@ -189,10 +189,6 @@ public class MainChatController implements Initializable {
      */
     @FXML private TextArea messageInputField;
     /**
-     * Button to open the emoji picker.
-     */
-    @FXML private Button emojiButton;
-    /**
      * Button to send messages or start voice recording.
      */
     @FXML private Button sendButton;
@@ -509,7 +505,6 @@ public class MainChatController implements Initializable {
 
         // Message input buttons
         attachmentButton.setOnAction(e -> attachDocument());
-        emojiButton.setOnAction(e -> showEmojiPicker());
         sendButton.setOnAction(e -> handleSendAction());
 
         // Scroll and navigation
@@ -1572,10 +1567,10 @@ public class MainChatController implements Initializable {
         messageInputField.setDisable(false);
         sendButton.setDisable(false);
         attachmentButton.setDisable(false);
-        emojiButton.setDisable(false);
         callButton.setDisable(false);
         videoCallButton.setDisable(false);
         searchInChatButton.setDisable(false);
+        moreOptionsButton.setDisable(false);
     }
 
     /**
@@ -1585,10 +1580,10 @@ public class MainChatController implements Initializable {
         messageInputField.setDisable(true);
         sendButton.setDisable(true);
         attachmentButton.setDisable(true);
-        emojiButton.setDisable(true);
         callButton.setDisable(true);
         videoCallButton.setDisable(true);
         searchInChatButton.setDisable(true);
+        moreOptionsButton.setDisable(true);
     }
 
     // ============ RIGHT PANEL MANAGEMENT ============
@@ -1957,38 +1952,6 @@ public class MainChatController implements Initializable {
         );
 
         menu.show(moreOptionsButton, moreOptionsButton.getLayoutX(), moreOptionsButton.getLayoutY() + moreOptionsButton.getHeight());
-    }
-
-    /**
-     * Shows a simple emoji picker context menu.
-     */
-    private void showEmojiPicker() {
-        // Create simple emoji picker for demonstration
-        ContextMenu emojiMenu = new ContextMenu();
-
-        String[] emojis = {"😀", "😂", "😍", "😊", "👍", "❤️", "😢", "😮", "😡", "🎉"};
-
-        for (String emoji : emojis) {
-            MenuItem emojiItem = new MenuItem(emoji);
-            emojiItem.setOnAction(e -> insertEmoji(emoji));
-            emojiMenu.getItems().add(emojiItem);
-        }
-
-        emojiMenu.show(emojiButton, emojiButton.getLayoutX(), emojiButton.getLayoutY() - 150);
-    }
-
-    /**
-     * Inserts the selected emoji into the message input at the caret position.
-     *
-     * @param emoji The emoji to insert.
-     */
-    private void insertEmoji(String emoji) {
-        String currentText = messageInputField.getText();
-        int caretPosition = messageInputField.getCaretPosition();
-
-        String newText = currentText.substring(0, caretPosition) + emoji + currentText.substring(caretPosition);
-        messageInputField.setText(newText);
-        messageInputField.positionCaret(caretPosition + emoji.length());
     }
 
     // ============ UTILITY METHODS ============

@@ -326,17 +326,6 @@
                             </children>
                         </VBox>
 
-                        <!-- Emoji/Sticker Button -->
-                        <Button fx:id="emojiButton" styleClass="emoji-button, icon-button">
-                            <graphic>
-                                <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
-                                    <image>
-                                        <Image url="@../images/emoji-icon.png" />
-                                    </image>
-                                </ImageView>
-                            </graphic>
-                        </Button>
-
                         <!-- Voice/Send Button -->
                         <Button fx:id="sendButton" styleClass="send-button">
                             <graphic>
@@ -500,7 +489,7 @@
                                     <Image url="@../images/chevron-right-icon.png" />
                                 </image>
                         <HBox.margin>
-                           <Insets top="2.0" />
+                           <Insets />
                         </HBox.margin>
                             </ImageView>
                             <Label styleClass="setting-title" text="More" HBox.hgrow="ALWAYS" />

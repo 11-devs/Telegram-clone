@@ -14,6 +14,28 @@
     -fx-font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 
+/* ============ SPLIT PANE STYLING ============ */
+
+.split-pane {
+    -fx-background-color: transparent;
+}
+
+.split-pane:horizontal > .split-pane-divider {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0 1px 0 1px;
+}
+
+.split-pane:vertical > .split-pane-divider {
+    -fx-background-color: #0F1419;
+    -fx-border-color: transparent;
+    -fx-padding: 1px 0 1px 0;
+}
+
+.split-pane-divider .grip {
+    -fx-background-color: transparent;
+}
+
 /* ============ SIDEBAR STYLING ============ */
 .sidebar {
     -fx-background-color: #17212B;
@@ -45,19 +67,14 @@
 }
 
 .icon-button:pressed {
-    -fx-background-color: #2B5278;
+    -fx-background-color: #232E3C;
 }
 
 .search-container {
     -fx-background-color: #202B36;
-    -fx-background-radius: 20px;
+    -fx-background-radius: 30px;
     -fx-border-color: transparent;
-    -fx-border-radius: 20px;
-}
-
-.search-container:focused-within {
-    -fx-border-color: #4FC3F7;
-    -fx-border-width: 1px;
+    -fx-border-radius: 30px;
 }
 
 .search-icon {
@@ -76,6 +93,10 @@
     -fx-faint-focus-color: transparent;
 }
 
+#searchField:focused {
+    -fx-effect: null;
+}
+
 /* Chat List */
 .chat-list {
     -fx-background-color: transparent;
@@ -86,7 +107,6 @@
     -fx-padding: 0;
     -fx-cell-size: 72px;
 }
-
 
 /* Sidebar Footer */
 .sidebar-footer {
@@ -1188,14 +1208,6 @@
     -fx-border-width: 2px;
 }
 
-/* ============ FOCUS INDICATORS ============ */
-.button:focused,
-.text-field:focused,
-.text-area:focused,
-.list-view:focused {
-    -fx-effect: dropshadow(gaussian, #4FC3F7, 3, 0.6, 0, 0);
-}
-
 /* ============ SPECIAL STATES ============ */
 .sidebar.collapsed {
     -fx-pref-width: 60px;
@@ -1310,15 +1322,6 @@
 
 .telegram-button.destructive:hover {
     -fx-background-color: #D32F2F;
-}
-
-/* ============ SELECTION STYLING ============ */
-.text-input:focused,
-.text-area:focused {
-    -fx-highlight-fill: #4FC3F7;
-    -fx-highlight-text-fill: white;
-    -fx-focus-color: #4FC3F7;
-    -fx-faint-focus-color: rgba(79, 195, 247, 0.2);
 }
 
 /* ============ UTILITY CLASSES ============ */
