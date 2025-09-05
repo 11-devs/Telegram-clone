@@ -2,16 +2,13 @@ package Server;
 
 import JSocket2.Core.Server.ServerApplication;
 import JSocket2.Core.Server.ServerApplicationBuilder;
-import JSocket2.Cryptography.RsaKeyManager;
 import Server.Controllers.*;
 import Server.Events.NewMessageEvent;
 import Server.Events.MessageEditedEvent;
 import Server.Events.MessageDeletedEvent;
 import Server.Events.MessageReadEvent;
-import Server.Events.MessageDeliveredEvent;
 import Server.Events.UserTypingEvent;
 import Shared.Database.Database;
-import Shared.Models.Account.Account;
 import jakarta.persistence.EntityManager;
 
 import java.io.IOException;
@@ -27,7 +24,6 @@ public class Server {
         builder.getServices().AddSingleton(MessageEditedEvent.class);
         builder.getServices().AddSingleton(MessageDeletedEvent.class);
         builder.getServices().AddSingleton(MessageReadEvent.class);
-        builder.getServices().AddSingleton(MessageDeliveredEvent.class);
         builder.getServices().AddSingleton(UserTypingEvent.class);
         builder.addController(AccountRpcController.class);
         builder.addController(MessageRpcController.class);

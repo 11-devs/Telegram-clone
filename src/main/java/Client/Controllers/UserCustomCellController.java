@@ -2,6 +2,7 @@ package Client.Controllers;
 
 import Shared.Models.UserViewModel;
 import Shared.Models.UserType;
+import javafx.beans.value.ChangeListener;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
@@ -58,7 +59,7 @@ public class UserCustomCellController {
 
     private UserViewModel currentUser;
     private boolean isSelected = false;
-
+    private ChangeListener<String> messageStatusListener;
     @FXML
     public void initialize() {
         setupClickHandlers();
@@ -212,6 +213,20 @@ public class UserCustomCellController {
             default -> "";
         }));
         statusIconSvg.getStyleClass().add("status-icon");
+        messageStatusListener = (obs, oldStatus, newStatus) -> {
+            statusIconSvg.getStyleClass().removeAll("sent", "delivered", "read");
+            if (newStatus != null && !newStatus.equals("none")) {
+                statusIconSvg.getStyleClass().add(newStatus);
+            }
+        };
+        currentUser.messageStatusProperty().addListener(messageStatusListener);
+
+        // Set initial state correctly
+        String initialStatus = currentUser.getMessageStatus();
+        statusIconSvg.getStyleClass().removeAll("sent", "delivered", "read");
+        if (initialStatus != null && !initialStatus.equals("none")) {
+            statusIconSvg.getStyleClass().add(initialStatus);
+        }
     }
 
     private void bindMutedPinnedIcons() {
@@ -257,6 +272,10 @@ public class UserCustomCellController {
         }
         if (mutedIcon != null) mutedIcon.visibleProperty().unbind();
         if (pinnedIcon != null) pinnedIcon.visibleProperty().unbind();
+        if (currentUser != null && messageStatusListener != null) {
+            currentUser.messageStatusProperty().removeListener(messageStatusListener);
+            messageStatusListener = null;
+        }
     }
 
     // Update cell appearance and content

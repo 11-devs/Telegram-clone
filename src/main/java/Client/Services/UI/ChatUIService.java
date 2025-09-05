@@ -2,7 +2,6 @@ package Client.Services.UI;
 
 import Client.Controllers.MainChatController;
 import Shared.Events.Models.MessageDeletedEventModel;
-import Shared.Events.Models.MessageDeliveredEventModel;
 import Shared.Events.Models.MessageEditedEventModel;
 import Shared.Events.Models.MessageReadEventModel;
 import Shared.Events.Models.NewMessageEventModel;
@@ -13,7 +12,6 @@ import java.util.function.Consumer;
 
 public class ChatUIService {
     private Consumer<NewMessageEventModel> newMessageEventHandler;
-    private Consumer<MessageDeliveredEventModel> messageDeliveredEventHandler;
     private Consumer<MessageEditedEventModel> messageEditedEventHandler;
     private Consumer<MessageDeletedEventModel> messageDeletedEventHandler;
     private Consumer<MessageReadEventModel> messageReadEventHandler;
@@ -22,14 +20,12 @@ public class ChatUIService {
     public void setActiveChatController(MainChatController controller) {
         if (controller != null) {
             this.newMessageEventHandler = controller::handleIncomingMessage;
-            this.messageDeliveredEventHandler = controller::handleMessageDelivered;
             this.messageEditedEventHandler = controller::handleMessageEdited;
             this.messageDeletedEventHandler = controller::handleMessageDeleted;
             this.messageReadEventHandler = controller::handleMessageRead;
             this.userTypingEventHandler = controller::handleUserTyping;
         } else {
             this.newMessageEventHandler = null;
-            this.messageDeliveredEventHandler = null;
             this.messageEditedEventHandler = null;
             this.messageDeletedEventHandler = null;
             this.messageReadEventHandler = null;
@@ -42,14 +38,6 @@ public class ChatUIService {
             Platform.runLater(() -> newMessageEventHandler.accept(message));
         } else {
             System.err.println("ChatUIService: No active chat controller to handle new message.");
-        }
-    }
-
-    public void onMessageDelivered(MessageDeliveredEventModel message) {
-        if (messageDeliveredEventHandler != null) {
-            Platform.runLater(() -> messageDeliveredEventHandler.accept(message));
-        } else {
-            System.err.println("ChatUIService: No active chat controller to handle message delivered event.");
         }
     }
 

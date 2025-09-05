@@ -7,7 +7,14 @@ public class GetChatInfoOutputModel {
     private String type;
     private String title;
     private String profilePictureId;
+    private int unreadCount;
+    public int getUnreadCount() {
+        return unreadCount;
+    }
 
+    public void setUnreadCount(int unreadCount) {
+        this.unreadCount = unreadCount;
+    }
     // --- NEW FIELDS ---
     private String lastMessage;
     private String lastMessageTimestamp;

@@ -68,10 +68,10 @@ public class ChatRpcController extends RpcControllerBase {
                     // --- END OF MODIFIED LOGIC ---
 
                     // Find the last message for this chat
-                    Message lastMessage = daoManager.getMessageDAO().findAllByField("chat.id", chat.getId())
-                            .stream()
-                            .max(Comparator.comparing(Message::getTimestamp))
-                            .orElse(null);
+                    Message lastMessage = daoManager.getMessageDAO().findOneByJpql("SELECT m FROM Message m JOIN FETCH m.sender WHERE m.chat.id = :chatId ORDER BY m.timestamp DESC",query ->{
+                        query.setParameter("chatId", chat.getId());
+                        query.setMaxResults(1);
+                    });
 
                     if (lastMessage != null) {
                         // Set last message content
@@ -98,6 +98,26 @@ public class ChatRpcController extends RpcControllerBase {
                         output.setLastMessageTimestamp(null);
                         output.setLastMessageSenderName("");
                     }
+                    Message lastReadMessage = membership.getLastReadMessage();
+                    long unreadCount = 0;
+                    if (lastReadMessage == null) {
+                        // If user has never read anything, count all messages not sent by them.
+                        String jpql = "SELECT COUNT(m) FROM Message m WHERE m.chat.id = :chatId AND m.sender.id != :senderId";
+                        unreadCount = daoManager.getMessageDAO().countByJpql(jpql, query -> {
+                            query.setParameter("chatId", chat.getId());
+                            query.setParameter("senderId", currentUserId);
+                        });
+                    } else {
+                        // Count messages newer than the last one read that were not sent by the current user.
+                        final LocalDateTime lastReadTimestamp = lastReadMessage.getTimestamp();
+                        String jpql = "SELECT COUNT(m) FROM Message m WHERE m.chat.id = :chatId AND m.timestamp > :lastReadTimestamp AND m.sender.id != :senderId";
+                        unreadCount = daoManager.getMessageDAO().countByJpql(jpql, query -> {
+                            query.setParameter("chatId", chat.getId());
+                            query.setParameter("lastReadTimestamp", lastReadTimestamp);
+                            query.setParameter("senderId", currentUserId);
+                        });
+                    }
+                    output.setUnreadCount((int) unreadCount);
                     return output;
                 })
                 .collect(Collectors.toList());

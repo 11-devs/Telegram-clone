@@ -17,6 +17,7 @@ import Shared.Models.Message.TextMessage;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter; // Import for formatting
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -180,7 +181,16 @@ public class MessageRpcController extends RpcControllerBase {
         newMessage.setType(model.getMessageType());
 
         daoManager.getMessageDAO().insert(newMessage);
+        Membership senderMembership = daoManager.getMembershipDAO().findAllByField("chat.id", chat.getId())
+                .stream()
+                .filter(m -> m.getAccount().getId().equals(sender.getId()))
+                .findFirst()
+                .orElse(null);
 
+        if (senderMembership != null) {
+            senderMembership.setLastReadMessage(newMessage);
+            daoManager.getMembershipDAO().update(senderMembership);
+        }
         broadcastNewMessageEvent(newMessage);
 
         SendMessageOutputModel output = new SendMessageOutputModel(
@@ -259,25 +269,50 @@ public class MessageRpcController extends RpcControllerBase {
         Chat chat = daoManager.getChatDAO().findById(model.getChatId());
         if (chat == null) return;
 
-        if (chat.getType() == Shared.Models.Chat.ChatType.PRIVATE) {
-            List<Membership> members = daoManager.getMembershipDAO().findAllByField("chat.id", model.getChatId());
-            members.stream()
-                    .map(Membership::getAccount)
-                    .filter(account -> !account.getId().equals(readerId))
-                    .findFirst()
-                    .ifPresent(otherUser -> {
-                        MessageReadEventModel eventModel = new MessageReadEventModel(
-                                null,
-                                model.getChatId(),
-                                readerId,
-                                LocalDateTime.now()
-                        );
-                        try {
-                            messageReadEvent.Invoke(getServerSessionManager(), otherUser.getId().toString(), eventModel);
-                        } catch (IOException e) {
-                            System.err.println("Failed to send message read event to " + otherUser.getId() + ": " + e.getMessage());
-                        }
-                    });
+        // 1. Find the latest message in the chat
+        // NOTE: This query is inefficient for chats with many messages.
+        // A dedicated DAO method with a 'ORDER BY timestamp DESC' and 'LIMIT 1' query would be optimal.
+        Message lastMessage = daoManager.getMessageDAO().findAllByField("chat.id", chat.getId())
+                .stream()
+                .max(Comparator.comparing(Message::getTimestamp))
+                .orElse(null);
+
+        // If there are no messages, there's nothing to mark as read.
+        if (lastMessage == null) return;
+
+        // 2. Update the reader's membership to record the last read message
+        Membership readerMembership = daoManager.getMembershipDAO().findAllByField("chat.id", chat.getId())
+                .stream()
+                .filter(m -> m.getAccount().getId().equals(readerId))
+                .findFirst()
+                .orElse(null);
+
+        if (readerMembership != null) {
+            // Only update if the user has actually read new messages
+            if (readerMembership.getLastReadMessage() == null || lastMessage.getTimestamp().isAfter(readerMembership.getLastReadMessage().getTimestamp())) {
+                readerMembership.setLastReadMessage(lastMessage);
+                daoManager.getMembershipDAO().update(readerMembership);
+            }
+        }
+
+        // 3. Notify all OTHER members that the user has read messages up to this point
+        List<Membership> otherMembers = daoManager.getMembershipDAO().findAllByField("chat.id", model.getChatId())
+                .stream()
+                .filter(m -> !m.getAccount().getId().equals(readerId))
+                .collect(Collectors.toList());
+
+        for (Membership member : otherMembers) {
+            MessageReadEventModel eventModel = new MessageReadEventModel(
+                    lastMessage.getId(),
+                    model.getChatId(),
+                    readerId,
+                    LocalDateTime.now()
+            );
+            try {
+                messageReadEvent.Invoke(getServerSessionManager(), member.getAccount().getId().toString(), eventModel);
+            } catch (IOException e) {
+                System.err.println("Failed to send message read event to " + member.getAccount().getId() + ": " + e.getMessage());
+            }
         }
     }
     public void sendTypingStatus(TypingNotificationInputModel model) {

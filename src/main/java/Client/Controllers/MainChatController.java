@@ -18,7 +18,6 @@ import Shared.Api.Models.MessageController.GetMessageOutputModel;
 import Shared.Api.Models.MessageController.SendMessageInputModel;
 import Shared.Api.Models.MessageController.SendMessageOutputModel;
 import Shared.Events.Models.MessageDeletedEventModel;
-import Shared.Events.Models.MessageDeliveredEventModel;
 import Shared.Events.Models.MessageEditedEventModel;
 import Shared.Events.Models.MessageReadEventModel;
 import Shared.Events.Models.NewMessageEventModel;
@@ -480,6 +479,8 @@ public class MainChatController implements Initializable {
             if (messagesScrollPane.getVvalue() > 0.9) {
                 scrollToBottom();
             }
+            Task<Void> markAsReadTask = chatService.markChatAsRead(UUID.fromString(currentSelectedUser.getUserId()));
+            new Thread(markAsReadTask).start();
         }
 
         // Update the corresponding chat item in the list
@@ -503,20 +504,19 @@ public class MainChatController implements Initializable {
                 });
     }
 
-    public void handleMessageDelivered(MessageDeliveredEventModel eventModel) {
-        if (currentSelectedUser != null && currentSelectedUser.getUserId().equals(eventModel.getChatId().toString())) {
-            Platform.runLater(() -> {
-                // Find the message in the UI and update its status
-                // This is a simplified approach; in a real app, messages would have unique IDs in the UI as well.
-                // For now, we assume the last outgoing message is the one being delivered.
-                updateLastOutgoingMessageStatus("delivered", eventModel.getDeliveredTimestamp());
-            });
+    private Label findStatusLabelInMessageNode(HBox messageNode) {
+        if (messageNode == null || messageNode.getChildren().isEmpty() || !(messageNode.getChildren().getFirst() instanceof VBox bubble)) {
+            return null;
         }
-        // Update chat list item status (e.g., change last message status icon)
-        allChatUsers.stream()
-                .filter(user -> user.getUserId().equals(eventModel.getChatId().toString()))
-                .findFirst()
-                .ifPresent(user -> user.setMessageStatus("delivered"));
+        if (bubble.getChildren().isEmpty() || !(bubble.getChildren().getLast() instanceof HBox timeContainer)) {
+            return null;
+        }
+        for (var node : timeContainer.getChildren()) {
+            if (node.getStyleClass().contains("message-status")) {
+                return (Label) node;
+            }
+        }
+        return null;
     }
 
     public void handleMessageEdited(MessageEditedEventModel eventModel) {
@@ -576,6 +576,7 @@ public class MainChatController implements Initializable {
                 .ifPresent(this::reorderAndRefreshChatList);
     }
 
+
     public void handleMessageRead(MessageReadEventModel eventModel) {
         if (currentSelectedUser != null && currentSelectedUser.getUserId().equals(eventModel.getChatId().toString())) {
             Platform.runLater(() -> {
@@ -583,27 +584,26 @@ public class MainChatController implements Initializable {
                 messagesContainer.getChildren().stream()
                         .filter(node -> node instanceof HBox && node.getStyleClass().contains("outgoing"))
                         .map(node -> (HBox) node)
-                        .flatMap(hBox -> hBox.getChildren().stream())
-                        .filter(node -> node instanceof VBox && node.getProperties().containsKey("messageTimestamp"))
-                        .map(node -> (VBox) node)
-                        .forEach(bubble -> {
+                        .filter(hBox -> hBox.getChildren().getFirst() instanceof VBox bubble && bubble.getProperties().containsKey("messageTimestamp"))
+                        .forEach(hBox -> {
+                            VBox bubble = (VBox) hBox.getChildren().getFirst();
                             LocalDateTime messageTime = (LocalDateTime) bubble.getProperties().get("messageTimestamp");
                             LocalDateTime readTime = LocalDateTime.parse(eventModel.getReadTimestamp());
                             if (!messageTime.isAfter(readTime)) {
-                                // Find the actual HBox container for the status update
-                                HBox parentHBox = (HBox) bubble.getParent();
-                                updateMessageStatus(parentHBox, "read", null);
+                                updateMessageStatus(hBox, "read", null);
                             }
                         });
             });
         }
 
-        // Clear unread count for the relevant user in the chat list
+        // This event means OUR messages have been read by the other party.
+        // We need to update the status icon in the chat list, not our unread count.
         allChatUsers.stream()
                 .filter(user -> user.getUserId().equals(eventModel.getChatId().toString()))
                 .findFirst()
                 .ifPresent(user -> {
-                    user.clearUnreadCount();
+                    // CORRECT: Update the message status to 'read' (double tick)
+                    user.setMessageStatus("read");
                     reorderAndRefreshChatList(user);
                 });
     }
@@ -784,6 +784,7 @@ public class MainChatController implements Initializable {
                             .lastMessage(chat.getLastMessage()) // Use real last message
                             .time(chat.getLastMessageTimestamp())     // Use real timestamp
                             .type(chat.getType())
+                            .notificationsNumber(String.valueOf(chat.getUnreadCount()))
                             .build();
                     userViewModels.add(uvm);
                 }
@@ -1002,10 +1003,11 @@ public class MainChatController implements Initializable {
         enableChatControls();
 
         // Clear notifications and mark chat as read
-        user.clearUnreadCount();
-        Task<Void> markAsReadTask = chatService.markChatAsRead(UUID.fromString(user.getUserId()));
-        new Thread(markAsReadTask).start();
-
+        if (user.hasUnreadMessages()) {
+            user.clearUnreadCount();
+            Task<Void> markAsReadTask = chatService.markChatAsRead(UUID.fromString(user.getUserId()));
+            new Thread(markAsReadTask).start();
+        }
 
         // Update right panel if visible
         if (isRightPanelVisible) {
@@ -1189,11 +1191,11 @@ public class MainChatController implements Initializable {
             RpcResponse<SendMessageOutputModel> response = sendMessageTask.getValue();
             if (response.getStatusCode() == StatusCode.OK) {
                 System.out.println("Message sent successfully. ID: " + response.getPayload().getMessageId());
-                Platform.runLater(() -> updateLastMessageStatus("delivered")); // Simulate delivery confirmation
+                Platform.runLater(() -> updateLastMessageStatus("sent"));
                 LocalDateTime serverTimestamp = LocalDateTime.parse(response.getPayload().getTimestamp());
                 String formattedTime = serverTimestamp.format(DateTimeFormatter.ofPattern("HH:mm"));
                 Platform.runLater(() -> {
-                updateMessageStatus(messageNode, "delivered", formattedTime);
+                updateMessageStatus(messageNode, "sent", formattedTime);
                 // Store the actual messageId and timestamp from server for later event updates
                 ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageId", response.getPayload().getMessageId());
                 ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageTimestamp", serverTimestamp);
