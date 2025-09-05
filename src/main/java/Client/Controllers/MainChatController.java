@@ -360,6 +360,8 @@ public class MainChatController implements Initializable {
     private Timer typingTimer;
     private TimerTask typingStopTask;
     private boolean isCurrentlyTyping = false;
+    private VBox editingMessageBubble;
+    private String originalEditText;
     /**
      * Initializes the controller after the FXML file is loaded.
      * Sets up the UI components, data, event handlers, and initial state.
@@ -1523,6 +1525,11 @@ public class MainChatController implements Initializable {
             replyPreviewContainer.setManaged(false);
             replyToMessage = null;
         });
+        replyToMessage = null;
+        editingMessageBubble = null;
+        originalEditText = null;
+
+        messageInputField.clear();
         hideReply.play();
     }
 
@@ -2004,7 +2011,16 @@ public class MainChatController implements Initializable {
      */
     private void handleSendAction() {
         String text = messageInputField.getText().trim();
-        if (!text.isEmpty()) {
+        if (editingMessageBubble != null) {
+            if (!text.isEmpty() && !text.equals(originalEditText)) {
+                UUID messageId = (UUID) editingMessageBubble.getProperties().get("messageId");
+                if (messageId != null) {
+                    editMessage(messageId, text);
+                }
+            }
+            closeReplyPreview();
+        }
+        else if (!text.isEmpty()) {
             sendMessage();
         } else {
             // Handle voice message recording
@@ -2176,7 +2192,37 @@ public class MainChatController implements Initializable {
         messagesScrollPane.setVisible(false);
         welcomeStateContainer.setVisible(false);
     }
+    private void showEditPreview() {
+        if (replyPreviewContainer == null || editingMessageBubble == null) return;
 
+        // Configure the preview bar for "Edit" mode
+        replyToLabel.setText("Edit Message");
+        replyMessageLabel.setText(originalEditText.length() > 50 ?
+                originalEditText.substring(0, 47) + "..." : originalEditText);
+
+        // Populate the input field
+        messageInputField.setText(originalEditText);
+        messageInputField.positionCaret(originalEditText.length());
+
+        replyPreviewContainer.setVisible(true);
+        replyPreviewContainer.setManaged(true);
+
+        // Animate reply preview
+        replyPreviewContainer.setTranslateY(-30);
+        replyPreviewContainer.setOpacity(0);
+
+        TranslateTransition slideDown = new TranslateTransition(Duration.millis(200), replyPreviewContainer);
+        slideDown.setToY(0);
+
+        FadeTransition fadeIn = new FadeTransition(Duration.millis(200), replyPreviewContainer);
+        fadeIn.setToValue(1.0);
+
+        ParallelTransition showEdit = new ParallelTransition(slideDown, fadeIn);
+        showEdit.play();
+
+        // Focus message input
+        messageInputField.requestFocus();
+    }
     /**
      * Enables chat controls when a chat is selected.
      */
@@ -2965,6 +3011,11 @@ public class MainChatController implements Initializable {
     }
 
     private void promptForEdit(VBox messageBubble) {
+        // Ensure we're not already replying or editing something else
+        if (replyPreviewContainer.isVisible()) {
+            closeReplyPreview();
+        }
+
         UUID messageId = (UUID) messageBubble.getProperties().get("messageId");
         if (messageId == null) return;
 
@@ -2974,18 +3025,14 @@ public class MainChatController implements Initializable {
 
         if (messageTextLabel == null) return;
 
-        TextInputDialog dialog = new TextInputDialog(messageTextLabel.getText());
-        dialog.setTitle("Edit Message");
-        dialog.setHeaderText("Enter the new message content.");
-        dialog.setContentText("Message:");
+        // Set the state for editing
+        this.editingMessageBubble = messageBubble;
+        this.originalEditText = messageTextLabel.getText();
 
-        Optional<String> result = dialog.showAndWait();
-        result.ifPresent(newContent -> {
-            if (!newContent.trim().isEmpty() && !newContent.equals(messageTextLabel.getText())) {
-                editMessage(messageId, newContent);
-            }
-        });
+        // Show the edit preview bar and populate the input field
+        showEditPreview();
     }
+
 
     /**
      * Edits a message by sending a request to the server.
