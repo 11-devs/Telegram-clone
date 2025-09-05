@@ -58,7 +58,7 @@ import javafx.util.Duration;
 
 import java.awt.*;
 import java.io.IOException;
-import java.util.List;
+import java.util.*;
 import java.io.File;
 import java.net.URL;
 import java.nio.file.Files;
@@ -67,10 +67,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Objects;
-import java.util.ResourceBundle;
-import java.util.UUID;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
@@ -541,9 +538,46 @@ public class MainChatController implements Initializable {
      * A future enhancement could be to move the chat to the top of the list.
      * @param user The UserViewModel of the chat that was updated.
      */
+    /**
+     * Moves the chat with the latest message to the top of the chat list, refreshes it,
+     * and scrolls to the top to make the change visible.
+     * @param user The UserViewModel of the chat that was updated.
+     */
+    /**
+     * Moves the chat with the latest message to the top of the chat list, refreshes it,
+     * and scrolls to the top. This version preserves the user's current selection to
+     * prevent the UI from "jumping" to another chat.
+     * @param user The UserViewModel of the chat that was updated.
+     */
     private void reorderAndRefreshChatList(UserViewModel user) {
-        refreshChatList();
+        Platform.runLater(() -> {
+            // 1. Preserve the current selection to prevent UI jumps.
+            UserViewModel previouslySelectedUser = chatListView.getSelectionModel().getSelectedItem();
+
+            // 2. Sort the master list based on the latest message time. This is more efficient.
+            allChatUsers.sort((u1, u2) -> {
+                try {
+                    LocalDateTime t1 = (u1.getTime() != null && !u1.getTime().isEmpty()) ? LocalDateTime.parse(u1.getTime()) : LocalDateTime.MIN;
+                    LocalDateTime t2 = (u2.getTime() != null && !u2.getTime().isEmpty()) ? LocalDateTime.parse(u2.getTime()) : LocalDateTime.MIN;
+                    return t2.compareTo(t1); // Newest first
+                } catch (Exception e) {
+                    return 0; // Should not happen with consistent ISO format
+                }
+            });
+
+            // 3. Re-apply the current search filter to update the displayed list correctly.
+            performSearch(searchField.getText());
+
+            // 4. Restore the selection. The ListView will find the object at its new index.
+            if (previouslySelectedUser != null) {
+                chatListView.getSelectionModel().select(previouslySelectedUser);
+            }
+
+            // 5. Scroll the list view to the top to show the newly arrived chat.
+            chatListView.scrollTo(0);
+        });
     }
+
     // ============ INITIALIZATION METHODS ============
 
     /**
@@ -610,6 +644,15 @@ public class MainChatController implements Initializable {
                             .build();
                     userViewModels.add(uvm);
                 }
+                userViewModels.sort((u1, u2) -> {
+                    try {
+                        LocalDateTime t1 = (u1.getTime() != null && !u1.getTime().isEmpty()) ? LocalDateTime.parse(u1.getTime()) : LocalDateTime.MIN;
+                        LocalDateTime t2 = (u2.getTime() != null && !u2.getTime().isEmpty()) ? LocalDateTime.parse(u2.getTime()) : LocalDateTime.MIN;
+                        return t2.compareTo(t1);
+                    } catch (Exception e) {
+                        return 0;
+                    }
+                });
                 Platform.runLater(() -> {
                     allChatUsers.setAll(userViewModels);
                     filteredChatUsers.setAll(allChatUsers);
@@ -930,8 +973,9 @@ public class MainChatController implements Initializable {
                         showEmptyChatState();
                         return;
                     }
-
-                    for (GetMessageOutputModel msg : response.getPayload()) {
+                    List<GetMessageOutputModel> sortedMessages = new ArrayList<>(Arrays.asList(response.getPayload()));
+                    sortedMessages.sort(Comparator.comparing(msg -> LocalDateTime.parse(msg.getTimestamp())));
+                    for (GetMessageOutputModel msg : sortedMessages) {
                         LocalDateTime timestamp = LocalDateTime.parse(msg.getTimestamp());
                         String formattedTime = timestamp.format(DateTimeFormatter.ofPattern("HH:mm"));
                         String senderName = msg.getOutgoing() ? null : msg.getSenderName();
@@ -1741,12 +1785,20 @@ public class MainChatController implements Initializable {
      *
      * @param searchText The text to search for.
      */
+    /**
+     * Performs a search on the chat list based on the input text.
+     * If the search text is empty, it displays all chats sorted by recent activity.
+     *
+     * @param searchText The text to search for.
+     */
     private void performSearch(String searchText) {
         if (searchText == null || searchText.trim().isEmpty()) {
+            // If search is empty, show all chats from the master sorted list.
+            filteredChatUsers.setAll(allChatUsers);
             return;
         }
 
-        ObservableList<UserViewModel> searchResults = FXCollections.observableArrayList();
+        List<UserViewModel> searchResults = new ArrayList<>();
         String lowerCaseSearch = searchText.toLowerCase();
 
         for (UserViewModel user : allChatUsers) {

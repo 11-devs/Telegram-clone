@@ -4,6 +4,7 @@ import JSocket2.Protocol.Message;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -48,11 +49,17 @@ public class ServerSessionManager {
         }
     }
 
-    public void publishMessage(String userId, Message msg) throws IOException {
+    public void publishMessage(String userId, Message msg) {
         var list = userSessions.get(userId);
         if (list != null) {
-            for (var sess : list) {
-                sess.getClientHandler().send(msg);
+            for (int i = 0; i < list.size(); i++) {
+                var sess = list.get(i);
+                try {
+                    sess.getClientHandler().send(msg);
+                } catch (SocketException e) {
+                    sessions.remove(sess);
+                } catch (IOException e) {
+                }
             }
         }
     }
