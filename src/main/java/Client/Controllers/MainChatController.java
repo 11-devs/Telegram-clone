@@ -1121,7 +1121,9 @@ public class MainChatController implements Initializable {
                         String senderName = msg.getOutgoing() ? null : msg.getSenderName();
 
                         if (msg.getMessageType() == MessageType.TEXT && msg.getTextContent() != null) {
-                            HBox messageNode = addMessageBubble(msg.getTextContent(), msg.getOutgoing(), formattedTime, "read", senderName);
+                            // Use the new status field from the server response
+                            String status = msg.getOutgoing() ? msg.getMessageStatus() : "received";
+                            HBox messageNode = addMessageBubble(msg.getTextContent(), msg.getOutgoing(), formattedTime, status, senderName);
                             // Store messageId and timestamp for later updates
                             ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageId", msg.getMessageId());
                             ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageTimestamp", timestamp);
@@ -1132,7 +1134,9 @@ public class MainChatController implements Initializable {
                                 if (transferInfo != null) {
                                     DocumentInfo docInfo = new DocumentInfo(transferInfo);
                                     docInfo.setSenderName(senderName);
-                                    HBox messageNode = addDocumentMessageBubble(docInfo, msg.getOutgoing(), formattedTime, "read");
+                                    // Use the new status field from the server response
+                                    String status = msg.getOutgoing() ? msg.getMessageStatus() : "received";
+                                    HBox messageNode = addDocumentMessageBubble(docInfo, msg.getOutgoing(), formattedTime, status);
                                     // Store messageId and timestamp for later updates
                                     ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageId", msg.getMessageId());
                                     ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageTimestamp", timestamp);
