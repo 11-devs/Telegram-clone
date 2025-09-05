@@ -103,6 +103,7 @@ public class DataSeeder {
             account.setBio(userData.get("bio"));
             account.setHashedPassword(PasswordUtil.hash("12345678")); // Default password for all
             account.setStatus(random.nextBoolean() ? AccountStatus.ONLINE : AccountStatus.OFFLINE);
+            account.setEmail("email@email.com");
             daoManager.getAccountDAO().insert(account);
             seededAccounts.add(account);
             Console.log("Created account: " + account.getFirstName() + " " + account.getLastName());

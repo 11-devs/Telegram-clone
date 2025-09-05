@@ -8,6 +8,8 @@ import JSocket2.Protocol.Rpc.RpcResponse;
 import JSocket2.Protocol.StatusCode;
 import Shared.Api.Models.AccountController.LoginInputModel;
 import Shared.Api.Models.AccountController.LoginOutputModel;
+import Shared.Api.Models.AccountController.RequestCodeEmailOutputModel;
+import Shared.Api.Models.AccountController.RequestCodePhoneNumberInputModel;
 import Shared.Utils.DeviceUtil;
 import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
@@ -15,12 +17,15 @@ import javafx.concurrent.Task;
 import javafx.css.PseudoClass;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.PasswordField;
+import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import Shared.Utils.AnimationUtil;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.Optional;
+
 import static Shared.Utils.SceneUtil.changeSceneWithSameSize;
 
 public class CloudPasswordCheckController {
@@ -144,9 +149,98 @@ public class CloudPasswordCheckController {
     @FXML
     private void handleForgotPassword() {
         System.out.println("Forgot password link clicked.");
-        // Navigate to the phone number input screen, indicating it's for password reset
-        changeSceneWithSameSize(root, "/Client/fxml/phoneNumber.fxml", (PhoneNumberController controller) -> {
-            controller.setForgotPasswordMode(true);
+        if (phoneNumber == null || phoneNumber.isEmpty()) {
+            // Fallback if phone number is not available for some reason
+            changeSceneWithSameSize(root, "/Client/fxml/phoneNumber.fxml");
+            return;
+        }
+
+        Task<RpcResponse<Object>> resetTask = new Task<>() {
+            @Override
+            protected RpcResponse<Object> call() throws Exception {
+                return rpcCaller.requestPasswordReset(new RequestCodePhoneNumberInputModel(phoneNumber, "email", DeviceUtil.getDeviceInfo(), "password_reset"));
+            }
+        };
+
+        resetTask.setOnSucceeded(event -> {
+            var response = resetTask.getValue();
+            if (response.getStatusCode() == StatusCode.OK) {
+                Map<String, String> payload = (Map<String, String>) response.getPayload();
+                String status = payload.get("status");
+
+                Platform.runLater(() -> {
+                    if ("email_code_sent".equals(status)) {
+                        RequestCodeEmailOutputModel emailOutputModel = new RequestCodeEmailOutputModel();
+                        emailOutputModel.setStatus(status);
+                        emailOutputModel.setPendingId(payload.get("pendingId"));
+                        emailOutputModel.setEmail(payload.get("email"));
+
+                        changeSceneWithSameSize(root, "/Client/fxml/verificationViaEmail.fxml", (VerificationViaEmailController controller) -> {
+                            controller.setRequestCodeEmailOutputModel(emailOutputModel);
+                            controller.setPasswordResetMode(true);
+                        });
+                    } else if ("no_email_setup".equals(status)) {
+                        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+                        alert.setTitle("No Email Found");
+                        alert.setHeaderText("You have not set up an email for password recovery.");
+                        alert.setContentText("You can reset your account, which will delete all your cloud data, or try to remember your password.");
+
+                        ButtonType buttonTypeReset = new ButtonType("Reset Account");
+                        ButtonType buttonTypeCancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+                        alert.getButtonTypes().setAll(buttonTypeReset, buttonTypeCancel);
+
+                        Optional<ButtonType> result = alert.showAndWait();
+                        if (result.isPresent() && result.get() == buttonTypeReset) {
+                            Task<RpcResponse<Object>> resetAccountTask = new Task<>() {
+                                @Override
+                                protected RpcResponse<Object> call() throws Exception {
+                                    return rpcCaller.resetAccount(phoneNumber, DeviceUtil.getDeviceInfo());
+                                }
+                            };
+
+                            resetAccountTask.setOnSucceeded(e -> {
+                                var resetResponse = resetAccountTask.getValue();
+                                if (resetResponse.getStatusCode() == StatusCode.OK) {
+                                    Map<String, String> resetPayload = (Map<String, String>) resetResponse.getPayload();
+                                    String accessKey = resetPayload.get("accessKey");
+                                    try {
+                                        if (AccessKeyManager.LoginWithAccessKey(accessKey, connectionManager.getClient()) == StatusCode.OK) {
+                                            changeSceneWithSameSize(root, "/Client/fxml/mainChat.fxml");
+                                        }
+                                    } catch (IOException ex) {
+                                        ex.printStackTrace();
+                                    }
+                                }
+                            });
+
+                            new Thread(resetAccountTask).start();
+                        }
+                    }
+                });
+            } else {
+                System.err.println("Request password reset failed: " + response.getMessage());
+                Platform.runLater(() -> {
+                    Alert errorAlert = new Alert(Alert.AlertType.ERROR);
+                    errorAlert.setTitle("Error");
+                    errorAlert.setHeaderText("Password Reset Failed");
+                    errorAlert.setContentText("Could not initiate password reset. Please try again later. Reason: " + response.getMessage());
+                    errorAlert.showAndWait();
+                });
+            }
         });
+
+         resetTask.setOnFailed(event -> {
+                event.getSource().getException().printStackTrace();
+                Platform.runLater(() -> {
+                    Alert errorAlert = new Alert(Alert.AlertType.ERROR);
+                    errorAlert.setTitle("Error");
+                    errorAlert.setHeaderText("Password Reset Failed");
+                    errorAlert.setContentText("An unexpected error occurred. Please check your connection and try again.");
+                    errorAlert.showAndWait();
+                });
+            });
+
+        new Thread(resetTask).start();
     }
 }

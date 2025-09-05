@@ -15,33 +15,22 @@
    <center>
       <VBox alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="650.0" prefWidth="790.0">
          <children>
-            <VBox fx:id="root" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="386.0" prefWidth="294.0">
+            <VBox fx:id="root" alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="386.0" prefWidth="320.0">
                <children>
-                  <VBox fx:id="infoBox" prefHeight="254.0" prefWidth="294.0">
+                  <VBox fx:id="infoBox" alignment="CENTER" prefHeight="287.0" prefWidth="320.0">
                      <children>
-                        <Label fx:id="phoneLabel" styleClass="phone-label" text="Email">
+                        <Label fx:id="emailLabel" styleClass="email-label" text="your.email@example.com">
                            <font>
-                              <Font name="System" size="18.0" />
+                              <Font name="System Bold" size="18.0" />
                            </font>
                            <VBox.margin>
-                              <Insets top="50.0" />
+                              <Insets bottom="10.0" />
                            </VBox.margin>
                         </Label>
-                        <Label fx:id="infoLabel" maxWidth="431.0" prefHeight="20.0" prefWidth="292.0" styleClass="info-label" text="A code was sent via Email to your other">
+                        <Label fx:id="infoLabel" maxWidth="300.0" styleClass="info-label" text="We've sent a verification code to your email address." textAlignment="CENTER" wrapText="true">
                            <font>
                               <Font name="System" size="14.0" />
                            </font>
-                           <VBox.margin>
-                              <Insets top="10.0" />
-                           </VBox.margin>
-                        </Label>
-                        <Label fx:id="infoLabel1" maxWidth="310.0" prefHeight="20.0" prefWidth="310.0" styleClass="info-label" text="devices, if you have any connected.">
-                           <font>
-                              <Font name="System" size="14.0" />
-                           </font>
-                           <VBox.margin>
-                              <Insets />
-                           </VBox.margin>
                         </Label>
                         <HBox fx:id="codeFields" alignment="CENTER" prefHeight="50.0" prefWidth="365.0" spacing="10.0" styleClass="code-fields">
                            <children>
@@ -52,12 +41,17 @@
                               <TextField fx:id="code5" prefHeight="50.0" prefWidth="40.0" styleClass="code-field" />
                            </children>
                            <VBox.margin>
-                              <Insets top="50.0" />
+                              <Insets top="30.0" />
                            </VBox.margin>
                         </HBox>
+                        <Label fx:id="validationMessageLabel" styleClass="info-label">
+                           <VBox.margin>
+                              <Insets top="15.0" />
+                           </VBox.margin>
+                        </Label>
                      </children>
                   </VBox>
-                  <Button fx:id="nextButton" onMouseClicked="#handleNext" prefHeight="42.0" prefWidth="294.0" styleClass="next-button" text="Next">
+                  <Button fx:id="nextButton" onMouseClicked="#handleNext" prefHeight="42.0" prefWidth="320.0" styleClass="next-button" text="Next">
                      <VBox.margin>
                         <Insets top="30.0" />
                      </VBox.margin>

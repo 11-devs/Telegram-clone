@@ -15,9 +15,11 @@ import Shared.Utils.SceneUtil;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.animation.TranslateTransition;
+import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -30,6 +32,7 @@ public class VerificationViaEmailController {
     private ConnectionManager connectionManager;
     private RpcCaller rpcCaller;
     private RequestCodeEmailOutputModel requestCodeEmailOutputModel;
+    private boolean isPasswordResetMode = false;
 
     @FXML
     private VBox root;
@@ -48,7 +51,14 @@ public class VerificationViaEmailController {
     private TextField code5;
 
     @FXML
+    private Label emailLabel;
+
+    @FXML
     public Button nextButton;
+
+    public void setPasswordResetMode(boolean passwordResetMode) {
+        isPasswordResetMode = passwordResetMode;
+    }
 
     @FXML
     private void initialize() {
@@ -179,31 +189,59 @@ public class VerificationViaEmailController {
         String code = code1.getText() + code2.getText() + code3.getText() + code4.getText() + code5.getText();
         if (code.length() == 5 && code.matches("[0-9]{5}")) {
             System.out.println("Verification code entered: " + code);
-            // TODO:
-            Task<RpcResponse<Object>> otpTask = new Task<>() {
-                @Override
-                protected RpcResponse<Object> call() throws Exception {
-                    return rpcCaller.verifyEmailOtp(new VerifyCodeEmailInputModel(requestCodeEmailOutputModel.getPendingId(), requestCodeEmailOutputModel.getEmail(), code));
-                }
-            };
-            otpTask.setOnSucceeded(event -> {
-                try {
-                    var response = otpTask.getValue();
-                    if(response.getStatusCode() == StatusCode.OK){
-                        System.out.println("Email Confirmed");
-                    }else if(response.getStatusCode() == StatusCode.BAD_REQUEST){
-                        turnFieldsBlank();
+            if (isPasswordResetMode) {
+                Task<RpcResponse<VerifyCodeOutputModel>> passwordResetOtpTask = new Task<>() {
+                    @Override
+                    protected RpcResponse<VerifyCodeOutputModel> call() throws Exception {
+                        return rpcCaller.verifyPasswordResetEmailOtp(new VerifyCodeEmailInputModel(requestCodeEmailOutputModel.getPendingId(), requestCodeEmailOutputModel.getEmail(), code));
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                }
-            });
-            otpTask.setOnFailed(event -> {
-                System.out.println("Task failed.");
-                otpTask.getException().printStackTrace();
-            });
-            new Thread(otpTask).start();
+                };
+                passwordResetOtpTask.setOnSucceeded(event -> {
+                    var response = passwordResetOtpTask.getValue();
+                    if (response.getStatusCode() == StatusCode.OK) {
+                        var payload = response.getPayload();
+                        if ("password_reset_required".equals(payload.getStatus())) {
+                            Platform.runLater(() -> {
+                                changeSceneWithSameSize(root, "/Client/fxml/resetPassword.fxml", (ResetPasswordController controller) -> {
+                                    controller.setPhoneNumber(payload.getPhoneNumber());
+                                    controller.setPendingId(payload.getPendingId());
+                                });
+                            });
+                        }
+                    } else {
+                        Platform.runLater(this::turnFieldsBlank);
+                    }
+                });
+                passwordResetOtpTask.setOnFailed(event -> {
+                    passwordResetOtpTask.getException().printStackTrace();
+                    Platform.runLater(this::turnFieldsBlank);
+                });
+                new Thread(passwordResetOtpTask).start();
+            } else {
+                Task<RpcResponse<Object>> otpTask = new Task<>() {
+                    @Override
+                    protected RpcResponse<Object> call() throws Exception {
+                        return rpcCaller.verifyEmailOtp(new VerifyCodeEmailInputModel(requestCodeEmailOutputModel.getPendingId(), requestCodeEmailOutputModel.getEmail(), code));
+                    }
+                };
+                otpTask.setOnSucceeded(event -> {
+                    try {
+                        var response = otpTask.getValue();
+                        if (response.getStatusCode() == StatusCode.OK) {
+                            System.out.println("Email Confirmed");
+                        } else if (response.getStatusCode() == StatusCode.BAD_REQUEST) {
+                            turnFieldsBlank();
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                });
+                otpTask.setOnFailed(event -> {
+                    System.out.println("Task failed.");
+                    otpTask.getException().printStackTrace();
+                });
+                new Thread(otpTask).start();
+            }
         } else {
             System.out.println("Please enter a 5-digit code.");
         }
@@ -218,6 +256,20 @@ public class VerificationViaEmailController {
 
     public void setRequestCodeEmailOutputModel(RequestCodeEmailOutputModel requestCodeEmailOutputModel) {
         this.requestCodeEmailOutputModel = requestCodeEmailOutputModel;
+        if(requestCodeEmailOutputModel != null && requestCodeEmailOutputModel.getEmail() != null) {
+            Platform.runLater(() -> emailLabel.setText(maskEmail(requestCodeEmailOutputModel.getEmail())));
+        }
+    }
+
+    private String maskEmail(String email) {
+        if (email == null || !email.contains("@")) {
+            return "your recovery email";
+        }
+        int atIndex = email.indexOf("@");
+        if (atIndex <= 2) { // e.g., a@b.c
+            return email.charAt(0) + "***" + email.substring(atIndex);
+        }
+        return email.substring(0, 2) + "***" + email.substring(atIndex - 2);
     }
 
 //    @FXML
