@@ -4,6 +4,7 @@ import JSocket2.Core.Client.ConnectionManager;
 import JSocket2.Protocol.Rpc.RpcCallerBase;
 import JSocket2.Protocol.Rpc.RpcResponse;
 import Shared.Api.Models.ChatController.GetChatInfoOutputModel;
+import Shared.Api.Models.ChatController.ToggleChatMuteInputModel;
 import Shared.Api.Models.ChatController.getChatsByUserInputModel;
 import Shared.Api.Models.MediaController.CreateMediaInputModel;
 import Shared.Api.Models.MessageController.*;
@@ -108,5 +109,8 @@ public class RpcCaller extends RpcCallerBase {
     }
     public RpcResponse<GetChatInfoOutputModel> getChatByUsername(String username) throws IOException {
         return callRpcAndGetResponse("ChatRpcController", "getChatByUsername", GetChatInfoOutputModel.class, username);
+    }
+    public RpcResponse<Object> toggleChatMute(ToggleChatMuteInputModel model) throws IOException {
+        return callRpcAndGetResponse("ChatRpcController", "toggleChatMute", Object.class, model);
     }
 }

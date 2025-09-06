@@ -26,10 +26,7 @@ import Shared.Events.Models.UserIsTypingEventModel;
 import Shared.Models.*;
 //import Shared.Utils.SidebarUtil;
 import Shared.Models.Message.MessageType;
-import Shared.Utils.DialogUtil;
-import Shared.Utils.SceneUtil;
-import Shared.Utils.TelegramCellUtils;
-import Shared.Utils.TextUtil;
+import Shared.Utils.*;
 import com.google.gson.Gson;
 import javafx.animation.*;
 import javafx.application.Platform;
@@ -551,6 +548,7 @@ public class MainChatController implements Initializable {
                 .filter(user -> user.getUserId().equals(message.getChatId().toString()))
                 .findFirst()
                 .ifPresent(user -> {
+                    String notificationMessage = message.getTextContent() != null ? message.getTextContent() : "Media";
                     user.setLastMessage(message.getTextContent() != null ? message.getTextContent() : "Media");
                     user.setTime(message.getTimestamp());
 
@@ -562,6 +560,9 @@ public class MainChatController implements Initializable {
                         } catch (NumberFormatException e) {
                             user.setNotificationsNumber("1");
                         }
+                    }
+                    if (!user.isMuted()) {
+                        SystemNotificationUtil.showNotification(user.getUserName(), notificationMessage);
                     }
                     reorderAndRefreshChatList(user);
                 });
@@ -836,6 +837,7 @@ public class MainChatController implements Initializable {
                             .time(chat.getLastMessageTimestamp())     // Use real timestamp
                             .type(chat.getType())
                             .notificationsNumber(String.valueOf(chat.getUnreadCount()))
+                            .isMuted(chat.isMuted())
                             .build();
                     userViewModels.add(uvm);
                 }
@@ -1296,88 +1298,6 @@ public class MainChatController implements Initializable {
 
         new Thread(getMessagesTask).start();
     }
-
-    private void uploadFileAndSendMessage(File file, DocumentInfo docInfo) {
-        IProgressListener listener = (transferred, total) -> {
-            double progress = (total > 0) ? ((double) transferred / total) * 100 : 0;
-            System.out.printf("Upload Progress: %.2f%%\\n", progress);
-            // TODO: Update UI with progress indicator on the message bubble
-        };
-
-        var app = connectionManager.getClient();
-        ExecutorService backgroundExecutor = app.getBackgroundExecutor();
-        backgroundExecutor.submit(() -> {
-            try {
-                // Step 1: Initiate upload to get FileId. This is a custom protocol message, not RPC.
-                FileInfoModel info = app.getFileTransferManager().initiateUpload(file);
-                String fileId = info.FileId;
-
-                // Step 2: Create the Media DB entry via RPC.
-                CreateMediaInputModel createMediaInput = new CreateMediaInputModel(
-                        UUID.fromString(fileId),
-                        file.getName(),
-                        file.length(),
-                        getFileExtension(file)
-                );
-                RpcResponse<UUID> createMediaResponse = rpcCaller.createMediaEntry(createMediaInput);
-
-                if (createMediaResponse.getStatusCode() != StatusCode.OK) {
-                    System.err.println("Failed to create media entry on server: " + createMediaResponse.getMessage());
-                    Platform.runLater(() -> showTemporaryNotification("Error preparing upload."));
-                    return; // Abort upload
-                }
-
-                // Step 3: Start the actual upload task
-                UploadTask uploadTask = new UploadTask(app.getFileTransferManager(), info, file, listener);
-                app.registerTask(fileId, uploadTask);
-
-                uploadTask.setOnSucceeded(e -> {
-                    app.unregisterTask(fileId);
-                    System.out.println("Upload successful. Media ID: " + fileId);
-
-                    // Step 4: Send the message pointing to the Media ID
-                    SendMessageInputModel messageInput = new SendMessageInputModel();
-                    messageInput.setChatId(UUID.fromString(currentSelectedUser.getUserId()));
-                    messageInput.setMessageType(MessageType.MEDIA);
-                    messageInput.setMediaId(createMediaResponse.getPayload());
-
-                    Task<RpcResponse<SendMessageOutputModel>> sendMessageTask = chatService.sendMessage(messageInput);
-                    sendMessageTask.setOnSucceeded(event -> {
-                        if (sendMessageTask.getValue().getStatusCode() == StatusCode.OK) {
-                            System.out.println("Media message sent successfully.");
-                            HBox messageNode = addDocumentMessageBubble(docInfo, true, getCurrentTime(), "delivered");
-                            // Store the actual messageId and timestamp from server for later event updates
-                            ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageId", sendMessageTask.getValue().getPayload().getMessageId());
-                            ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageTimestamp", LocalDateTime.parse(sendMessageTask.getValue().getPayload().getTimestamp()));
-
-                        } else {
-                            Platform.runLater(() -> showTemporaryNotification("Failed to send file message."));
-                        }
-                    });
-                    sendMessageTask.setOnFailed(failEvent -> {
-                        sendMessageTask.getException().printStackTrace();
-                        Platform.runLater(() -> showTemporaryNotification("Error sending file message."));
-                    });
-                    new Thread(sendMessageTask).start();
-                });
-
-                uploadTask.setOnFailed(failEvent -> {
-                    app.unregisterTask(fileId);
-                    uploadTask.getException().printStackTrace();
-                    Platform.runLater(() -> showTemporaryNotification("File upload failed."));
-                });
-
-                backgroundExecutor.submit(uploadTask);
-
-            } catch (Exception ex) {
-                System.err.println("Error initiating file upload or creating media entry: " + ex.getMessage());
-                ex.printStackTrace();
-                Platform.runLater(() -> showTemporaryNotification("Error starting upload."));
-            }
-        });
-        }
-
-    // ============ MESSAGE HANDLING ============
 
     /**
      * Adds a message bubble to the messages container with the specified details.
@@ -1963,6 +1883,7 @@ public class MainChatController implements Initializable {
                                 });
                             } else {
                                 Platform.runLater(() -> updateMessageStatus(finalMessageNode, "failed", null));
+                                reorderAndRefreshChatList(currentSelectedUser);
                             }
                         }
                     });
@@ -3408,14 +3329,49 @@ public class MainChatController implements Initializable {
     private void toggleNotifications() {
         if (currentSelectedUser == null) return;
 
-        boolean isEnabled = notificationsToggle.isSelected();
-        currentSelectedUser.setMuted(!isEnabled);
+        boolean isCurrentlyMuted = currentSelectedUser.isMuted();
+        boolean newMuteState = !isCurrentlyMuted;
 
+        // --- Optimistically update UI ---
+        currentSelectedUser.setMuted(newMuteState);
+        boolean isEnabled = !newMuteState;
         notificationStatusLabel.setText(isEnabled ? "Enabled" : "Disabled");
-        mutedIcon.setVisible(!isEnabled);
-
-        String message = (isEnabled ? "Unmuted" : "Muted") + " " + currentSelectedUser.getUserName();
+        mutedIcon.setVisible(newMuteState);
+        updateNotificationToggle(isEnabled);
+        String message = (newMuteState ? "Muted" : "Unmuted") + " " + currentSelectedUser.getUserName();
         showTemporaryNotification(message);
+        // --- End of optimistic update ---
+
+        Task<RpcResponse<Object>> muteTask = chatService.toggleChatMute(UUID.fromString(currentSelectedUser.getUserId()), newMuteState);
+
+        muteTask.setOnSucceeded(event -> {
+            RpcResponse<Object> response = muteTask.getValue();
+            if (response.getStatusCode() != StatusCode.OK) {
+                // Revert UI on failure
+                Platform.runLater(() -> {
+                    currentSelectedUser.setMuted(isCurrentlyMuted); // Revert model
+                    notificationStatusLabel.setText(!isCurrentlyMuted ? "Enabled" : "Disabled");
+                    mutedIcon.setVisible(isCurrentlyMuted);
+                    updateNotificationToggle(!isCurrentlyMuted);
+                    showTemporaryNotification("Failed to update notification settings.");
+                });
+                System.err.println("Failed to toggle mute status: " + response.getMessage());
+            }
+        });
+
+        muteTask.setOnFailed(event -> {
+            // Revert UI on failure
+            Platform.runLater(() -> {
+                currentSelectedUser.setMuted(isCurrentlyMuted); // Revert model
+                notificationStatusLabel.setText(!isCurrentlyMuted ? "Enabled" : "Disabled");
+                mutedIcon.setVisible(isCurrentlyMuted);
+                updateNotificationToggle(!isCurrentlyMuted);
+                showTemporaryNotification("Error updating notification settings.");
+            });
+            muteTask.getException().printStackTrace();
+        });
+
+        new Thread(muteTask).start();
     }
 
     /**

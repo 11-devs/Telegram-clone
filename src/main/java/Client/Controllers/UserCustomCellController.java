@@ -61,6 +61,7 @@ public class UserCustomCellController {
     private UserViewModel currentUser;
     private boolean isSelected = false;
     private ChangeListener<String> messageStatusListener;
+    private ChangeListener<Boolean> mutedPropertyListener;
     @FXML
     public void initialize() {
         setupClickHandlers();
@@ -185,20 +186,24 @@ public class UserCustomCellController {
         if (notificationPanel == null || nombreMessageLabel == null) return;
 
         nombreMessageLabel.textProperty().bind(currentUser.notificationsNumberProperty());
+        // Keep base style classes
         nombreMessageLabel.getStyleClass().add("notification-count-label");
         notificationPanel.getStyleClass().add("notification-badge");
 
+        // Visibility is still based on count
         notificationPanel.visibleProperty().bind(currentUser.notificationsNumberProperty().map(count ->
                 count != null && !count.equals("0") && !count.isEmpty()
         ));
 
-        currentUser.notificationsNumberProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal != null && !newVal.equals("0") && !newVal.isEmpty()) {
-                root.getStyleClass().add("unread");
-            } else {
-                root.getStyleClass().remove("unread");
-            }
-        });
+        // Listener for count changes to update style
+        currentUser.notificationsNumberProperty().addListener((obs, oldVal, newVal) -> updateNotificationBadgeStyle());
+
+        // Listener for mute state changes to update style
+        mutedPropertyListener = (obs, oldVal, newVal) -> updateNotificationBadgeStyle();
+        currentUser.isMutedProperty().addListener(mutedPropertyListener);
+
+        // Set initial style
+        updateNotificationBadgeStyle();
     }
 
     private void bindMessageStatus() {
@@ -411,7 +416,26 @@ public class UserCustomCellController {
             });
         }
     }
+    private void updateNotificationBadgeStyle() {
+        if (currentUser == null || notificationPanel == null) return;
 
+        String count = currentUser.getNotificationsNumber();
+        boolean hasUnread = count != null && !count.equals("0") && !count.isEmpty();
+
+        // Clear previous state styles
+        notificationPanel.getStyleClass().removeAll("active", "muted");
+        root.getStyleClass().removeAll("unread", "unread-muted");
+
+        if (hasUnread) {
+            if (currentUser.isMuted()) {
+                notificationPanel.getStyleClass().add("muted");
+                root.getStyleClass().add("unread-muted");
+            } else {
+                notificationPanel.getStyleClass().add("active");
+                root.getStyleClass().add("unread");
+            }
+        }
+    }
     public void setSelected(boolean selected) {
         this.isSelected = selected;
         updateCellAppearance();

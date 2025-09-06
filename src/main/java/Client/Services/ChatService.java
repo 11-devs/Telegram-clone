@@ -3,6 +3,7 @@ package Client.Services;
 import Client.RpcCaller;
 import JSocket2.Protocol.Rpc.RpcResponse;
 import Shared.Api.Models.ChatController.GetChatInfoOutputModel;
+import Shared.Api.Models.ChatController.ToggleChatMuteInputModel;
 import Shared.Api.Models.MessageController.*;
 import Shared.Models.Message.MessageType;
 import javafx.concurrent.Task;
@@ -112,6 +113,17 @@ public class ChatService {
                 input.setChatId(chatId);
                  rpcCaller.markChatAsRead(input);
                  return null;
+            }
+        };
+    }
+    public Task<RpcResponse<Object>> toggleChatMute(UUID chatId, boolean isMuted) {
+        return new Task<>() {
+            @Override
+            protected RpcResponse<Object> call() throws Exception {
+                ToggleChatMuteInputModel input = new ToggleChatMuteInputModel();
+                input.setChatId(chatId);
+                input.setMuted(isMuted);
+                return rpcCaller.toggleChatMute(input);
             }
         };
     }
