@@ -3,10 +3,8 @@ package Client.Services;
 import Client.AppConnectionManager;
 import Client.Tasks.DownloadTask;
 import JSocket2.Core.Client.ConnectionManager;
-import JSocket2.Protocol.Transfer.ClientFileTransferManager;
-import JSocket2.Protocol.Transfer.IProgressListener;
-import JSocket2.Protocol.Transfer.TransferInfo;
-import JSocket2.Protocol.Transfer.TransferState;
+import JSocket2.Protocol.Transfer.*;
+import JSocket2.Protocol.Transfer.Download.DownloadFileInfoModel;
 import javafx.application.Platform;
 
 import java.io.File;
@@ -28,13 +26,15 @@ public class FileDownloadService {
     private ClientFileTransferManager transferManager;
     private ExecutorService executor;
     private final Path cacheDir = Paths.get("ClientData/cache/avatars");
+    private final Path documentCacheDir = Paths.get("ClientData/cache/documents");
     private final Map<String, CompletableFuture<File>> activeDownloads = new ConcurrentHashMap<>();
 
     private FileDownloadService() {
         try {
             Files.createDirectories(cacheDir);
+            Files.createDirectories(documentCacheDir);
         } catch (IOException e) {
-            System.err.println("Failed to create cache directory: " + cacheDir);
+            System.err.println("Failed to create cache directories: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -60,7 +60,9 @@ public class FileDownloadService {
         this.transferManager = connectionManager.getClient().getFileTransferManager();
         this.executor = connectionManager.getClient().getBackgroundExecutor();
     }
-
+    public Path getDocumentCacheDir() {
+        return documentCacheDir;
+    }
 
     /**
      * Retrieves a file, downloading it if it's not already cached.
@@ -104,9 +106,38 @@ public class FileDownloadService {
         CompletableFuture<TransferInfo> future = new CompletableFuture<>();
         executor.submit(() -> {
             try {
-                // initiateDownload gets info from server and loads local transfer state if it exists.
-                TransferInfo info = transferManager.initiateDownload(fileId, cacheDir.toString());
-                if (info != null) {
+                if (TransferFiles.canLoad(fileId)) {
+                    try {
+                        TransferFiles tf = TransferFiles.Load(fileId);
+                        if (tf != null) {
+                            TransferInfo localInfo = tf.getinfo();
+                            infoCache.put(fileId, localInfo);
+                            future.complete(localInfo);
+                            return; // Found local info, we are done.
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Could not load existing transfer info for " + fileId + ". Fetching from server. " + e.getMessage());
+                    }
+                }
+
+                // If not resumable, fetch info from server without creating local files.
+                DownloadFileInfoModel fileInfoModel = transferManager.getDownloadFileInfoFromServer(fileId);
+
+                if (fileInfoModel != null) {
+                    // Manually construct a transient TransferInfo object.
+                    int totalChunksCount = (int) Math.ceil((double) fileInfoModel.getFileLength() / 65536); // Assuming default chunk size 64KB
+                    TransferInfo info = new TransferInfo(
+                            fileInfoModel.getFileId(),
+                            fileInfoModel.getFileName(),
+                            fileInfoModel.getFileExtension(),
+                            cacheDir.toString(), // The potential destination path
+                            0,               // lastWrittenOffset, not started yet
+                            0,               // lastChunkIndex, not started yet
+                            totalChunksCount,
+                            fileInfoModel.getFileLength()
+                    );
+                    info.setTransferState(TransferState.Paused); // Indicate it's just info, not in progress.
+
                     infoCache.put(fileId, info);
                     future.complete(info);
                 } else {

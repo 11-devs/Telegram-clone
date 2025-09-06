@@ -15,8 +15,11 @@ public class NewMessageEventModel {
     private String textContent;
     private UUID mediaId;
     private String fileId;
+    private String fileName;
+    private long fileSize;
+    private String fileExtension;
 
-
+    //<editor-fold desc="Getters and Setters">
     public UUID getMessageId() {
         return messageId;
     }
@@ -97,4 +100,28 @@ public class NewMessageEventModel {
         this.fileId = fileId;
     }
 
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    public long getFileSize() {
+        return fileSize;
+    }
+
+    public void setFileSize(long fileSize) {
+        this.fileSize = fileSize;
+    }
+
+    public String getFileExtension() {
+        return fileExtension;
+    }
+
+    public void setFileExtension(String fileExtension) {
+        this.fileExtension = fileExtension;
+    }
+    //</editor-fold>
 }

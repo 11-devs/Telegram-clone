@@ -253,6 +253,7 @@ public class UserInfoController implements Initializable {
                             String fileId = info.FileId;
                             CreateMediaInputModel createMediaInput = new CreateMediaInputModel(
                                     UUID.fromString(fileId),
+                                    selectedFile.getName(),
                                     selectedFile.length(),
                                     FileUtil.getFileExtension(selectedFile)
                             );

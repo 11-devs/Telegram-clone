@@ -46,6 +46,6 @@ bin/
 
 ### Project ###
 /src/files/
-/logs/
+/logs/app.log
 /Client/
 /ClientData/

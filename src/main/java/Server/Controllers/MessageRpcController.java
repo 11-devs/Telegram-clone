@@ -110,6 +110,9 @@ public class MessageRpcController extends RpcControllerBase {
                     if (media != null) {
                         output.setMediaId(media.getId());
                         output.setFileId(media.getFileId());
+                        output.setFileName(media.getFileName());
+                        output.setFileSize(media.getSize());
+                        output.setFileExtension(media.getFileExtension());
                     }
                 }
                 break;
@@ -163,6 +166,9 @@ public class MessageRpcController extends RpcControllerBase {
             if (media != null) {
                 eventModel.setMediaId(media.getId());
                 eventModel.setFileId(media.getFileId());
+                eventModel.setFileName(media.getFileName());
+                eventModel.setFileSize(media.getSize());
+                eventModel.setFileExtension(media.getFileExtension());
             }
         }
 

@@ -255,4 +255,35 @@ public class ClientFileTransferManager extends FileTransferManager{
             sendDownloadChunkRequest(metadata.fileId,metadata.chunkIndex+1,metadata.offset+65536);
         }
     }
+    public DownloadFileInfoModel getDownloadFileInfoFromServer(String fileId) throws IOException {
+        UUID requestId = UUID.randomUUID();
+        DownloadRequestMetadata metadata = new DownloadRequestMetadata(fileId);
+        byte[] metadataBytes = gson.toJson(metadata).getBytes(StandardCharsets.UTF_8);
+
+        Message request = new Message(
+                MessageHeader.BuildDownloadRequestHeader(requestId, true, metadataBytes.length, 0),
+                metadataBytes,
+                new byte[0]
+        );
+
+        CompletableFuture<Message> futureResponse = new CompletableFuture<>();
+        pendingRequests.put(requestId, futureResponse);
+        handler.write(request);
+
+        Message response;
+        try {
+            response = futureResponse.join();
+        } finally {
+            pendingRequests.remove(requestId);
+        }
+
+        gson.fromJson(
+                new String(response.getMetadata(), StandardCharsets.UTF_8),
+                RpcResponseMetadata.class
+        );
+        return gson.fromJson(
+                new String(response.getPayload(), StandardCharsets.UTF_8),
+                DownloadFileInfoModel.class
+        );
+    }
 }

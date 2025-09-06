@@ -17,6 +17,33 @@ public class GetMessageOutputModel {
     private UUID mediaId;
     private String fileId;
     private String messageStatus; // New field
+    private String fileName;
+    private long fileSize;
+    private String fileExtension;
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    public long getFileSize() {
+        return fileSize;
+    }
+
+    public void setFileSize(long fileSize) {
+        this.fileSize = fileSize;
+    }
+
+    public String getFileExtension() {
+        return fileExtension;
+    }
+
+    public void setFileExtension(String fileExtension) {
+        this.fileExtension = fileExtension;
+    }
 
     public boolean getOutgoing() {
         return isOutgoing;
