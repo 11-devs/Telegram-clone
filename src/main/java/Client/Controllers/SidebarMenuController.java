@@ -57,9 +57,15 @@ public class SidebarMenuController implements Initializable {
     // Add primaryStage field
     private Stage primaryStage;
 
+    private Object parentController;
+
     // Constructor to inject primaryStage
     public void setPrimaryStage(Stage primaryStage) {
         this.primaryStage = primaryStage;
+    }
+
+    public void setParentController(Object parentController) {
+        this.parentController = parentController;
     }
 
     @Override
@@ -373,18 +379,27 @@ public class SidebarMenuController implements Initializable {
      */
     public void toggleSidebar(boolean show) {
         Platform.runLater(() -> {
+            double width = sidebarMenuContainer.getWidth();
+            System.out.println("Sidebar width: " + width + ", Show: " + show);
+            if (width <= 0) {
+                System.out.println("Warning: Sidebar width is zero or negative, forcing width to 300");
+                sidebarMenuContainer.setPrefWidth(300);
+                width = 300;
+            }
+
             TranslateTransition slideTransition = new TranslateTransition(Duration.millis(150), sidebarMenuContainer);
             slideTransition.setInterpolator(Interpolator.EASE_BOTH);
 
             if (show) {
-                slideTransition.setFromX(-sidebarMenuContainer.getWidth());
+                slideTransition.setFromX(-width);
                 slideTransition.setToX(0);
             } else {
                 slideTransition.setFromX(0);
-                slideTransition.setToX(-sidebarMenuContainer.getWidth());
+                slideTransition.setToX(-width);
             }
 
             slideTransition.play();
+            slideTransition.setOnFinished(e -> System.out.println("Animation finished, X: " + sidebarMenuContainer.getTranslateX()));
         });
     }
 

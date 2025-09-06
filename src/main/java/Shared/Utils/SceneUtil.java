@@ -93,15 +93,26 @@ public class SceneUtil {
         if (controller != null) {
             try {
                 // Use reflection to call setter methods dynamically
+
+                controller.getClass().getMethod("setDialogStage", Stage.class).invoke(controller, dialogStage);
+
                 if (parentController != null) {
-                    controller.getClass().getMethod("setParentController", Object.class).invoke(controller, parentController);
+                    try {
+                        controller.getClass().getMethod("setParentController", Object.class).invoke(controller, parentController);
+                    } catch (NoSuchMethodException e) {
+                        System.err.println("The controller " + controller.getClass().getName() + " does not have a 'setParentController(Object parentController)' method.");
+                    }
                 }
                 if (data != null) {
-                    controller.getClass().getMethod("setData", Object.class).invoke(controller, data);
+                    try {
+                        controller.getClass().getMethod("setData", Object.class).invoke(controller, data);
+                    } catch (NoSuchMethodException e) {
+                        System.err.println("The controller " + controller.getClass().getName() + " does not have a 'setData(Object data)' method.");
+                    }
                 }
-                controller.getClass().getMethod("setDialogStage", Stage.class).invoke(controller, dialogStage);
             } catch (Exception e) {
                 System.err.println("Error setting controller properties: " + e.getMessage());
+                e.printStackTrace();
             }
         }
 
