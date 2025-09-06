@@ -299,6 +299,7 @@ public class MessageRpcController extends RpcControllerBase {
         );
         for (Membership member : members) {
             try {
+                if(member.getAccount().getId().toString().equals(message.getSender().getId().toString())) continue;
                 messageDeletedEvent.Invoke(getServerSessionManager(), member.getAccount().getId().toString(), eventModel);
             } catch (IOException e) {
                 System.err.println("Failed to send message deleted event to " + member.getAccount().getId() + ": " + e.getMessage());

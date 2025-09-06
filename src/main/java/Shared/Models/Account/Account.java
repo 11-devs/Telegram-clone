@@ -1,11 +1,14 @@
 package Shared.Models.Account;
 
 import Shared.Models.BaseEntity;
-import Shared.Models.Chat.ChatType;
 import jakarta.persistence.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 @Entity
 @Table(name = "accounts")
+@SQLDelete(sql = "UPDATE accounts SET is_deleted = true WHERE id = ? and version = ?")
+@Where(clause = "is_deleted = false")
 public class Account extends BaseEntity {
 
     // The Fix: Provide a default value for existing rows

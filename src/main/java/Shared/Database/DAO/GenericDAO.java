@@ -1,5 +1,6 @@
 package Shared.Database.DAO;
 
+import Shared.Models.BaseEntity;
 import Shared.Utils.Console;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
@@ -113,14 +114,21 @@ public class GenericDAO<T> {
     }
 
     public void delete(T obj) {
-        // todo : implemet soft delete
-        executeTransaction(em -> {
-            T entityToRemove = obj;
-            if (!em.contains(entityToRemove)) {
-                entityToRemove = em.merge(entityToRemove);
-            }
-            em.remove(entityToRemove);
-        });
+        if (obj instanceof BaseEntity entity) {
+            executeTransaction(em -> {
+                entity.setIsDeleted(true);
+                em.merge(entity);
+            });
+        } else {
+            // Fallback to hard delete for any non-BaseEntity types
+            executeTransaction(em -> {
+                T entityToRemove = obj;
+                if (!em.contains(entityToRemove)) {
+                    entityToRemove = em.merge(entityToRemove);
+                }
+                em.remove(entityToRemove);
+            });
+        }
     }
 
     public void deleteById(Object id) {
