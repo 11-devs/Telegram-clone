@@ -1490,6 +1490,7 @@ public class MainChatController implements Initializable {
         bubble.setSpacing(4);
         bubble.getStyleClass().addAll("message-bubble", isOutgoing ? "outgoing" : "incoming");
         bubble.setMaxWidth(420);
+        bubble.getProperties().put("originalText", text); // FIX: Store original text for actions
 
         // Add sender name for incoming group messages
         if (!isOutgoing && senderName != null && currentSelectedUser != null &&
@@ -1774,6 +1775,21 @@ public class MainChatController implements Initializable {
         }
     }
 
+    private String stripFormattingForPreview(String text) {
+        if (text == null || text.isEmpty()) {
+            return text;
+        }
+        String result = text;
+        // 1. Spoilers: ||content|| -> ██████
+        result = result.replaceAll("\\|\\|.*?\\|\\|", "██████");
+        // 2. Bold: **content** -> content
+        result = result.replaceAll("\\*\\*(.*?)\\*\\*", "$1");
+        // 3. Italic: __content__ -> content
+        result = result.replaceAll("__(.*?)__", "$1");
+        // 4. Underline: ++content++ -> content
+        result = result.replaceAll("\\+\\+(.*?)\\+\\+", "$1");
+        return result;
+    }
     /**
      * Displays a reply preview for the selected message bubble.
      *
@@ -1782,16 +1798,16 @@ public class MainChatController implements Initializable {
     private void showReplyPreview(VBox messageBubble) {
         if (replyPreviewContainer == null) return;
 
-        // Extract message info
-        Label messageText = (Label) messageBubble.getChildren().get(
-                messageBubble.getChildren().size() == 3 ? 1 : 0 // Account for sender name
-        );
+        // FIX: Extract original message text from properties to avoid ClassCastException
+        String originalMessageText = (String) messageBubble.getProperties().getOrDefault("originalText", "");
+        String previewText = stripFormattingForPreview(originalMessageText);
 
         replyToLabel.setText(currentSelectedUser != null ? currentSelectedUser.getUserName() : "User");
-        replyMessageLabel.setText(messageText.getText().length() > 50 ?
-                messageText.getText().substring(0, 47) + "..." : messageText.getText());
+        replyMessageLabel.setText(previewText.length() > 50 ?
+                previewText.substring(0, 47) + "..." : previewText);
 
         replyPreviewContainer.setVisible(true);
+        replyPreviewContainer.setManaged(true);
 
         // Animate reply preview
         replyPreviewContainer.setTranslateY(-30);
@@ -3349,15 +3365,13 @@ public class MainChatController implements Initializable {
         UUID messageId = (UUID) messageBubble.getProperties().get("messageId");
         if (messageId == null) return;
 
-        Label messageTextLabel = (Label) messageBubble.getChildren().stream()
-                .filter(node -> node instanceof Label && node.getStyleClass().contains("message-text"))
-                .findFirst().orElse(null);
-
-        if (messageTextLabel == null) return;
+        // FIX: Retrieve original text directly from properties
+        String originalText = (String) messageBubble.getProperties().get("originalText");
+        if (originalText == null) return;
 
         // Set the state for editing
         this.editingMessageBubble = messageBubble;
-        this.originalEditText = messageTextLabel.getText();
+        this.originalEditText = originalText;
 
         // Show the edit preview bar and populate the input field
         showEditPreview();
@@ -3422,14 +3436,13 @@ public class MainChatController implements Initializable {
      * Copies the text of a message to the clipboard.
      */
     private void copyMessageText(VBox messageBubble) {
-        Label messageTextLabel = (Label) messageBubble.getChildren().stream()
-                .filter(node -> node instanceof Label && node.getStyleClass().contains("message-text"))
-                .findFirst().orElse(null);
+        // FIX: Retrieve original text directly from properties
+        String originalText = (String) messageBubble.getProperties().get("originalText");
 
-        if (messageTextLabel != null) {
+        if (originalText != null && !originalText.isEmpty()) {
             final javafx.scene.input.Clipboard clipboard = javafx.scene.input.Clipboard.getSystemClipboard();
             final javafx.scene.input.ClipboardContent content = new javafx.scene.input.ClipboardContent();
-            content.putString(messageTextLabel.getText());
+            content.putString(originalText);
             clipboard.setContent(content);
             showTemporaryNotification("Text copied to clipboard.");
         }
