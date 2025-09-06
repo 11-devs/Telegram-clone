@@ -397,6 +397,10 @@ public class MainChatController implements Initializable {
      */
     private double rightInitialX;
 
+    @FXML private StackPane messageInputWrapper;
+    @FXML private VBox messageInputContainer;
+    @FXML private Button channelMuteToggleButton;
+
     // Sidebar Menu
     /**
      * Controller for the sidebar menu.
@@ -415,55 +419,6 @@ public class MainChatController implements Initializable {
     //private UserIdentity currentUser;
     private final Gson gson = new Gson();
 
-    /**
-     * DTO class to mirror the server's GetMessageOutputModel for clean JSON parsing.
-     */
-    private static class DocumentInfo {
-        private String fileId;
-        private String fileName;
-        private long fileSize;
-        private String fileExtension;
-        private String storedPath;
-        private String senderName;
-
-        /**
-         * Constructor for local file uploads.
-         */
-        public DocumentInfo(String fileName, long fileSize, String fileExtension, String storedPath) {
-            this.fileName = fileName;
-            this.fileSize = fileSize;
-            this.fileExtension = fileExtension;
-            this.storedPath = storedPath;
-        }
-
-        /**
-         * Constructor for downloaded files, created from server metadata.
-         */
-        public DocumentInfo(TransferInfo transferInfo) {
-            this.fileId = transferInfo.getFileId();
-            this.fileName = transferInfo.getFileName() + "." + transferInfo.getFileExtension();
-            this.fileSize = transferInfo.getFileSize();
-            this.fileExtension = transferInfo.getFileExtension();
-            // The final path is resolved by the download service upon completion.
-            // We can predict it for the 'open' action.
-            this.storedPath = new File(transferInfo.getDestinationPath(), this.fileName).getPath();
-        }
-
-        //<editor-fold desc="Getters and Setters">
-        public String getFileId() { return fileId; }
-        public void setFileId(String fileId) { this.fileId = fileId; }
-        public String getFileName() { return fileName; }
-        public void setFileName(String fileName) { this.fileName = fileName; }
-        public long getFileSize() { return fileSize; }
-        public void setFileSize(long fileSize) { this.fileSize = fileSize; }
-        public String getFileExtension() { return fileExtension; }
-        public void setFileExtension(String fileExtension) { this.fileExtension = fileExtension; }
-        public String getStoredPath() { return storedPath; }
-        public void setStoredPath(String storedPath) { this.storedPath = storedPath; }
-        public String getSenderName() { return senderName; }
-        public void setSenderName(String senderName) { this.senderName = senderName; }
-        //</editor-fold>
-    }
 
 
     @Override
@@ -482,6 +437,7 @@ public class MainChatController implements Initializable {
         setupChatList();
         setupMessageInput();
         setupMessageInputFormatting();
+        channelMuteToggleButton.prefWidthProperty().bind(messageInputContainer.widthProperty());
         setupEventHandlers();
         setupAnimations();
         // TODO: Implement keyboard shortcut setup for enhanced navigation.
@@ -915,7 +871,7 @@ public class MainChatController implements Initializable {
         MenuItem spoilerItem = new MenuItem("Spoiler");
         spoilerItem.setOnAction(e -> applyFormatting(SPOILER_MARKER_PREFIX, SPOILER_MARKER_SUFFIX));
 
-        formattingMenu.getItems().addAll(boldItem, italicItem, underlineItem, new SeparatorMenuItem(), spoilerItem);
+        formattingMenu.getItems().addAll(boldItem, italicItem, underlineItem, spoilerItem);
 
         // Show context menu only when text is selected
         formattingMenu.setOnShowing(e -> {
@@ -1330,7 +1286,7 @@ public class MainChatController implements Initializable {
 
                 if (createMediaResponse.getStatusCode() != StatusCode.OK) {
                     System.err.println("Failed to create media entry on server: " + createMediaResponse.getMessage());
-                    Platform.runLater(() -> showTemporaryNotification("Error preparing upload."));
+                    Platform.runLater(() -> showTemporaryNotification("Error preparing upload.\n"));
                     return; // Abort upload
                 }
 
@@ -1358,12 +1314,12 @@ public class MainChatController implements Initializable {
                             ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageTimestamp", LocalDateTime.parse(sendMessageTask.getValue().getPayload().getTimestamp()));
 
                         } else {
-                            Platform.runLater(() -> showTemporaryNotification("Failed to send file message."));
+                            Platform.runLater(() -> showTemporaryNotification("Failed to send file message.\n"));
                         }
                     });
                     sendMessageTask.setOnFailed(failEvent -> {
                         sendMessageTask.getException().printStackTrace();
-                        Platform.runLater(() -> showTemporaryNotification("Error sending file message."));
+                        Platform.runLater(() -> showTemporaryNotification("Error sending file message.\n"));
                     });
                     new Thread(sendMessageTask).start();
                 });
@@ -1371,7 +1327,7 @@ public class MainChatController implements Initializable {
                 uploadTask.setOnFailed(failEvent -> {
                     app.unregisterTask(fileId);
                     uploadTask.getException().printStackTrace();
-                    Platform.runLater(() -> showTemporaryNotification("File upload failed."));
+                    Platform.runLater(() -> showTemporaryNotification("File upload failed.\n"));
                 });
 
                 backgroundExecutor.submit(uploadTask);
@@ -1379,7 +1335,7 @@ public class MainChatController implements Initializable {
             } catch (Exception ex) {
                 System.err.println("Error initiating file upload or creating media entry: " + ex.getMessage());
                 ex.printStackTrace();
-                Platform.runLater(() -> showTemporaryNotification("Error starting upload."));
+                Platform.runLater(() -> showTemporaryNotification("Error starting upload.\n"));
             }
         });
         }
@@ -1686,14 +1642,14 @@ public class MainChatController implements Initializable {
                     chatListView.scrollTo(userToSelect);
                 });
             } else {
-                Platform.runLater(() -> showTemporaryNotification("User @" + username + " not found."));
+                Platform.runLater(() -> showTemporaryNotification("User @" + username + " not found.\n"));
                 System.err.println("Failed to find user by username: " + response.getMessage());
             }
         });
 
         findChatTask.setOnFailed(event -> {
             findChatTask.getException().printStackTrace();
-            Platform.runLater(() -> showTemporaryNotification("Error finding user."));
+            Platform.runLater(() -> showTemporaryNotification("Error finding user.\n"));
         });
 
         new Thread(findChatTask).start();
@@ -2146,7 +2102,7 @@ public class MainChatController implements Initializable {
         } catch (IOException e) {
             System.err.println("Failed to open video player: " + e.getMessage());
             e.printStackTrace();
-            showTemporaryNotification("Error opening video player.");
+            showTemporaryNotification("Error opening video player.\n");
         }
     }
     private void openDocument(DocumentInfo docInfo) {
@@ -2198,7 +2154,7 @@ public class MainChatController implements Initializable {
                 File sourceFile = new File(docInfo.getStoredPath());
                 Files.copy(sourceFile.toPath(), saveLocation.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
-                showTemporaryNotification("Document saved to " + saveLocation.getName());
+                showTemporaryNotification("Document saved to " + saveLocation.getName() + "\n");
 
             } catch (Exception e) {
                 System.err.println("Error saving document: " + e.getMessage());
@@ -2384,11 +2340,11 @@ public class MainChatController implements Initializable {
                     });
                 } else {
                     System.err.println("Failed to send message: " + response.getMessage());
-                    Platform.runLater(() -> showTemporaryNotification("Failed to send message."));
+                    Platform.runLater(() -> showTemporaryNotification("Failed to send message.\n"));
                     System.err.println("Failed to send message: " + response.getMessage());
                     Platform.runLater(() -> {
                         updateMessageStatus(messageNode, "failed", null);
-                        showTemporaryNotification("Failed to send message.");});
+                        showTemporaryNotification("Failed to send message.\n");});
                 }
             });
 
@@ -2396,7 +2352,7 @@ public class MainChatController implements Initializable {
                 sendMessageTask.getException().printStackTrace();
                 Platform.runLater(() -> {
                     updateMessageStatus(messageNode, "failed", null);
-                    showTemporaryNotification("Error sending message.");
+                    showTemporaryNotification("Error sending message.\n");
                 });
             });
 
@@ -2626,28 +2582,49 @@ public class MainChatController implements Initializable {
     }
 
     /**
-     * Enables chat controls, but with restrictions for non-admins in channels.
+     * Enables or disables all chat-related controls based on whether a chat is selected
+     * and what the user's permissions are within that chat.
      */
     private void enableChatControls() {
-        boolean canSendMessage = currentSelectedUser == null || currentSelectedUser.getType() != UserType.CHANNEL || isCurrentUserAdmin();
+        boolean canSendMessage = currentSelectedUser != null && (currentSelectedUser.getType() != UserType.CHANNEL || isCurrentUserAdmin());
+
+        messageInputContainer.setVisible(canSendMessage);
+        messageInputContainer.setManaged(canSendMessage);
+
+        channelMuteToggleButton.setVisible(!canSendMessage);
+        channelMuteToggleButton.setManaged(!canSendMessage);
 
         messageInputField.setDisable(!canSendMessage);
         sendButton.setDisable(!canSendMessage);
         attachmentButton.setDisable(!canSendMessage);
 
-        callButton.setDisable(false);
-        videoCallButton.setDisable(false);
-        searchInChatButton.setDisable(false);
-        moreOptionsButton.setDisable(false);
+        if (!canSendMessage && currentSelectedUser != null) {
+            updateChannelMuteButtonText();
+        }
+
+        callButton.setDisable(currentSelectedUser == null);
+        videoCallButton.setDisable(currentSelectedUser == null);
+        searchInChatButton.setDisable(currentSelectedUser == null);
+        moreOptionsButton.setDisable(currentSelectedUser == null);
     }
 
     /**
-     * Disables chat controls when no chat is selected.
+     * Disables all chat controls when no chat is selected (welcome state).
+     * This method is now simpler and delegates most logic to enableChatControls.
      */
     private void disableChatControls() {
-        messageInputField.setDisable(true);
-        sendButton.setDisable(true);
-        attachmentButton.setDisable(true);
+        boolean canSendMessage = false;
+
+        messageInputContainer.setVisible(canSendMessage);
+        messageInputContainer.setManaged(canSendMessage);
+
+        channelMuteToggleButton.setVisible(!canSendMessage);
+        channelMuteToggleButton.setManaged(!canSendMessage);
+
+        messageInputField.setDisable(!canSendMessage);
+        sendButton.setDisable(!canSendMessage);
+        attachmentButton.setDisable(!canSendMessage);
+
         callButton.setDisable(true);
         videoCallButton.setDisable(true);
         searchInChatButton.setDisable(true);
@@ -3237,21 +3214,19 @@ public class MainChatController implements Initializable {
      * Toggles the mute state for the current user and updates all related UI components.
      * This is the single source of truth for changing the mute status.
      */
+    @FXML
     private void toggleMuteState() {
         if (currentSelectedUser == null) return;
 
         boolean newMuteState = !currentSelectedUser.isMuted();
-
         currentSelectedUser.setMuted(newMuteState);
-
         notificationsToggle.setSelected(!newMuteState);
-
         notificationStatusLabel.setText(newMuteState ? "Disabled" : "Enabled");
-
         mutedIcon.setVisible(newMuteState);
-
         String message = (newMuteState ? "Muted" : "Unmuted") + " " + currentSelectedUser.getUserName();
-        showTemporaryNotification(message);
+        showTemporaryNotification(message + "\n");
+
+        updateChannelMuteButtonText();
 
         refreshChatList();
     }
@@ -3304,7 +3279,7 @@ public class MainChatController implements Initializable {
         currentSelectedUser.setPinned(newPinState);
 
         String message = (newPinState ? "Pinned" : "Unpinned") + " " + currentSelectedUser.getUserName();
-        showTemporaryNotification(message);
+        showTemporaryNotification(message + "n");
 
         refreshChatList();
     }
@@ -3322,7 +3297,7 @@ public class MainChatController implements Initializable {
         currentSelectedUser.setLastMessage("");
         refreshChatList();
 
-        showTemporaryNotification("Chat history cleared");
+        showTemporaryNotification("Chat history cleared\n");
     }
 
     /**
@@ -3336,7 +3311,7 @@ public class MainChatController implements Initializable {
         filteredChatUsers.remove(currentSelectedUser);
 
         goBackToWelcomeState();
-        showTemporaryNotification("Blocked " + userName);
+        showTemporaryNotification("Blocked " + userName + "\n");
     }
 
     /**
@@ -3347,7 +3322,7 @@ public class MainChatController implements Initializable {
         // TODO: Implement voice recording functionality (UI: Show recording UI, Server: Handle audio upload).
         // Visual feedback
         sendButton.getStyleClass().add("recording");
-        showTemporaryNotification("Voice recording started");
+        showTemporaryNotification("Voice recording started\n");
     }
 
     /**
@@ -3447,7 +3422,6 @@ public class MainChatController implements Initializable {
         }
 
         newMenu.getItems().add(forwardItem);
-        newMenu.getItems().add(new SeparatorMenuItem());
 
         if (isDocument) {
             newMenu.getItems().add(downloadItem);
@@ -3522,12 +3496,12 @@ public class MainChatController implements Initializable {
         editTask.setOnSucceeded(event -> {
             RpcResponse<Object> response = editTask.getValue();
             if (response.getStatusCode() != StatusCode.OK) {
-                Platform.runLater(() -> showTemporaryNotification("Failed to edit message: " + response.getMessage()));
+                Platform.runLater(() -> showTemporaryNotification("Failed to edit message: " + response.getMessage() + "\n"));
             }
         });
         editTask.setOnFailed(event -> {
             editTask.getException().printStackTrace();
-            Platform.runLater(() -> showTemporaryNotification("Error editing message."));
+            Platform.runLater(() -> showTemporaryNotification("Error editing message.\n"));
         });
         new Thread(editTask).start();
     }
@@ -3547,6 +3521,19 @@ public class MainChatController implements Initializable {
     }
 
     /**
+     * Updates the text and icon of the mute button shown in restricted channels.
+     */
+    private void updateChannelMuteButtonText() {
+        if (currentSelectedUser == null) return;
+
+        if (currentSelectedUser.isMuted()) {
+            channelMuteToggleButton.setText("UNMUTE");
+        } else {
+            channelMuteToggleButton.setText("MUTE");
+        }
+    }
+
+    /**
      * Deletes a message by sending a request to the server.
      * The UI will be updated by the MessageDeletedEvent.
      */
@@ -3556,12 +3543,12 @@ public class MainChatController implements Initializable {
         deleteTask.setOnSucceeded(event -> {
             RpcResponse<Object> response = deleteTask.getValue();
             if (response.getStatusCode() != StatusCode.OK) {
-                Platform.runLater(() -> showTemporaryNotification("Failed to delete message: " + response.getMessage()));
+                Platform.runLater(() -> showTemporaryNotification("Failed to delete message: " + response.getMessage() + "\n"));
             }
         });
         deleteTask.setOnFailed(event -> {
             deleteTask.getException().printStackTrace();
-            Platform.runLater(() -> showTemporaryNotification("Error deleting message."));
+            Platform.runLater(() -> showTemporaryNotification("Error deleting message.\n"));
         });
         new Thread(deleteTask).start();
     }
@@ -3578,7 +3565,7 @@ public class MainChatController implements Initializable {
             String cleanText = TextUtil.stripFormattingForCopying(rawText);
             content.putString(cleanText);
             clipboard.setContent(content);
-            showTemporaryNotification("Text copied to clipboard.");
+            showTemporaryNotification("Text copied to clipboard.\n");
         }
     }
 

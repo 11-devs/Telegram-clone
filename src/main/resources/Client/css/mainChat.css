@@ -530,6 +530,27 @@
     -fx-background-color: transparent;
 }
 
+/* ============ CHANNEL MUTE BUTTON STYLE ============ */
+.channel-mute-button {
+    -fx-min-height: 55px;
+    -fx-max-height: 55px;
+    -fx-background-color: #17212B;
+    -fx-border-color: transparent;
+    -fx-text-fill: #6AB3F3;
+    -fx-font-size: 16px;
+    -fx-font-weight: 600;
+    -fx-cursor: hand;
+    -fx-graphic-text-gap: 10px;
+}
+
+.channel-mute-button:hover {
+    -fx-background-color: #1C2835;
+}
+
+.channel-mute-button:pressed {
+    -fx-background-color: #222F3E;
+}
+
 /* ============ RIGHT PANEL STYLING ============ */
 .right-panel {
     -fx-background-color: #17212B;
@@ -679,7 +700,6 @@
     -fx-text-fill: #FFFFFF;
 }
 
-
 .message-bubble.outgoing.last-in-group {
     -fx-background-radius: 18px 18px 4px 18px;
     -fx-border-radius: 18px 18px 4px 18px;
@@ -781,7 +801,6 @@
     -fx-font-weight: 600;
     -fx-font-size: 14px;
     -fx-text-fill: #ffffff;
-    -fx-line-spacing: 1.3em;
     -fx-wrap-text: true;
     -fx-max-width: 200px;
 }
@@ -796,17 +815,8 @@
 
 .document-details {
     -fx-font-size: 12px;
-    -fx-text-fill: #bdc3c7;
+    -fx-text-fill: #90A8BD;
     -fx-font-weight: 400;
-    -fx-opacity: 0.8;
-}
-
-.document-details.outgoing {
-    -fx-text-fill: #b8e6b8;
-}
-
-.document-details.incoming {
-    -fx-text-fill: #bdc3c7;
 }
 
 /* Action buttons */
@@ -901,23 +911,10 @@
 }
 
 /* Time and status styles for document bubbles */
-.document-bubble .message-time {
-    -fx-font-size: 11px;
-    -fx-text-fill: #bdc3c7;
-    -fx-opacity: 0.8;
-}
-
-.document-bubble.outgoing .message-time {
-    -fx-text-fill: #b8e6b8;
-}
-
-.document-bubble .message-status {
-    -fx-font-size: 11px;
-    -fx-margin-left: 4px;
-}
-
+.document-bubble .message-time,
 .document-bubble .message-status.sent {
-    -fx-text-fill: #bdc3c7;
+    -fx-font-size: 11px;
+    -fx-text-fill: #90A8BD;
 }
 
 .document-bubble .message-status.delivered {

@@ -1,6 +1,10 @@
 package Shared.Models;
+import JSocket2.Protocol.Transfer.TransferInfo;
+import java.io.File;
 
 public class DocumentInfo {
+    private String fileId;
+
     private String fileName;
     private long fileSize;
     private String fileExtension;
@@ -17,7 +21,19 @@ public class DocumentInfo {
         this.isUploaded = false;
     }
 
+    public DocumentInfo(TransferInfo transferInfo) {
+        this.fileId = transferInfo.getFileId();
+        this.fileName = transferInfo.getFileName() + "." + transferInfo.getFileExtension();
+        this.fileSize = transferInfo.getFileSize();
+        this.fileExtension = transferInfo.getFileExtension();
+        this.storedPath = new File(transferInfo.getDestinationPath(), this.fileName).getPath();
+        this.isUploaded = true;
+    }
+
     // Getters and setters
+    public String getFileId() { return fileId; }
+    public void setFileId(String fileId) { this.fileId = fileId; }
+
     public String getFileName() { return fileName; }
     public void setFileName(String fileName) { this.fileName = fileName; }
 

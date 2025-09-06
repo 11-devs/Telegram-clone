@@ -277,72 +277,78 @@
             </StackPane>
 
             <!-- Message Input Area -->
-            <VBox alignment="BOTTOM_CENTER" minHeight="59.0" prefHeight="59.0" prefWidth="569.0" styleClass="message-input-container">
-                <!-- Reply/Forward Preview -->
-                <HBox fx:id="replyPreviewContainer" alignment="CENTER_LEFT" managed="false" spacing="12.0" styleClass="reply-preview" visible="false">
-                    <padding>
-                        <Insets bottom="8.0" left="20.0" right="13.0" top="8.0" />
-                    </padding>
-                    <children>
-                        <VBox styleClass="reply-bar" />
-                        <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+            <StackPane fx:id="messageInputWrapper" alignment="CENTER" styleClass="message-input-container-wrapper">
+                <children>
+                    <VBox fx:id="messageInputContainer" alignment="BOTTOM_CENTER" minHeight="59.0" prefHeight="59.0" prefWidth="569.0" styleClass="message-input-container">
+                        <!-- Reply/Forward Preview -->
+                        <HBox fx:id="replyPreviewContainer" alignment="CENTER_LEFT" managed="false" spacing="12.0" styleClass="reply-preview" visible="false">
+                            <padding>
+                                <Insets bottom="8.0" left="20.0" right="13.0" top="8.0" />
+                            </padding>
                             <children>
-                                <Label fx:id="replyToLabel" styleClass="reply-to-label" text="Reply to User" />
-                                <Label fx:id="replyMessageLabel" prefHeight="18.0" prefWidth="483.0" styleClass="reply-message-label" text="Original message text..." />
+                                <VBox styleClass="reply-bar" />
+                                <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label fx:id="replyToLabel" styleClass="reply-to-label" text="Reply to User" />
+                                        <Label fx:id="replyMessageLabel" prefHeight="18.0" prefWidth="483.0" styleClass="reply-message-label" text="Original message text..." />
+                                    </children>
+                                </VBox>
+                                <Button fx:id="closeReplyButton" onAction="#closeReplyPreview" styleClass="close-reply-button">
+                                    <graphic>
+                                        <SVGPath content="M18 18L12 12M12 12L6 6M12 12L18 6M12 12L6 18" fill="#666666" stroke="#666666" strokeLineCap="ROUND" strokeLineJoin="ROUND" strokeWidth="2">
+                                            <StackPane.margin>
+                                                <Insets right="2" top="2" />
+                                            </StackPane.margin>
+                                        </SVGPath>
+                                    </graphic>
+                                </Button>
                             </children>
-                        </VBox>
-                        <Button fx:id="closeReplyButton" onAction="#closeReplyPreview" styleClass="close-reply-button">
-                            <graphic>
-                                <SVGPath content="M18 18L12 12M12 12L6 6M12 12L18 6M12 12L6 18" fill="#666666" stroke="#666666" strokeLineCap="ROUND" strokeLineJoin="ROUND" strokeWidth="2">
-                                    <StackPane.margin>
-                                        <Insets right="2" top="2" />
-                                    </StackPane.margin>
-                                </SVGPath>
-                            </graphic>
-                        </Button>
-                    </children>
-                </HBox>
+                        </HBox>
 
-                <!-- Main Input Row -->
-                <HBox alignment="CENTER" prefHeight="58.0" prefWidth="569.0" spacing="8.0" styleClass="message-input-area">
-                    <padding>
-                        <Insets bottom="9.0" left="4.0" right="4.0" top="9.0" />
-                    </padding>
-                    <children>
-                        <!-- Attachment Menu Button -->
-                        <Button fx:id="attachmentButton" alignment="CENTER" minHeight="23.0" prefHeight="23.0" prefWidth="27.0" styleClass="attachment-button, icon-button">
-                            <graphic>
-                                <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
-                                    <image>
-                                        <Image url="@../images/attachment-icon.png" />
-                                    </image>
-                                </ImageView>
-                            </graphic>
-                        </Button>
-
-                        <!-- Message Input Field Container -->
-                        <VBox prefWidth="433.0" styleClass="input-field-container" HBox.hgrow="ALWAYS">
+                        <!-- Main Input Row -->
+                        <HBox fx:id="messageInputArea" alignment="CENTER" prefHeight="58.0" prefWidth="569.0" spacing="8.0" styleClass="message-input-area">
+                            <padding>
+                                <Insets bottom="9.0" left="4.0" right="4.0" top="9.0" />
+                            </padding>
                             <children>
-                                <TextArea fx:id="messageInputField" prefRowCount="1" prefWidth="433.0" promptText="Write a message..." styleClass="message-input-field" wrapText="true">
-                                    <padding>
-                                        <Insets top="3.0" />
-                                    </padding></TextArea>
-                            </children>
-                        </VBox>
+                                <!-- Attachment Menu Button -->
+                                <Button fx:id="attachmentButton" alignment="CENTER" minHeight="23.0" prefHeight="23.0" prefWidth="27.0" styleClass="attachment-button, icon-button">
+                                    <graphic>
+                                        <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
+                                            <image>
+                                                <Image url="@../images/attachment-icon.png" />
+                                            </image>
+                                        </ImageView>
+                                    </graphic>
+                                </Button>
 
-                        <!-- Voice/Send Button -->
-                        <Button fx:id="sendButton" styleClass="send-button">
-                            <graphic>
-                                <ImageView fx:id="sendButtonIcon" fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
-                                    <image>
-                                        <Image url="@../images/microphone-icon.png" />
-                                    </image>
-                                </ImageView>
-                            </graphic>
-                        </Button>
-                    </children>
-                </HBox>
-            </VBox>
+                                <!-- Message Input Field Container -->
+                                <VBox prefWidth="433.0" styleClass="input-field-container" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <TextArea fx:id="messageInputField" prefRowCount="1" prefWidth="433.0" promptText="Write a message..." styleClass="message-input-field" wrapText="true">
+                                            <padding>
+                                                <Insets top="3.0" />
+                                            </padding>
+                                        </TextArea>
+                                    </children>
+                                </VBox>
+
+                                <!-- Voice/Send Button -->
+                                <Button fx:id="sendButton" styleClass="send-button">
+                                    <graphic>
+                                        <ImageView fx:id="sendButtonIcon" fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
+                                            <image>
+                                                <Image url="@../images/microphone-icon.png" />
+                                            </image>
+                                        </ImageView>
+                                    </graphic>
+                                </Button>
+                            </children>
+                        </HBox>
+                    </VBox>
+                    <Button fx:id="channelMuteToggleButton" onAction="#toggleMuteState" managed="false" maxWidth="Infinity" styleClass="channel-mute-button" text="Mute" visible="false"/>
+                </children>
+            </StackPane>
         </VBox>
     </center>
 
