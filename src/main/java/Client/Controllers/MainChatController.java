@@ -51,6 +51,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.shape.Circle;
@@ -61,11 +62,16 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.util.Duration;
+import com.jfoenix.controls.JFXToggleButton;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
+import javafx.geometry.Point2D;
 
 import java.awt.*;
 import java.io.IOException;
 import java.util.*;
 import java.io.File;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -112,6 +118,10 @@ public class MainChatController implements Initializable {
      * The left sidebar containing the chat list and controls.
      */
     @FXML private VBox leftSidebar;
+    /**
+     * The SplitPane that holds the left, center, and right panels.
+     */
+    private SplitPane splitPane;
     /**
      * Button to toggle the sidebar menu.
      */
@@ -237,10 +247,6 @@ public class MainChatController implements Initializable {
      */
     @FXML private TextArea messageInputField;
     /**
-     * Button to open the emoji picker.
-     */
-    @FXML private Button emojiButton;
-    /**
      * Button to send messages or start voice recording.
      */
     @FXML private Button sendButton;
@@ -293,10 +299,21 @@ public class MainChatController implements Initializable {
     /**
      * Button to toggle notifications in the right panel.
      */
-    @FXML private Button notificationsToggle;
+    @FXML private JFXToggleButton notificationsToggle;
+    /**
+     * Handle about HBox click
+     */
+    @FXML private HBox MoreHBox;
+    /**
+     * Handle right panel
+     */
+    @FXML private Button closeRightPanelButton;
 
     // ============ DATA AND STATE ============
-
+    /**
+     * Default users name.
+     */
+    private String ownUsername = "Me";
     /**
      * ObservableList of all chat users.
      */
@@ -317,6 +334,18 @@ public class MainChatController implements Initializable {
      * The message being replied to, if any.
      */
     private MessageViewModel replyToMessage;
+    /**
+     * activeMessageContextMenu.
+     */
+    private ContextMenu activeMessageContextMenu;
+    /**
+     * isEditing boolean.
+     */
+    private boolean isEditing = false;
+    /**
+     * editingMessageBubble VBox.
+     */
+    private VBox editingMessageBubble = null;
 
     // Animation timelines
     /**
@@ -331,6 +360,10 @@ public class MainChatController implements Initializable {
      * Timeline for connection status animation.
      */
     private Timeline connectionStatusTimeline;
+    /**
+     * ParallelTransition for reply animation.
+     */
+    private ParallelTransition replyPreviewAnimation;
 
     // State flags
     /**
@@ -372,7 +405,6 @@ public class MainChatController implements Initializable {
     private Timer typingTimer;
     private TimerTask typingStopTask;
     private boolean isCurrentlyTyping = false;
-    private VBox editingMessageBubble;
     private String originalEditText;
     /**
      * Initializes the controller after the FXML file is loaded.
@@ -766,34 +798,24 @@ public class MainChatController implements Initializable {
     // ============ INITIALIZATION METHODS ============
 
     /**
-     * Initializes the sidebar layout by converting the BorderPane to a SplitPane
-     * for draggable panel resizing. Sets minimum and maximum widths and divider positions.
+     * Initializes the sidebar layout by creating a SplitPane and setting it as the center of the BorderPane.
+     * The right panel is initially removed to be shown on demand.
      */
     private void initializeSidebarsSplitPane() {
-        SplitPane splitPane = new SplitPane();
-        splitPane.getItems().addAll(leftSidebar, mainChatContainer.getCenter(), rightPanel);
+        splitPane = new SplitPane();
+        VBox chatArea = (VBox) mainChatContainer.getCenter();
+        splitPane.getItems().addAll(leftSidebar, chatArea);
         mainChatContainer.setCenter(splitPane);
 
         // Setting minimum and maximum widths for panels
-        SplitPane.setResizableWithParent(leftSidebar, Boolean.TRUE);
-        SplitPane.setResizableWithParent(rightPanel, Boolean.TRUE);
+        SplitPane.setResizableWithParent(leftSidebar, Boolean.FALSE); // Prevent resizing of the parent
+        SplitPane.setResizableWithParent(rightPanel, Boolean.FALSE); // Prevent resizing of the parent
         leftSidebar.setMinWidth(300.0);
         leftSidebar.setMaxWidth(420.0);
         rightPanel.setMinWidth(300.0);
         rightPanel.setMaxWidth(420.0);
 
-        // Ensuring panels don't take up the entire screen
-        splitPane.setDividerPositions(0.25, 0.75); // 25% left, 50% center, 25% right
-        splitPane.getDividers().get(0).positionProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal.doubleValue() < 0.2 || newVal.doubleValue() > 0.4) {
-                splitPane.setDividerPosition(0, oldVal.doubleValue()); // Expansion limit
-            }
-        });
-        splitPane.getDividers().get(1).positionProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal.doubleValue() < 0.6 || newVal.doubleValue() > 0.8) {
-                splitPane.setDividerPosition(1, oldVal.doubleValue()); // Expansion limit
-            }
-        });
+        // We will set divider positions dynamically when showing/hiding panels
     }
 
     /**
@@ -1003,7 +1025,6 @@ public class MainChatController implements Initializable {
 
         // Message input buttons
         attachmentButton.setOnAction(e -> attachDocument());
-        emojiButton.setOnAction(e -> showEmojiPicker());
         sendButton.setOnAction(e -> handleSendAction());
 
         // Scroll and navigation
@@ -1017,6 +1038,7 @@ public class MainChatController implements Initializable {
         profileVideoButton.setOnAction(e -> startVideoCall());
         profileSearchButton.setOnAction(e -> showSearchInChat());
         notificationsToggle.setOnAction(e -> toggleNotifications());
+        MoreHBox.setOnMouseClicked(e -> handleAbout());
 
         // Scroll listener for messages
         messagesScrollPane.vvalueProperty().addListener((obs, oldVal, newVal) -> {
@@ -1080,14 +1102,21 @@ public class MainChatController implements Initializable {
         // Set initial theme
         // updateThemeClasses(); TODO UI
 
+        // hide reply preview
+        replyPreviewContainer.setVisible(false);
+        replyPreviewContainer.setManaged(false);
+
         // Update connection status
         updateConnectionStatus(true); // TODO: Connect to the server for real status.
 
         // Show welcome state
         showWelcomeState();
 
-        // Initialize right panel state
-        hideRightPanel();
+        rightPanel.setVisible(false);
+        rightPanel.setManaged(false);
+
+        // Set the initial position of the first divider after the scene is shown
+        Platform.runLater(() -> splitPane.setDividerPosition(0, 0.25));
     }
 
     /**
@@ -1294,94 +1323,6 @@ public class MainChatController implements Initializable {
         new Thread(getMessagesTask).start();
     }
 
-    private void sendMessage() {
-        String text = messageInputField.getText().trim();
-        if (text.isEmpty() || currentSelectedUser == null) return;
-
-        String currentTime = getCurrentTime();
-
-        // Optimistically add message to UI
-        HBox messageNode = addMessageBubble(text, true, currentTime, "sending", null,false);
-        scrollToBottom();
-
-        currentSelectedUser.setLastMessage(text);
-        currentSelectedUser.setTime(currentTime);
-        refreshChatList();
-
-        messageInputField.clear();
-        updateSendButtonState();
-
-        // Send message to the server in a background task
-        SendMessageInputModel input = new SendMessageInputModel();
-        input.setChatId(UUID.fromString(currentSelectedUser.getUserId())); // This is the chat ID
-        input.setTextContent(text);
-        input.setMessageType(MessageType.TEXT);
-
-        Task<RpcResponse<SendMessageOutputModel>> sendMessageTask = chatService.sendMessage(input);
-
-        sendMessageTask.setOnSucceeded(event -> {
-            RpcResponse<SendMessageOutputModel> response = sendMessageTask.getValue();
-            if (response.getStatusCode() == StatusCode.OK) {
-                System.out.println("Message sent successfully. ID: " + response.getPayload().getMessageId());
-                Platform.runLater(() -> updateLastMessageStatus("sent"));
-                LocalDateTime serverTimestamp = LocalDateTime.parse(response.getPayload().getTimestamp());
-                String formattedTime = serverTimestamp.format(DateTimeFormatter.ofPattern("HH:mm"));
-                Platform.runLater(() -> {
-                updateMessageStatus(messageNode, "sent", formattedTime);
-                // Store the actual messageId and timestamp from server for later event updates
-                ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageId", response.getPayload().getMessageId());
-                ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageTimestamp", serverTimestamp);
-                currentSelectedUser.setLastMessage(text);
-                currentSelectedUser.setTime(formattedTime);
-                reorderAndRefreshChatList(currentSelectedUser);
-            });
-            } else {
-                System.err.println("Failed to send message: " + response.getMessage());
-                Platform.runLater(() -> showTemporaryNotification("Failed to send message."));
-                System.err.println("Failed to send message: " + response.getMessage());
-                Platform.runLater(() -> {
-                updateMessageStatus(messageNode, "failed", null);
-                showTemporaryNotification("Failed to send message.");});
-            }
-        });
-
-        sendMessageTask.setOnFailed(event -> {
-            sendMessageTask.getException().printStackTrace();
-            Platform.runLater(() -> {
-                updateMessageStatus(messageNode, "failed", null);
-                showTemporaryNotification("Error sending message.");
-                });
-        });
-
-        new Thread(sendMessageTask).start();
-        Platform.runLater(() -> messageInputField.requestFocus());
-    }
-
-    private void processDocumentAttachment(File file) {
-        try {
-            DocumentInfo docInfo = new DocumentInfo(
-                    file.getName(),
-                    file.length(),
-                    getFileExtension(file),
-                    file.getAbsolutePath()
-            );
-
-            // TODO: A more robust path management is needed
-            String documentsDir = "Client/documents/";
-            ensureDataDirectoryExists(documentsDir);
-            Path targetPath = Paths.get(documentsDir + System.currentTimeMillis() + "_" + file.getName());
-            Files.copy(file.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-            docInfo.setStoredPath(targetPath.toString());
-
-            // Upload the file and then send the message
-            uploadFileAndSendMessage(file, docInfo);
-
-        } catch (Exception e) {
-            System.err.println("Error processing document: " + e.getMessage());
-            showTemporaryNotification("Upload Error\nFailed to process the selected document.");
-        }
-    }
-
     private void uploadFileAndSendMessage(File file, DocumentInfo docInfo) {
         IProgressListener listener = (transferred, total) -> {
             double progress = (total > 0) ? ((double) transferred / total) * 100 : 0;
@@ -1479,12 +1420,11 @@ public class MainChatController implements Initializable {
 
         if (isOutgoing) {
             messageContainer.setAlignment(Pos.CENTER_RIGHT);
-            messageContainer.getStyleClass().add("outgoing");
             VBox bubble = createMessageBubble(text, time, status, true, null, isEdited);
             messageContainer.getChildren().add(bubble);
         } else {
             messageContainer.setAlignment(Pos.CENTER_LEFT);
-            messageContainer.getStyleClass().add("incoming");
+
             // Add sender avatar for group chats
             if (currentSelectedUser != null &&
                     (currentSelectedUser.getType() == UserType.GROUP || currentSelectedUser.getType() == UserType.SUPERGROUP)) {
@@ -1500,6 +1440,7 @@ public class MainChatController implements Initializable {
 
         // Animate new message if it's being added in real-time
         TelegramCellUtils.animateNewMessage(messageContainer);
+
         return messageContainer;
     }
 
@@ -1520,9 +1461,6 @@ public class MainChatController implements Initializable {
         bubble.getStyleClass().addAll("message-bubble", isOutgoing ? "outgoing" : "incoming");
         bubble.setMaxWidth(420);
 
-        // SOLUTION: Store the original raw text. This is crucial for Edit/Copy/Reply functionality.
-        bubble.getProperties().put("raw_text", text);
-
         // Add sender name for incoming group messages
         if (!isOutgoing && senderName != null && currentSelectedUser != null &&
                 (currentSelectedUser.getType() == UserType.GROUP || currentSelectedUser.getType() == UserType.SUPERGROUP)) {
@@ -1531,8 +1469,10 @@ public class MainChatController implements Initializable {
             bubble.getChildren().add(senderLabel);
         }
 
-        // MODIFIED: Use the new createFormattedTextFlow method
-        TextFlow messageTextFlow = createFormattedTextFlow(text, isOutgoing);
+        // Message text
+        Label messageText = new Label(text);
+        messageText.getStyleClass().addAll("message-text", isOutgoing ? "outgoing" : "incoming");
+        messageText.setWrapText(true);
 
         // Time and status container
         HBox timeContainer = new HBox();
@@ -1550,21 +1490,9 @@ public class MainChatController implements Initializable {
             timeContainer.getChildren().add(statusLabel);
         }
 
-        // Add "edited" indicator if the message is edited
-        if (isEdited) {
-            Label editedLabel = new Label("edited");
-            editedLabel.getStyleClass().add("edited-indicator");
-            // Insert before the time label
-            timeContainer.getChildren().add(0, editedLabel);
-        }
+        bubble.getChildren().addAll(messageText, timeContainer);
 
-        bubble.getChildren().addAll(messageTextFlow, timeContainer);
-        bubble.setOnContextMenuRequested(event -> {
-            ContextMenu contextMenu = createMessageContextMenu(bubble);
-            contextMenu.show(bubble, event.getScreenX(), event.getScreenY());
-            event.consume(); // Consume the event to prevent it from bubbling up
-        });
-        // Add click handler for message options AND attach the context menu
+        // Add click handler for message options
         bubble.setOnMouseClicked(this::handleMessageClick);
 
 
@@ -1802,78 +1730,95 @@ public class MainChatController implements Initializable {
     }
 
     /**
-     * Handles mouse clicks on a message bubble (e.g., double-click to reply, right-click for menu).
+     * Handles mouse clicks on a message bubble.
+     * Differentiates between primary (left) and secondary (right) clicks.
+     * - Double-click with the primary button triggers a reply.
+     * - A single click with the secondary button shows the context menu.
      *
      * @param event The MouseEvent triggering the action.
      */
     private void handleMessageClick(MouseEvent event) {
-        if (event.getClickCount() == 2) {
-            // Double-click to reply
+        // (Secondary Button)
+        if (event.getButton() == MouseButton.SECONDARY) {
+            showMessageContextMenu(event);
+            event.consume();
+            return;
+        }
+
+        if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
             VBox bubble = (VBox) event.getSource();
             showReplyPreview(bubble);
+            event.consume();
         }
     }
 
     /**
-     * Displays a reply preview for the selected message bubble.
+     * Displays a reply preview. It resets any prior editing state and configures
+     * the preview panel for a reply action.
      *
      * @param messageBubble The VBox representing the message to reply to.
      */
     private void showReplyPreview(VBox messageBubble) {
-        if (replyPreviewContainer == null) return;
+        if (replyPreviewContainer == null || messageBubble == null) return;
 
-        String previewText;
-        if (messageBubble.getProperties().containsKey("raw_text")) {
-            previewText = (String) messageBubble.getProperties().get("raw_text");
-        } else {
-            Node fileNameNode = messageBubble.lookup(".document-name");
-            if (fileNameNode instanceof Label) {
-                previewText = "File: " + ((Label) fileNameNode).getText();
-            } else {
-                return;
-            }
+        // 1. Reset data state WITHOUT hiding the panel
+        resetReplyEditState();
+
+        // Stop any ongoing animation
+        if (replyPreviewAnimation != null) {
+            replyPreviewAnimation.stop();
         }
 
-        // Try to find a specific sender name (for group chats).
-        Label senderLabel = (Label) messageBubble.getChildren().stream()
-                .filter(node -> node instanceof Label && node.getStyleClass().contains("sender-name"))
+        // 2. Determine the sender's name
+        boolean isOwnMessage = messageBubble.getStyleClass().contains("outgoing");
+        String replyToName = isOwnMessage ? this.ownUsername : (currentSelectedUser != null ? currentSelectedUser.getUserName() : "User");
+
+        // 3. Extract message text
+        Label messageTextLabel = (Label) messageBubble.getChildren().stream()
+                .filter(node -> node instanceof Label && node.getStyleClass().contains("message-text"))
                 .findFirst().orElse(null);
 
-        String replyToName = (senderLabel != null)
-                ? senderLabel.getText()
-                : (currentSelectedUser != null ? currentSelectedUser.getUserName() : "User");
+        if (messageTextLabel == null) return;
+        String originalMessageText = messageTextLabel.getText();
 
+        // 4. Update UI labels
         replyToLabel.setText("Reply to " + replyToName);
-        String strippedPreview = TextUtil.stripFormattingForPreview(previewText);
-        replyMessageLabel.setText(strippedPreview.length() > 50 ?
-                strippedPreview.substring(0, 47) + "..." : strippedPreview);
+        replyMessageLabel.setText(originalMessageText.length() > 100 ?
+                originalMessageText.substring(0, 97) + "..." : originalMessageText);
+        messageInputField.clear(); // Clear input field for the new reply
 
-        replyPreviewContainer.setVisible(true);
+        // 5. If the panel was hidden, show it now with animation
+        if (!replyPreviewContainer.isVisible()) {
+            replyPreviewContainer.setVisible(true);
+            replyPreviewContainer.setManaged(true);
 
-        // Animate reply preview
-        replyPreviewContainer.setTranslateY(-30);
-        replyPreviewContainer.setOpacity(0);
+            replyPreviewContainer.setTranslateY(-30);
+            replyPreviewContainer.setOpacity(0);
 
-        TranslateTransition slideDown = new TranslateTransition(Duration.millis(200), replyPreviewContainer);
-        slideDown.setToY(0);
+            TranslateTransition slideDown = new TranslateTransition(Duration.millis(200), replyPreviewContainer);
+            slideDown.setToY(0);
 
-        FadeTransition fadeIn = new FadeTransition(Duration.millis(200), replyPreviewContainer);
-        fadeIn.setToValue(1.0);
+            FadeTransition fadeIn = new FadeTransition(Duration.millis(200), replyPreviewContainer);
+            fadeIn.setToValue(1.0);
 
-        ParallelTransition showReply = new ParallelTransition(slideDown, fadeIn);
-        showReply.play();
+            replyPreviewAnimation = new ParallelTransition(slideDown, fadeIn);
+            replyPreviewAnimation.play();
+        }
 
-        // Focus message input
         messageInputField.requestFocus();
     }
 
     /**
      * Closes the reply preview with an animation.
-     * Triggered by the closeReplyButton action.
+     * Stops any previous animation before starting the new one.
      */
     @FXML
     private void closeReplyPreview() {
         if (replyPreviewContainer == null || !replyPreviewContainer.isVisible()) return;
+
+        if (replyPreviewAnimation != null) {
+            replyPreviewAnimation.stop();
+        }
 
         TranslateTransition slideUp = new TranslateTransition(Duration.millis(150), replyPreviewContainer);
         slideUp.setToY(-30);
@@ -1881,18 +1826,30 @@ public class MainChatController implements Initializable {
         FadeTransition fadeOut = new FadeTransition(Duration.millis(150), replyPreviewContainer);
         fadeOut.setToValue(0);
 
-        ParallelTransition hideReply = new ParallelTransition(slideUp, fadeOut);
-        hideReply.setOnFinished(e -> {
+        replyPreviewAnimation = new ParallelTransition(slideUp, fadeOut);
+        replyPreviewAnimation.setOnFinished(e -> {
+            // Hide the panel
             replyPreviewContainer.setVisible(false);
             replyPreviewContainer.setManaged(false);
-            replyToMessage = null;
-        });
-        replyToMessage = null;
-        editingMessageBubble = null;
-        originalEditText = null;
 
-        messageInputField.clear();
-        hideReply.play();
+            // Reset the state data AND clear the input field
+            resetReplyEditState();
+            messageInputField.clear();
+        });
+        replyPreviewAnimation.play();
+    }
+
+    /**
+     * Resets only the data and state flags for reply/edit.
+     * Does NOT hide the UI container, allowing for smooth transitions between states.
+     */
+    private void resetReplyEditState() {
+        isEditing = false;
+        editingMessageBubble = null;
+        replyToMessage = null;
+
+        replyToLabel.setText("");
+        replyMessageLabel.setText("");
     }
 
     // ============ DOCUMENT MESSAGE BUBBLE IMPLEMENTATION ============
@@ -1938,6 +1895,49 @@ public class MainChatController implements Initializable {
         }
     }
 
+    /**
+     * Processes the selected document and adds it to the chat
+     */
+    private void processDocumentAttachment(File file) {
+        try {
+            // Create document info object
+            DocumentInfo docInfo = new DocumentInfo(
+                    file.getName(),
+                    file.length(),
+                    getFileExtension(file),
+                    file.getAbsolutePath()
+            );
+
+            //TODO: connect to the data base
+            // Copy file to app's document directory for persistence
+            String documentsDir = "/Client/documents"; // TODO: it has bug
+            ensureDataDirectoryExists(documentsDir);
+
+            String newFileName = System.currentTimeMillis() + "_" + file.getName();
+            Path targetPath = Path.of(documentsDir + newFileName);
+
+            // Copy file
+            Files.copy(file.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+            docInfo.setStoredPath(targetPath.toString());
+
+            // Add document message bubble
+            addDocumentMessageBubble(docInfo, true, getCurrentTime(), "sent");
+
+            // Update chat list
+            if (currentSelectedUser != null) {
+                currentSelectedUser.setLastMessage("📄 " + file.getName());
+                currentSelectedUser.setTime(getCurrentTime());
+                refreshChatList();
+            }
+
+            // Simulate upload progress and delivery
+            simulateDocumentUpload(docInfo);
+
+        } catch (Exception e) {
+            System.err.println("Error processing document: " + e.getMessage());
+            showTemporaryNotification("Upload Error\nFailed to process the selected document.\n");
+        }
+    }
 
     /**
      * Creates a document message bubble with file info and controls
@@ -1950,12 +1950,10 @@ public class MainChatController implements Initializable {
 
         if (isOutgoing) {
             messageContainer.setAlignment(Pos.CENTER_RIGHT);
-            messageContainer.getStyleClass().add("outgoing");
             VBox bubble = createDocumentBubble(docInfo, time, status, true);
             messageContainer.getChildren().add(bubble);
         } else {
             messageContainer.setAlignment(Pos.CENTER_LEFT);
-            messageContainer.getStyleClass().add("incoming");
 
             // Add sender avatar for group chats
             if (currentSelectedUser != null &&
@@ -1973,6 +1971,7 @@ public class MainChatController implements Initializable {
         TelegramCellUtils.animateNewMessage(messageContainer);
 
         Platform.runLater(this::scrollToBottom);
+
         return messageContainer;
     }
 
@@ -1983,7 +1982,7 @@ public class MainChatController implements Initializable {
         VBox bubble = new VBox();
         bubble.setSpacing(8);
         bubble.getStyleClass().addAll("message-bubble", "document-bubble", isOutgoing ? "outgoing" : "incoming");
-        bubble.setMaxWidth(350);
+        bubble.setMaxWidth(250);
         bubble.setPadding(new Insets(12));
 
         // Document content container
@@ -2015,7 +2014,7 @@ public class MainChatController implements Initializable {
         Label fileName = new Label(docInfo.getFileName());
         fileName.getStyleClass().addAll("document-name", isOutgoing ? "outgoing" : "incoming");
         fileName.setWrapText(true);
-        fileName.setMaxWidth(200);
+        fileName.setMaxWidth(100);
 
         // File size and type
         Label fileDetails = new Label(formatFileSize(docInfo.getFileSize()) + " • " +
@@ -2032,7 +2031,7 @@ public class MainChatController implements Initializable {
         // Open button
         Button openButton = new Button("Open");
         openButton.getStyleClass().addAll("document-action-button", isOutgoing ? "outgoing" : "incoming");
-        openButton.setPrefWidth(100);
+        openButton.setPrefWidth(120);
         openButton.setOnAction(e -> openDocument(docInfo));
 
         // Download/Save button (for received files)
@@ -2069,13 +2068,11 @@ public class MainChatController implements Initializable {
         }
 
         bubble.getChildren().addAll(docContainer, timeContainer);
-        bubble.setOnContextMenuRequested(event -> {
-            ContextMenu contextMenu = createMessageContextMenu(bubble);
-            contextMenu.show(bubble, event.getScreenX(), event.getScreenY());
-            event.consume();
-        });
+
         // Add click handler for message options
         bubble.setOnMouseClicked(this::handleMessageClick);
+
+        bubble.setUserData(docInfo);
 
         return bubble;
     }
@@ -2155,84 +2152,36 @@ public class MainChatController implements Initializable {
         }
     }
     private void openDocument(DocumentInfo docInfo) {
-        if (docInfo.getStoredPath() != null) {
-            if (isVideoFile(docInfo.getFileExtension())) {
-                File localVideoFile = (docInfo.getStoredPath() != null) ? new File(docInfo.getStoredPath()) : null;
-
-                if (localVideoFile != null && localVideoFile.exists()) {
-                    openVideoPlayer(localVideoFile);
-                    return;
-                }
-
-                if (docInfo.getFileId() != null && !docInfo.getFileId().isEmpty()) {
-                    showTemporaryNotification("Opening " + docInfo.getFileName() + "...");
-                    fileDownloadService.getFile(docInfo.getFileId()).thenAcceptAsync(downloadedFile -> {
-                        Platform.runLater(() -> {
-                            if (downloadedFile != null && downloadedFile.exists()) {
-                                openVideoPlayer(downloadedFile);
-                            } else {
-                                showTemporaryNotification("Download Error\nVideo not found after download.");
-                            }
-                        });
-                    }).exceptionally(ex -> {
-                        Platform.runLater(() -> {
-                            showTemporaryNotification("Download Failed\nCould not retrieve the video.");
-                            ex.printStackTrace();
-                        });
-                        return null;
-                    });
-                } else {
-                    showTemporaryNotification("File Not Found\nCannot locate or download the video.");
-                }
+        try {
+            File file = new File(docInfo.getStoredPath());
+            if (!file.exists()) {
+                showTemporaryNotification("File Not Found\nThe document file could not be found.\n");
                 return;
             }
-            File localFile = new File(docInfo.getStoredPath());
-            if (localFile.exists()) {
-                try {
-                    if (Desktop.isDesktopSupported()) {
-                        Desktop.getDesktop().open(localFile);
-                        System.out.println("Opening existing local document: " + docInfo.getFileName());
-                        return;
-                    }
-                } catch (IOException e) {
-                    System.err.println("Could not open local file, will try to download. Error: " + e.getMessage());
-                }
+
+            // Check if Desktop is supported
+            if (!Desktop.isDesktopSupported()) {
+                showTemporaryNotification("Not Supported\nOpening files is not supported on this system.\n");
+                return;
             }
+
+            Desktop desktop = Desktop.getDesktop();
+
+            // Check if the open action is supported
+            if (!desktop.isSupported(Desktop.Action.OPEN)) {
+                showTemporaryNotification("Not Supported\nOpening files is not supported on this system.\n");
+                return;
+            }
+
+            // Open the file with the system's default application
+            desktop.open(file);
+
+            System.out.println("Opening document: " + docInfo.getFileName());
+
+        } catch (Exception e) {
+            System.err.println("Error opening document: " + e.getMessage());
+            showTemporaryNotification("Open Error\nFailed to open the document: " + e.getMessage() + "\n");
         }
-
-        // If no local path or it fails, use the fileId to download/get from cache.
-        if (docInfo.getFileId() == null || docInfo.getFileId().isEmpty()) {
-            showTemporaryNotification("File Not Found\nCannot locate or download the file.");
-            return;
-        }
-
-        showTemporaryNotification("Opening " + docInfo.getFileName() + "...");
-
-        fileDownloadService.getFile(docInfo.getFileId()).thenAcceptAsync(file -> {
-            Platform.runLater(() -> {
-                try {
-                    if (file != null && file.exists()) {
-                        if (Desktop.isDesktopSupported()) {
-                            Desktop.getDesktop().open(file);
-                        } else {
-                            showTemporaryNotification("Not Supported\nOpening files is not supported on this system.");
-                        }
-                    } else {
-                        showTemporaryNotification("Download Error\nFile not found after download.");
-                    }
-                } catch (IOException e) {
-                    System.err.println("Error opening downloaded document: " + e.getMessage());
-                    showTemporaryNotification("Open Error\nCould not open the downloaded file.");
-                }
-            });
-        }).exceptionally(ex -> {
-            Platform.runLater(() -> {
-                System.err.println("Failed to download or open file: " + ex.getMessage());
-                ex.printStackTrace();
-                showTemporaryNotification("Download Failed\nCould not retrieve the file.");
-            });
-            return null;
-        });
     }
 
     /**
@@ -2247,37 +2196,16 @@ public class MainChatController implements Initializable {
         File saveLocation = fileChooser.showSaveDialog(currentStage);
 
         if (saveLocation != null) {
-            CompletableFuture<File> sourceFileFuture;
-            // Case 1: File was uploaded by this client and path is known and valid.
-            if (docInfo.getStoredPath() != null && new File(docInfo.getStoredPath()).exists()) {
-                sourceFileFuture = CompletableFuture.completedFuture(new File(docInfo.getStoredPath()));
-            }
-            // Case 2: File needs to be fetched from server/cache via its ID.
-            else if (docInfo.getFileId() != null) {
-                showTemporaryNotification("Downloading file to save...");
-                sourceFileFuture = fileDownloadService.getFile(docInfo.getFileId());
-            }
-            // Case 3: No way to locate the file.
-            else {
-                showTemporaryNotification("Save Error\nCould not locate the source file.");
-                return;
-            }
+            try {
+                File sourceFile = new File(docInfo.getStoredPath());
+                Files.copy(sourceFile.toPath(), saveLocation.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
-            sourceFileFuture.thenAcceptAsync(sourceFile -> {
-                try {
-                    Files.copy(sourceFile.toPath(), saveLocation.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                    Platform.runLater(() -> showTemporaryNotification("Document saved to " + saveLocation.getName()));
-                } catch (IOException e) {
-                    System.err.println("Error saving document: " + e.getMessage());
-                    Platform.runLater(() -> showTemporaryNotification("Save Error\nFailed to copy the file."));
-                }
-            }).exceptionally(ex -> {
-                Platform.runLater(() -> {
-                    System.err.println("Error getting source file for saving: " + ex.getMessage());
-                    showTemporaryNotification("Save Error\nCould not retrieve the file for saving.");
-                });
-                return null;
-            });
+                showTemporaryNotification("Document saved to " + saveLocation.getName());
+
+            } catch (Exception e) {
+                System.err.println("Error saving document: " + e.getMessage());
+                showTemporaryNotification("Save Error\nFailed to save the document: " + e.getMessage() + "\n");
+            }
         }
     }
 
@@ -2310,33 +2238,31 @@ public class MainChatController implements Initializable {
 
     /**
      * Performs a search on the chat list based on the input text.
-     *
-     * @param searchText The text to search for.
-     */
-    /**
-     * Performs a search on the chat list based on the input text.
-     * If the search text is empty, it displays all chats sorted by recent activity.
+     * If the search text is empty, it resets the list to show all chats.
      *
      * @param searchText The text to search for.
      */
     private void performSearch(String searchText) {
         if (searchText == null || searchText.trim().isEmpty()) {
-            // If search is empty, show all chats from the master sorted list.
             filteredChatUsers.setAll(allChatUsers);
+            chatListView.scrollTo(0);
             return;
         }
 
-        List<UserViewModel> searchResults = new ArrayList<>();
-        String lowerCaseSearch = searchText.toLowerCase();
+        ObservableList<UserViewModel> searchResults = FXCollections.observableArrayList();
+        String lowerCaseSearch = searchText.toLowerCase().trim();
 
         for (UserViewModel user : allChatUsers) {
-            if (user.getUserName().toLowerCase().contains(lowerCaseSearch) ||
-                    (user.getLastMessage() != null && user.getLastMessage().toLowerCase().contains(lowerCaseSearch))) {
+            boolean nameMatches = user.getUserName().toLowerCase().contains(lowerCaseSearch);
+            boolean messageMatches = user.getLastMessage() != null && user.getLastMessage().toLowerCase().contains(lowerCaseSearch);
+
+            if (nameMatches || messageMatches) {
                 searchResults.add(user);
             }
         }
 
         filteredChatUsers.setAll(searchResults);
+        chatListView.scrollTo(0);
     }
 
     // ============ MESSAGE INPUT HANDLING ============
@@ -2383,12 +2309,15 @@ public class MainChatController implements Initializable {
             } else {
                 // Send message with Enter
                 event.consume();
-                handleSendAction();
+                sendMessage();
             }
         } else if (event.getCode() == KeyCode.ESCAPE) {
             if (replyPreviewContainer.isVisible()) {
                 closeReplyPreview();
             }
+        } else if (event.getCode() == KeyCode.UP && event.isControlDown()) {
+            // Ctrl+Up to edit last message
+            editLastMessage();
         }
     }
 
@@ -2413,6 +2342,81 @@ public class MainChatController implements Initializable {
             // Handle voice message recording
             startVoiceRecording();
         }
+    }
+
+    /**
+     * Sends the current message and updates the UI.
+     */
+    private void sendMessage() {
+        String text = messageInputField.getText().trim();
+        if (text.isEmpty() || currentSelectedUser == null) return;
+
+        if (isEditing && editingMessageBubble != null) {
+            updateMessage(editingMessageBubble, text);
+            closeReplyPreview();
+        } else {
+            String messageText = text;
+            if (replyPreviewContainer.isVisible()) {
+                messageText = "↪ " + replyMessageLabel.getText() + "\n\n" + text;
+                closeReplyPreview();
+            }
+
+            HBox messageNode = addMessageBubble(messageText, true, getCurrentTime(), "sent", null, false);
+            // Send message to the server in a background task
+            SendMessageInputModel input = new SendMessageInputModel();
+            input.setChatId(UUID.fromString(currentSelectedUser.getUserId())); // This is the chat ID
+            input.setTextContent(text);
+            input.setMessageType(MessageType.TEXT);
+            Task<RpcResponse<SendMessageOutputModel>> sendMessageTask = chatService.sendMessage(input);
+            sendMessageTask.setOnSucceeded(event -> {
+                RpcResponse<SendMessageOutputModel> response = sendMessageTask.getValue();
+                if (response.getStatusCode() == StatusCode.OK) {
+                    System.out.println("Message sent successfully. ID: " + response.getPayload().getMessageId());
+                    Platform.runLater(() -> updateLastMessageStatus("sent"));
+                    LocalDateTime serverTimestamp = LocalDateTime.parse(response.getPayload().getTimestamp());
+                    String formattedTime = serverTimestamp.format(DateTimeFormatter.ofPattern("HH:mm"));
+                    Platform.runLater(() -> {
+                        updateMessageStatus(messageNode, "sent", formattedTime);
+                        // Store the actual messageId and timestamp from server for later event updates
+                        ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageId", response.getPayload().getMessageId());
+                        ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageTimestamp", serverTimestamp);
+                        currentSelectedUser.setLastMessage(text);
+                        currentSelectedUser.setTime(formattedTime);
+                        reorderAndRefreshChatList(currentSelectedUser);
+                    });
+                } else {
+                    System.err.println("Failed to send message: " + response.getMessage());
+                    Platform.runLater(() -> showTemporaryNotification("Failed to send message."));
+                    System.err.println("Failed to send message: " + response.getMessage());
+                    Platform.runLater(() -> {
+                        updateMessageStatus(messageNode, "failed", null);
+                        showTemporaryNotification("Failed to send message.");});
+                }
+            });
+
+            sendMessageTask.setOnFailed(event -> {
+                sendMessageTask.getException().printStackTrace();
+                Platform.runLater(() -> {
+                    updateMessageStatus(messageNode, "failed", null);
+                    showTemporaryNotification("Error sending message.");
+                });
+            });
+
+            new Thread(sendMessageTask).start();
+            // Update chat list for new message
+            currentSelectedUser.setLastMessage(text);
+            currentSelectedUser.setTime(getCurrentTime());
+            refreshChatList();
+
+            simulateMessageDelivery();
+        }
+
+        messageInputField.clear();
+        updateSendButtonState();
+
+
+
+        Platform.runLater(() -> messageInputField.requestFocus());
     }
 
     /**
@@ -2451,6 +2455,47 @@ public class MainChatController implements Initializable {
             statusLabel.getStyleClass().removeAll("sent", "delivered", "read");
             statusLabel.getStyleClass().add(status);
         }
+    }
+
+    /**
+     * Updates the content of an existing message bubble after editing.
+     *
+     * @param bubble   The VBox of the message to update.
+     * @param newText  The new text for the message.
+     */
+    private void updateMessage(VBox bubble, String newText) {
+        Label messageTextLabel = (Label) bubble.getChildren().stream()
+                .filter(node -> node instanceof Label && node.getStyleClass().contains("message-text"))
+                .findFirst().orElse(null);
+
+        HBox timeContainer = (HBox) bubble.getChildren().stream()
+                .filter(node -> node instanceof HBox)
+                .findFirst().orElse(null);
+
+        if (messageTextLabel == null || timeContainer == null) return;
+
+        messageTextLabel.setText(newText);
+
+        Label editedLabel = (Label) timeContainer.getChildren().stream()
+                .filter(node -> node instanceof Label && "edited-label".equals(node.getId()))
+                .findFirst().orElse(null);
+
+        if (editedLabel == null) {
+            editedLabel = new Label("edited");
+            editedLabel.setId("edited-label");
+            editedLabel.getStyleClass().add("message-time");
+            timeContainer.getChildren().add(timeContainer.getChildren().size() - 2, editedLabel);
+        }
+
+        Label timeLabel = (Label) timeContainer.getChildren().stream()
+                .filter(node -> node.getStyleClass().contains("message-time") && !"edited-label".equals(node.getId()))
+                .findFirst().orElse(null);
+
+        if (timeLabel != null) {
+            timeLabel.setText(getCurrentTime());
+        }
+
+        // TODO: Server
     }
 
     /**
@@ -2579,37 +2624,7 @@ public class MainChatController implements Initializable {
         messagesScrollPane.setVisible(false);
         welcomeStateContainer.setVisible(false);
     }
-    private void showEditPreview() {
-        if (replyPreviewContainer == null || editingMessageBubble == null) return;
 
-        // Configure the preview bar for "Edit" mode
-        replyToLabel.setText("Edit Message");
-        replyMessageLabel.setText(originalEditText.length() > 50 ?
-                originalEditText.substring(0, 47) + "..." : originalEditText);
-
-        // Populate the input field
-        messageInputField.setText(originalEditText);
-        messageInputField.positionCaret(originalEditText.length());
-
-        replyPreviewContainer.setVisible(true);
-        replyPreviewContainer.setManaged(true);
-
-        // Animate reply preview
-        replyPreviewContainer.setTranslateY(-30);
-        replyPreviewContainer.setOpacity(0);
-
-        TranslateTransition slideDown = new TranslateTransition(Duration.millis(200), replyPreviewContainer);
-        slideDown.setToY(0);
-
-        FadeTransition fadeIn = new FadeTransition(Duration.millis(200), replyPreviewContainer);
-        fadeIn.setToValue(1.0);
-
-        ParallelTransition showEdit = new ParallelTransition(slideDown, fadeIn);
-        showEdit.play();
-
-        // Focus message input
-        messageInputField.requestFocus();
-    }
     /**
      * Enables chat controls when a chat is selected.
      */
@@ -2617,10 +2632,10 @@ public class MainChatController implements Initializable {
         messageInputField.setDisable(false);
         sendButton.setDisable(false);
         attachmentButton.setDisable(false);
-        emojiButton.setDisable(false);
         callButton.setDisable(false);
         videoCallButton.setDisable(false);
         searchInChatButton.setDisable(false);
+        moreOptionsButton.setDisable(false);
     }
 
     /**
@@ -2630,10 +2645,10 @@ public class MainChatController implements Initializable {
         messageInputField.setDisable(true);
         sendButton.setDisable(true);
         attachmentButton.setDisable(true);
-        emojiButton.setDisable(true);
         callButton.setDisable(true);
         videoCallButton.setDisable(true);
         searchInChatButton.setDisable(true);
+        moreOptionsButton.setDisable(true);
     }
 
     // ============ RIGHT PANEL MANAGEMENT ============
@@ -2652,37 +2667,77 @@ public class MainChatController implements Initializable {
     }
 
     /**
-     * Shows the right panel with an animation.
+     * Shows the right panel by adding it to the SplitPane and animating the divider positions
+     * to maintain the main chat area as the largest component.
      */
     private void showRightPanel() {
-        if (rightPanel == null || currentSelectedUser == null) return;
+        if (rightPanel == null || currentSelectedUser == null || splitPane.getItems().contains(rightPanel)) {
+            return;
+        }
 
         updateRightPanel(currentSelectedUser);
-
         rightPanel.setManaged(true);
-        rightPanel.setTranslateX(350);
+        rightPanel.setVisible(true);
 
-        TranslateTransition slideIn = new TranslateTransition(Duration.millis(250), rightPanel);
-        slideIn.setToX(0);
-        slideIn.setInterpolator(Interpolator.EASE_OUT);
-        slideIn.setOnFinished(e -> isRightPanelVisible = true);
-        slideIn.play();
+        // Get the current position of the first divider
+        double firstDividerPosition = splitPane.getDividers().get(0).getPosition();
+
+        // Add the right panel to the SplitPane
+        splitPane.getItems().add(rightPanel);
+
+        // === CRITICAL FIX: Set initial divider positions BEFORE animating ===
+        // Set the starting positions for the animation to prevent the "jump".
+        // The second divider starts at the far right.
+        splitPane.setDividerPositions(firstDividerPosition, 1.0);
+
+        // Define the target positions for the dividers
+        double targetLeftPanelPercentage = 0.25;
+        double targetRightPanelPercentage = 0.25;
+        double targetSecondDividerPosition = 1.0 - targetRightPanelPercentage;
+
+        // Animate the dividers to their new target positions
+        Timeline timeline = new Timeline(
+                new KeyFrame(Duration.millis(1),
+                        new KeyValue(splitPane.getDividers().get(0).positionProperty(), targetLeftPanelPercentage, Interpolator.EASE_OUT),
+                        new KeyValue(splitPane.getDividers().get(1).positionProperty(), targetSecondDividerPosition, Interpolator.EASE_OUT)
+                )
+        );
+
+        timeline.setOnFinished(e -> {
+            isRightPanelVisible = true;
+        });
+        timeline.play();
     }
 
-    /**
-     * Hides the right panel with an animation.
-     */
-    private void hideRightPanel() {
-        if (rightPanel == null) return;
 
-        TranslateTransition slideOut = new TranslateTransition(Duration.millis(250), rightPanel);
-        slideOut.setToX(350);
-        slideOut.setInterpolator(Interpolator.EASE_IN);
-        slideOut.setOnFinished(e -> {
-            rightPanel.setManaged(false);
+    /**
+     * Hides the right panel by animating the second divider to the edge
+     * and then removing the panel from the SplitPane, allowing the chat area to expand.
+     */
+    @FXML
+    private void hideRightPanel() {
+        if (rightPanel == null || !splitPane.getItems().contains(rightPanel)) {
+            return;
+        }
+
+        // Animate only the second divider sliding out
+        final SplitPane.Divider secondDivider = splitPane.getDividers().get(1);
+        Timeline timeline = new Timeline(
+                new KeyFrame(Duration.millis(1),
+                        new KeyValue(secondDivider.positionProperty(), 1.0, Interpolator.EASE_IN)
+                )
+        );
+
+        // After the animation finishes, remove the panel
+        timeline.setOnFinished(e -> {
+            splitPane.getItems().remove(rightPanel);
+            // The first divider's position will be automatically preserved
             isRightPanelVisible = false;
+            rightPanel.setManaged(false);
+            rightPanel.setVisible(false);
         });
-        slideOut.play();
+
+        timeline.play();
     }
 
     /**
@@ -2981,9 +3036,7 @@ public class MainChatController implements Initializable {
      */
     private void startVoiceCall() {
         if (currentSelectedUser == null) return;
-
-        System.out.println("Starting voice call with: " + currentSelectedUser.getUserName());
-        showCallDialog("Voice Call", currentSelectedUser.getUserName());
+        showTemporaryNotification("This feature will be implemented in the future.\n");
     }
 
     /**
@@ -2991,92 +3044,69 @@ public class MainChatController implements Initializable {
      */
     private void startVideoCall() {
         if (currentSelectedUser == null) return;
-
-        System.out.println("Starting video call with: " + currentSelectedUser.getUserName());
-        showCallDialog("Video Call", currentSelectedUser.getUserName());
+        showTemporaryNotification("This feature will be implemented in the future.\n");
     }
 
     /**
-     * Shows a dialog for a call with the specified type and user.
-     *
-     * @param callType The type of call (e.g., "Voice Call", "Video Call").
-     * @param userName The name of the user being called.
-     */
-    private void showCallDialog(String callType, String userName) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(callType);
-        alert.setHeaderText("Calling " + userName);
-        alert.setContentText("This would initiate a " + callType.toLowerCase() + " with " + userName);
-
-        ButtonType endCallButton = new ButtonType("End Call", ButtonBar.ButtonData.CANCEL_CLOSE);
-        alert.getButtonTypes().setAll(endCallButton);
-
-        alert.showAndWait();
-    }
-
-    /**
-     * Shows a context menu with options for the current chat.
+     * Shows a context menu with options for the current chat, complete with icons.
+     * The menu is positioned correctly relative to the 'moreOptionsButton'.
      */
     private void showMoreOptions() {
-        ContextMenu menu = new ContextMenu();
+        if (activeMessageContextMenu != null && activeMessageContextMenu.isShowing()) {
+            activeMessageContextMenu.hide();
+        }
 
-        MenuItem viewProfileItem = new MenuItem("View Profile");
+        ContextMenu menu = new ContextMenu();
+        menu.setAutoHide(true);
+
+        MenuItem viewProfileItem = createIconMenuItem("View Profile", "/Client/images/context-menu/profile.png");
         viewProfileItem.setOnAction(e -> toggleRightPanel());
 
-        MenuItem searchItem = new MenuItem("Search Messages");
+        MenuItem searchItem = createIconMenuItem("Search Messages", "/Client/images/context-menu/search.png");
         searchItem.setOnAction(e -> showSearchInChat());
 
-        MenuItem muteItem = new MenuItem(currentSelectedUser != null && currentSelectedUser.isMuted() ? "Unmute" : "Mute");
+        String muteText = (currentSelectedUser != null && currentSelectedUser.isMuted()) ? "Unmute" : "Mute";
+        String muteIcon = (currentSelectedUser != null && currentSelectedUser.isMuted()) ? "/Client/images/context-menu/unmute.png" : "/Client/images/context-menu/mute.png";
+        MenuItem muteItem = createIconMenuItem(muteText, muteIcon);
         muteItem.setOnAction(e -> toggleMute());
 
-        MenuItem pinItem = new MenuItem(currentSelectedUser != null && currentSelectedUser.isPinned() ? "Unpin" : "Pin");
+        String pinText = (currentSelectedUser != null && currentSelectedUser.isPinned()) ? "Unpin" : "Pin";
+        String pinIcon = (currentSelectedUser != null && currentSelectedUser.isPinned()) ? "/Client/images/context-menu/unpin.png" : "/Client/images/context-menu/pin.png";
+        MenuItem pinItem = createIconMenuItem(pinText, pinIcon);
         pinItem.setOnAction(e -> togglePin());
 
-        MenuItem clearHistoryItem = new MenuItem("Clear History");
+        MenuItem clearHistoryItem = createIconMenuItem("Clear History", "/Client/images/context-menu/clear.png");
         clearHistoryItem.setOnAction(e -> clearChatHistory());
 
-        MenuItem blockUserItem = new MenuItem("Block User");
+        MenuItem blockUserItem = createIconMenuItem("Block User", "/Client/images/context-menu/block.png");
         blockUserItem.setOnAction(e -> blockUser());
 
         menu.getItems().addAll(
-                viewProfileItem, searchItem, new SeparatorMenuItem(),
-                muteItem, pinItem, new SeparatorMenuItem(),
-                clearHistoryItem, blockUserItem
+                viewProfileItem,
+                searchItem,
+                muteItem,
+                pinItem,
+                clearHistoryItem,
+                blockUserItem
         );
 
-        menu.show(moreOptionsButton, moreOptionsButton.getLayoutX(), moreOptionsButton.getLayoutY() + moreOptionsButton.getHeight());
-    }
+        Point2D buttonBottomRight = new Point2D(moreOptionsButton.getWidth(), moreOptionsButton.getHeight());
+        Point2D screenBottomRight = moreOptionsButton.localToScreen(buttonBottomRight);
 
-    /**
-     * Shows a simple emoji picker context menu.
-     */
-    private void showEmojiPicker() {
-        // Create simple emoji picker for demonstration
-        ContextMenu emojiMenu = new ContextMenu();
+        menu.show(moreOptionsButton, -10000, -10000);
+        double menuWidth = menu.getWidth();
+        menu.hide();
 
-        String[] emojis = {"😀", "😂", "😍", "😊", "👍", "❤️", "😢", "😮", "😡", "🎉"};
+        double xOffset = 15;
+        double yOffset = -5;
 
-        for (String emoji : emojis) {
-            MenuItem emojiItem = new MenuItem(emoji);
-            emojiItem.setOnAction(e -> insertEmoji(emoji));
-            emojiMenu.getItems().add(emojiItem);
-        }
+        menu.show(
+                moreOptionsButton,
+                (screenBottomRight.getX() - menuWidth) + xOffset,
+                screenBottomRight.getY() + yOffset
+        );
 
-        emojiMenu.show(emojiButton, emojiButton.getLayoutX(), emojiButton.getLayoutY() - 150);
-    }
-
-    /**
-     * Inserts the selected emoji into the message input at the caret position.
-     *
-     * @param emoji The emoji to insert.
-     */
-    private void insertEmoji(String emoji) {
-        String currentText = messageInputField.getText();
-        int caretPosition = messageInputField.getCaretPosition();
-
-        String newText = currentText.substring(0, caretPosition) + emoji + currentText.substring(caretPosition);
-        messageInputField.setText(newText);
-        messageInputField.positionCaret(caretPosition + emoji.length());
+        activeMessageContextMenu = menu;
     }
 
     // ============ UTILITY METHODS ============
@@ -3201,36 +3231,43 @@ public class MainChatController implements Initializable {
 
     /**
      * Toggles the notification mute state for the current user.
+     * This method now listens to the toggle button's action.
      */
     private void toggleNotifications() {
         if (currentSelectedUser == null) return;
 
-        boolean newMuteState = !currentSelectedUser.isMuted();
-        currentSelectedUser.setMuted(newMuteState);
+        boolean isEnabled = notificationsToggle.isSelected();
+        currentSelectedUser.setMuted(!isEnabled);
 
-        updateNotificationToggle(!newMuteState);
-        notificationStatusLabel.setText(newMuteState ? "Disabled" : "Enabled");
+        notificationStatusLabel.setText(isEnabled ? "Enabled" : "Disabled");
+        mutedIcon.setVisible(!isEnabled);
 
-        // Update header
-        mutedIcon.setVisible(newMuteState);
-
-        // Visual feedback
-        String message = (newMuteState ? "Muted" : "Unmuted") + " " + currentSelectedUser.getUserName();
+        String message = (isEnabled ? "Unmuted" : "Muted") + " " + currentSelectedUser.getUserName();
         showTemporaryNotification(message);
     }
 
     /**
-     * Updates the notification toggle button's state.
+     * Handle about HBox click
+     */
+    @FXML
+    private void handleAbout() {
+        System.out.println("About clicked");
+        try {
+            Desktop.getDesktop().browse(new URI("https://github.com/11-devs/Telegram-clone"));
+        } catch (Exception e) {
+            System.out.println("Failed to open link: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Updates the notification toggle button's state based on user data.
+     * This is called when the right panel is shown or the user changes.
      *
-     * @param enabled True to enable, false to disable.
+     * @param enabled True if notifications are enabled, false if disabled (muted).
      */
     private void updateNotificationToggle(boolean enabled) {
         if (notificationsToggle == null) return;
-
-        notificationsToggle.getStyleClass().removeAll("off");
-        if (!enabled) {
-            notificationsToggle.getStyleClass().add("off");
-        }
+        notificationsToggle.setSelected(enabled);
     }
 
     /**
@@ -3261,23 +3298,14 @@ public class MainChatController implements Initializable {
     private void clearChatHistory() {
         if (currentSelectedUser == null) return;
 
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION); // TODO UI
-        alert.setTitle("Clear Chat History");
-        alert.setHeaderText("Clear history with " + currentSelectedUser.getUserName() + "?");
-        alert.setContentText("This will permanently delete all messages in this chat.");
+        messagesContainer.getChildren().clear();
+        showEmptyChatState();
 
-        alert.showAndWait().ifPresent(response -> {
-            if (response == ButtonType.OK) {
-                messagesContainer.getChildren().clear();
-                showEmptyChatState();
+        // Update last message in chat list
+        currentSelectedUser.setLastMessage("");
+        refreshChatList();
 
-                // Update last message in chat list
-                currentSelectedUser.setLastMessage("");
-                refreshChatList();
-
-                showTemporaryNotification("Chat history cleared");
-            }
-        });
+        showTemporaryNotification("Chat history cleared");
     }
 
     /**
@@ -3286,21 +3314,12 @@ public class MainChatController implements Initializable {
     private void blockUser() {
         if (currentSelectedUser == null) return;
 
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION); // TODO UI
-        alert.setTitle("Block User");
-        alert.setHeaderText("Block " + currentSelectedUser.getUserName() + "?");
-        alert.setContentText("You will no longer receive messages from this user.");
+        String userName = currentSelectedUser.getUserName();
+        allChatUsers.remove(currentSelectedUser);
+        filteredChatUsers.remove(currentSelectedUser);
 
-        alert.showAndWait().ifPresent(response -> {
-            if (response == ButtonType.OK) {
-                String userName = currentSelectedUser.getUserName();
-                allChatUsers.remove(currentSelectedUser);
-                filteredChatUsers.remove(currentSelectedUser);
-
-                goBackToWelcomeState();
-                showTemporaryNotification("Blocked " + userName);
-            }
-        });
+        goBackToWelcomeState();
+        showTemporaryNotification("Blocked " + userName);
     }
 
     /**
@@ -3318,19 +3337,22 @@ public class MainChatController implements Initializable {
      * Edits the last outgoing message by loading it into the input field.
      */
     private void editLastMessage() {
-        // Find the last outgoing text message bubble and prompt for edit
+        // Find last outgoing message and allow editing
         for (int i = messagesContainer.getChildren().size() - 1; i >= 0; i--) {
-            Node node = messagesContainer.getChildren().get(i);
-            // Check if it's an HBox for an outgoing message
-            if (node instanceof HBox messageContainer && messageContainer.getStyleClass().contains("outgoing")) {
-                // The bubble is the first child in an outgoing message HBox
-                if (!messageContainer.getChildren().isEmpty() && messageContainer.getChildren().getFirst() instanceof VBox bubble) {
-                    // Check if it's a text message by looking for the "raw_text" property
-                    if (bubble.getProperties().containsKey("raw_text")) {
-                        promptForEdit(bubble);
-                        break; // We found the last editable message, so we're done.
-                    }
-                }
+            HBox messageContainer = (HBox) messagesContainer.getChildren().get(i);
+            if (messageContainer.getAlignment() == Pos.CENTER_RIGHT) {
+                // This is an outgoing message
+                VBox bubble = (VBox) messageContainer.getChildren().getFirst();
+                Label messageText = (Label) bubble.getChildren().getFirst();
+
+                // Put text in input field for editing
+                messageInputField.setText(messageText.getText());
+                messageInputField.selectAll();
+                messageInputField.requestFocus();
+
+                // Remove the message from display
+                messagesContainer.getChildren().remove(i);
+                break;
             }
         }
     }
@@ -3355,43 +3377,87 @@ public class MainChatController implements Initializable {
     }
 
     /**
-     * Shows a context menu for a message with various actions.
+     * Shows a context menu for a message with actions relevant to its type (text vs. document)
+     * and sender (incoming vs. outgoing).
      *
      * @param event The MouseEvent triggering the menu.
      */
-    private void showMessageContextMenu(MouseEvent event, VBox messageBubble) {
-        ContextMenu menu = new ContextMenu();
+    private void showMessageContextMenu(MouseEvent event) {
+        if (activeMessageContextMenu != null && activeMessageContextMenu.isShowing()) {
+            activeMessageContextMenu.hide();
+        }
 
-        // Extract message properties stored in the node
-        UUID messageId = (UUID) messageBubble.getProperties().get("messageId");
+        ContextMenu newMenu = new ContextMenu();
+        newMenu.setAutoHide(true);
+
+        VBox messageBubble = (VBox) event.getSource();
         boolean isOutgoing = messageBubble.getStyleClass().contains("outgoing");
-        boolean isTextMessage = messageBubble.getChildren().stream()
-                .anyMatch(node -> node instanceof Label && node.getStyleClass().contains("message-text"));
+        boolean isDocument = messageBubble.getStyleClass().contains("document-bubble");
 
-        MenuItem replyItem = new MenuItem("Reply");
+        MenuItem replyItem = createIconMenuItem("Reply", "/Client/images/context-menu/reply.png");
         replyItem.setOnAction(e -> showReplyPreview(messageBubble));
 
-        MenuItem forwardItem = new MenuItem("Forward");
-        forwardItem.setOnAction(e -> forwardMessage(messageId));
-        forwardItem.setDisable(messageId == null);
+        MenuItem forwardItem = createIconMenuItem("Forward", "/Client/images/context-menu/forward.png");
+        forwardItem.setOnAction(e -> forwardMessage());
 
-        MenuItem editItem = new MenuItem("Edit");
-        editItem.setOnAction(e -> promptForEdit(messageBubble));
-        // Can only edit outgoing text messages
-        editItem.setDisable(!isOutgoing || !isTextMessage);
+        newMenu.getItems().addAll(replyItem, forwardItem);
 
-        MenuItem deleteItem = new MenuItem("Delete");
-        deleteItem.setOnAction(e -> confirmAndDeleteMessage(messageId));
-        // Can only delete outgoing messages
-        deleteItem.setDisable(!isOutgoing);
+        if (isOutgoing && !isDocument) {
+            MenuItem editItem = createIconMenuItem("Edit", "/Client/images/context-menu/edit.png");
+            editItem.setOnAction(e -> editMessage(messageBubble));
+            newMenu.getItems().add(1, editItem);
+        }
 
-        MenuItem copyItem = new MenuItem("Copy Text");
-        copyItem.setOnAction(e -> copyMessageText(messageBubble));
-        // Can only copy text from text messages
-        copyItem.setDisable(!isTextMessage);
+        if (isDocument) {
+            MenuItem downloadItem = createIconMenuItem("Download", "/Client/images/context-menu/download.png");
+            downloadItem.setOnAction(e -> {
+                Object userData = messageBubble.getUserData();
+                if (userData instanceof DocumentInfo) {
+                    saveDocument((DocumentInfo) userData);
+                }
+            });
+            newMenu.getItems().add(downloadItem);
+        } else {
+            MenuItem copyItem = createIconMenuItem("Copy Text", "/Client/images/context-menu/copy.png");
+            copyItem.setOnAction(e -> copyMessageText(messageBubble));
+            newMenu.getItems().add(copyItem);
+        }
 
-        menu.getItems().addAll(replyItem, forwardItem, editItem, new SeparatorMenuItem(), copyItem, deleteItem);
-        menu.show(mainChatContainer, event.getScreenX(), event.getScreenY());
+        MenuItem deleteItem = createIconMenuItem("Delete", "/Client/images/context-menu/delete.png");
+        deleteItem.setOnAction(e -> deleteMessage(messageBubble));
+        newMenu.getItems().add(deleteItem);
+
+        newMenu.show(messageBubble, event.getScreenX(), event.getScreenY());
+        activeMessageContextMenu = newMenu;
+    }
+
+    /**
+     * Helper method to create a MenuItem with a custom Image icon.
+     *
+     * @param text     The text of the menu item.
+     * @param imageUrl The path to the icon image (relative to the resources folder).
+     * @return A configured MenuItem with an icon.
+     */
+    private MenuItem createIconMenuItem(String text, String imageUrl) {
+        ImageView icon = new ImageView();
+        try {
+            Image image = new Image(Objects.requireNonNull(getClass().getResource(imageUrl)).toExternalForm());
+            icon.setImage(image);
+        } catch (Exception e) {
+            System.err.println("Error loading icon for MenuItem: " + imageUrl);
+            // In case of error, an empty icon is created.
+        }
+
+        icon.setFitWidth(20);
+        icon.setFitHeight(20);
+        icon.setPreserveRatio(true);
+
+        icon.getStyleClass().add("context-menu-icon-image");
+
+        MenuItem menuItem = new MenuItem(text);
+        menuItem.setGraphic(icon);
+
+        return menuItem;
     }
 
     private void promptForEdit(VBox messageBubble) {
@@ -3409,7 +3475,7 @@ public class MainChatController implements Initializable {
         this.editingMessageBubble = messageBubble;
         this.originalEditText = rawText;
 
-        showEditPreview();
+        //showEditPreview();
     }
 
 
@@ -3543,27 +3609,88 @@ public class MainChatController implements Initializable {
     }
 
     /**
-     * Edits a message (placeholder).
+     * Puts the UI into editing mode. It resets any prior reply state and configures
+     * the preview panel for an edit action.
+     *
+     * @param messageBubble The VBox of the message to be edited.
      */
-    private void editMessage() {
-        System.out.println("Editing message");
-        // TODO: Implement message editing (Server: Update message on server, UI: Reflect changes).
+    private void editMessage(VBox messageBubble) {
+        if (messageBubble == null) return;
+
+        // 1. Reset data state WITHOUT hiding the panel
+        resetReplyEditState();
+
+        // Stop any ongoing animation
+        if (replyPreviewAnimation != null) {
+            replyPreviewAnimation.stop();
+        }
+
+        // 2. Set the new editing state
+        isEditing = true;
+        editingMessageBubble = messageBubble;
+
+        // 3. Extract message text
+        Label messageTextLabel = (Label) messageBubble.getChildren().stream()
+                .filter(node -> node instanceof Label && node.getStyleClass().contains("message-text"))
+                .findFirst().orElse(null);
+
+        if (messageTextLabel == null) {
+            resetReplyEditState(); // Abort if text not found
+            return;
+        }
+        String originalMessageText = messageTextLabel.getText();
+
+        // 4. Update UI labels and input field
+        replyToLabel.setText("Edit Message");
+        replyMessageLabel.setText(originalMessageText);
+        messageInputField.setText(originalMessageText);
+
+        // 5. If the panel was hidden, show it now with animation
+        if (!replyPreviewContainer.isVisible()) {
+            replyPreviewContainer.setVisible(true);
+            replyPreviewContainer.setManaged(true);
+
+            replyPreviewContainer.setTranslateY(-30);
+            replyPreviewContainer.setOpacity(0);
+
+            TranslateTransition slideDown = new TranslateTransition(Duration.millis(200), replyPreviewContainer);
+            slideDown.setToY(0);
+
+            FadeTransition fadeIn = new FadeTransition(Duration.millis(200), replyPreviewContainer);
+            fadeIn.setToValue(1.0);
+
+            replyPreviewAnimation = new ParallelTransition(slideDown, fadeIn);
+            replyPreviewAnimation.play();
+        }
+
+        messageInputField.requestFocus();
+        messageInputField.positionCaret(originalMessageText.length());
     }
 
     /**
-     * Deletes a message (placeholder).
+     * Deletes a message from the UI and optionally from the backend.
+     *
+     * @param messageBubble The VBox of the message to be deleted.
      */
-    private void deleteMessage() {
-        System.out.println("Deleting message");
-        // TODO: Implement message deletion (Server: Remove message from server, UI: Remove from UI).
-    }
+    private void deleteMessage(VBox messageBubble) {
+        if (messageBubble == null) return;
 
-    /**
-     * Copies the text of a message to the clipboard (placeholder).
-     */
-    private void copyMessageText() {
-        System.out.println("Copying message text");
-        // TODO: Implement text copying to clipboard (UI: Use JavaFX Clipboard API).
+        // Remove the HBox that contains the VBox message bubble
+        if (messageBubble.getParent() instanceof HBox) {
+            ((HBox) messageBubble.getParent()).getChildren().remove(messageBubble); // remove bubble from HBox
+            messagesContainer.getChildren().remove(messageBubble.getParent()); // remove HBox from messagesContainer
+        } else {
+            messagesContainer.getChildren().remove(messageBubble); // Fallback: remove VBox directly
+        }
+
+        // TODO: (Server) Send delete request to the server
+        System.out.println("Message deleted from UI. (Implement server deletion)");
+
+        // Check if the chat is now empty
+        if (messagesContainer.getChildren().isEmpty()) {
+            showEmptyChatState();
+            // TODO: Update currentSelectedUser.lastMessage accordingly
+        }
     }
 
     // ============ UTILITY METHODS ============
@@ -3603,10 +3730,9 @@ public class MainChatController implements Initializable {
      * @param message The message to display in the notification.
      */
     private void showTemporaryNotification(String message) {
-        Stage parentStage = (Stage) menuButton.getScene().getWindow();
+        Stage parentStage = (Stage) mainChatContainer.getScene().getWindow();
         showNotificationDialog(parentStage, message);
     }
-
 
     // ============ PUBLIC API METHODS ============
     /**
@@ -3736,41 +3862,5 @@ public class MainChatController implements Initializable {
         messagesContainer.getChildren().clear();
         // TODO (UI): Ensure all event listeners are removed to prevent memory leaks.
         // TODO (Server): Notify server of cleanup or session end if applicable.
-    }
-    // Add this new method to create the context menu
-    private ContextMenu createMessageContextMenu(VBox messageBubble) {
-        ContextMenu menu = new ContextMenu();
-
-        // Extract message properties stored in the node
-        UUID messageId = (UUID) messageBubble.getProperties().get("messageId");
-        boolean isOutgoing = messageBubble.getStyleClass().contains("outgoing");
-
-        // Determine if it's a text message by checking for the stored raw text property
-        boolean isTextMessage = messageBubble.getProperties().containsKey("raw_text");
-
-        MenuItem replyItem = new MenuItem("Reply");
-        replyItem.setOnAction(e -> showReplyPreview(messageBubble));
-
-        MenuItem forwardItem = new MenuItem("Forward");
-        forwardItem.setOnAction(e -> forwardMessage(messageId));
-        forwardItem.setDisable(messageId == null); // Disable if no messageId is available
-
-        MenuItem editItem = new MenuItem("Edit");
-        editItem.setOnAction(e -> promptForEdit(messageBubble));
-        // Can only edit outgoing text messages
-        editItem.setDisable(!isOutgoing || !isTextMessage);
-
-        MenuItem deleteItem = new MenuItem("Delete");
-        deleteItem.setOnAction(e -> confirmAndDeleteMessage(messageId));
-        // Can only delete your own (outgoing) messages
-        deleteItem.setDisable(!isOutgoing || messageId == null);
-
-        MenuItem copyItem = new MenuItem("Copy Text");
-        copyItem.setOnAction(e -> copyMessageText(messageBubble));
-        // Can only copy text from text messages
-        copyItem.setDisable(!isTextMessage);
-
-        menu.getItems().addAll(replyItem, forwardItem, editItem, new SeparatorMenuItem(), copyItem, deleteItem);
-        return menu;
     }
 }

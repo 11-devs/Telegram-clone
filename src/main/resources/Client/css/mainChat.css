@@ -68,6 +68,28 @@
     -fx-font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 
+/* ============ SPLIT PANE STYLING ============ */
+
+.split-pane {
+    -fx-background-color: transparent;
+}
+
+.split-pane:horizontal > .split-pane-divider {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0 1px 0 1px;
+}
+
+.split-pane:vertical > .split-pane-divider {
+    -fx-background-color: #0F1419;
+    -fx-border-color: transparent;
+    -fx-padding: 1px 0 1px 0;
+}
+
+.split-pane-divider .grip {
+    -fx-background-color: transparent;
+}
+
 /* ============ SIDEBAR STYLING ============ */
 .sidebar {
     -fx-background-color: #17212B;
@@ -99,19 +121,14 @@
 }
 
 .icon-button:pressed {
-    -fx-background-color: #2B5278;
+    -fx-background-color: #232E3C;
 }
 
 .search-container {
     -fx-background-color: #202B36;
-    -fx-background-radius: 20px;
+    -fx-background-radius: 30px;
     -fx-border-color: transparent;
-    -fx-border-radius: 20px;
-}
-
-.search-container:focused-within {
-    -fx-border-color: #4FC3F7;
-    -fx-border-width: 1px;
+    -fx-border-radius: 30px;
 }
 
 .search-icon {
@@ -130,6 +147,10 @@
     -fx-faint-focus-color: transparent;
 }
 
+#searchField:focused {
+    -fx-effect: null;
+}
+
 /* Chat List */
 .chat-list {
     -fx-background-color: transparent;
@@ -141,13 +162,12 @@
     -fx-cell-size: 72px;
 }
 
-
 /* Sidebar Footer */
 .sidebar-footer {
     -fx-background-color: #17212B;
     -fx-border-color: #2C3E50;
     -fx-border-width: 1 0 0 0;
-    -fx-min-height: 50px;
+    -fx-min-height: 40px;
 }
 
 .footer-button {
@@ -256,7 +276,7 @@
 }
 
 .messages-scroll-pane {
-    -fx-background-color: transparent;
+    -fx-background-color: #0E1621;
     -fx-border-color: transparent;
     -fx-focus-color: transparent;
     -fx-faint-focus-color: transparent;
@@ -397,14 +417,14 @@
 }
 
 .close-reply-button:pressed {
+    -fx-background-color: transparent;
     -fx-scale-x: 0.95;
     -fx-scale-y: 0.95;
     -fx-opacity: 0.8;
 }
 
 .close-reply-button:focused {
-    -fx-background-color: derive(#ffffff, -20%);
-    -fx-background-radius: 50%;
+    -fx-background-color: derive(transparent, -20%);
 }
 
 /* ============ MESSAGE INPUT ============ */
@@ -412,11 +432,11 @@
     -fx-background-color: #17212B;
     -fx-border-color: #2C3E50;
     -fx-border-width: 1 0 0 0;
-    -fx-min-height: 70px;
+    -fx-min-height: 50px;
 }
 
 .message-input-area {
-    -fx-background-color: #202B36;
+    -fx-background-color: #17212B;
     -fx-alignment: bottom-center;
 }
 
@@ -449,27 +469,26 @@
 }
 
 .message-input-field {
-    -fx-background-color: #202B36;
+    -fx-background-color: #17212B;
     -fx-border-color: transparent;
     -fx-text-fill: #FFFFFF;
     -fx-prompt-text-fill: #92A3AF;
     -fx-font-size: 14px;
-    -fx-font-weight: 400;
-    -fx-padding: 8 16 8 16;
+    -fx-font-weight: 600;
     -fx-min-height: 40px;
     -fx-pref-height: 40px;
-    -fx-max-height: 120px;
+    -fx-max-height: 80px;
     -fx-wrap-text: true;
     -fx-focus-color: transparent;
     -fx-faint-focus-color: transparent;
 }
 
 .message-input-field:selected {
-    -fx-background-color: #202B36;
+    -fx-background-color: #17212B;
 }
 
 .message-input-field:focused {
-    -fx-background-color: #202B36;
+    -fx-background-color: #17212B;
 }
 
 .message-input-field .content {
@@ -486,34 +505,29 @@
 }
 
 .send-button {
-    -fx-background-color: #4FC3F7;
+    -fx-background-color: transparent;
     -fx-border-color: transparent;
-    -fx-background-radius: 50%;
     -fx-cursor: hand;
     -fx-min-width: 40px;
     -fx-min-height: 40px;
     -fx-pref-width: 40px;
     -fx-pref-height: 40px;
-    -fx-padding: 8;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.12), 0, 0, 0, 0) 0 1px 3px, dropshadow(gaussian, rgba(0, 0, 0, 0.24), 0, 0, 0, 0) 0 1px 2px;
 }
 
 .send-button:hover {
-    -fx-background-color: #29B6F6;
-    -fx-scale-x: 1.05;
-    -fx-scale-y: 1.05;
+    -fx-background-color: transparent;
 }
 
 .send-button:pressed {
-    -fx-background-color: #0288D1;
+    -fx-background-color: transparent;
 }
 
 .send-button.voice-mode {
-    -fx-background-color: #92A3AF;
+    -fx-background-color: transparent;
 }
 
 .send-button.voice-mode:hover {
-    -fx-background-color: #708090;
+    -fx-background-color: transparent;
 }
 
 /* ============ RIGHT PANEL STYLING ============ */
@@ -629,29 +643,12 @@
     -fx-text-fill: #92A3AF;
     -fx-font-size: 12px;
 }
+/* ============ JFX TOGGLE BUTTON STYLING ============ */
 
-.toggle-switch {
-    -fx-background-color: #4FC3F7;
-    -fx-text-fill: white;
-    -fx-border-color: transparent;
-    -fx-background-radius: 12px;
-    -fx-font-size: 11px;
-    -fx-font-weight: 600;
-    -fx-padding: 4 8 4 8;
-    -fx-cursor: hand;
-    -fx-min-width: 44px;
-}
-
-.toggle-switch:hover {
-    -fx-background-color: #29B6F6;
-}
-
-.toggle-switch.off {
-    -fx-background-color: #92A3AF;
-}
-
-.toggle-switch.off:hover {
-    -fx-background-color: #708090;
+.notificationsToggle {
+    -jfx-toggle-color: #2A3947;
+    -jfx-toggle-line-color: #5288C1;
+    -jfx-untoggle-line-color: #999999;
 }
 
 /* ============ MESSAGE BUBBLES ============ */
@@ -803,7 +800,8 @@
 .document-action-button {
     -fx-background-color: #2B5278;
     -fx-text-fill: #ffffff;
-    -fx-border-width: 0;
+    -fx-border-width: 1px;
+    -fx-border-color: #FFFFFF;
     -fx-border-radius: 8px;
     -fx-padding: 6px 12px;
     -fx-font-size: 12px;
@@ -1010,25 +1008,27 @@
 }
 
 /* ============ SCROLLBAR STYLING ============ */
+.scroll-bar {
+    -fx-background-color: transparent;
+}
+
 .scroll-bar:vertical {
     -fx-background-color: transparent;
-    -fx-border-color: transparent;
-    -fx-pref-width: 6px;
-    -fx-max-width: 6px;
-    -fx-min-width: 6px;
+    -fx-pref-width: 8px;
+    -fx-padding: 2;
 }
 
 .scroll-bar:vertical .track {
     -fx-background-color: transparent;
     -fx-border-color: transparent;
-    -fx-opacity: 0;
+    -fx-background-radius: 4px;
+    -fx-border-radius: 4px;
 }
 
 .scroll-bar:vertical .thumb {
     -fx-background-color: rgba(146, 163, 175, 0.3);
-    -fx-background-radius: 3px;
-    -fx-border-radius: 3px;
-    -fx-border-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 4px;
 }
 
 .scroll-bar:vertical .thumb:hover {
@@ -1039,63 +1039,56 @@
     -fx-background-color: rgba(146, 163, 175, 0.7);
 }
 
-.scroll-bar:vertical .increment-button,
-.scroll-bar:vertical .decrement-button {
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
     -fx-background-color: transparent;
-    -fx-border-color: transparent;
-    -fx-pref-height: 0;
+    -fx-background-radius: 0;
+    -fx-padding: 0;
+    -fx-min-width: 0;
     -fx-pref-width: 0;
+    -fx-min-height: 0;
+    -fx-pref-height: 0;
+}
+
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-shape: "";
+    -fx-padding: 0;
 }
 
 .scroll-bar:horizontal {
     -fx-pref-height: 0;
     -fx-max-height: 0;
+    -fx-opacity: 0;
 }
 
-/* ============ CONTEXT MENU STYLING ============ */
+/* ============ TELEGRAM CONTEXT MENU STYLE ============ */
 .context-menu {
-    -fx-background-color: #202B36;
-    -fx-border-color: #2C3E50;
-    -fx-border-width: 1px;
+    -fx-background-color: #17212B;
+    -fx-background-insets: 0;
     -fx-background-radius: 8px;
-    -fx-border-radius: 8px;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.16), 0, 0, 0, 0) 0 3px 6px, dropshadow(gaussian, rgba(0, 0, 0, 0.23), 0, 0, 0, 0) 0 3px 6px;
-    -fx-padding: 4;
+    -fx-border-width: 0;
+    -fx-pref-width: 150px;
+}
+
+.context-menu .menu-item > .label {
+    -fx-text-fill: #FFFFFF;
+    -fx-padding: 0 0 0 10px;
 }
 
 .context-menu .menu-item {
-    -fx-background-color: transparent;
+    -fx-background-radius: 6px;
+    -fx-padding: 8px 12px 8px 12px;
+}
+
+.context-menu .menu-item:focused > .label,
+.context-menu .menu-item:hover > .label {
     -fx-text-fill: #FFFFFF;
-    -fx-font-size: 14px;
-    -fx-font-weight: 400;
-    -fx-padding: 8 16 8 16;
-    -fx-background-radius: 8px;
-    -fx-cursor: hand;
 }
 
 .context-menu .menu-item:focused,
 .context-menu .menu-item:hover {
-    -fx-background-color: #2B5278;
-}
-
-.context-menu .separator {
-    -fx-background-color: #2C3E50;
-    -fx-pref-height: 1px;
-    -fx-margin: 4 0 4 0;
-}
-
-/* ============ TOOLTIP STYLING ============ */
-.tooltip {
-    -fx-background-color: #2C3E50;
-    -fx-text-fill: #FFFFFF;
-    -fx-font-size: 12px;
-    -fx-font-weight: 400;
-    -fx-background-radius: 8px;
-    -fx-border-radius: 8px;
-    -fx-border-color: #2C3E50;
-    -fx-border-width: 1px;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.16), 0, 0, 0, 0) 0 3px 6px, dropshadow(gaussian, rgba(0, 0, 0, 0.23), 0, 0, 0, 0) 0 3px 6px;
-    -fx-padding: 6 10 6 10;
+    -fx-background-color: #232E3C;
 }
 
 /* ============ CHAT LIST CELL CUSTOM STYLING ============ */
@@ -1229,14 +1222,6 @@
     -fx-border-width: 2px;
 }
 
-/* ============ FOCUS INDICATORS ============ */
-.button:focused,
-.text-field:focused,
-.text-area:focused,
-.list-view:focused {
-    -fx-effect: dropshadow(gaussian, #4FC3F7, 3, 0.6, 0, 0);
-}
-
 /* ============ SPECIAL STATES ============ */
 .sidebar.collapsed {
     -fx-pref-width: 60px;
@@ -1291,6 +1276,25 @@
     -fx-background-radius: 8px;
     -fx-padding: 8 12 8 12;
     -fx-font-size: 13px;
+}
+
+/* ============ RIGHT PANEL CLOSE BUTTON ============ */
+.close-right-panel-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 50%;
+    -fx-cursor: hand;
+    -fx-padding: 8px;
+    -fx-min-width: 40px;
+    -fx-min-height: 40px;
+}
+
+.close-right-panel-button:hover {
+    -fx-background-color: #232E3C;
+}
+
+.close-right-panel-button .svg-path {
+    -fx-fill: #92A3AF;
+    -fx-stroke: #92A3AF;
 }
 
 /* ============ DARK MODE ADJUSTMENTS ============ */
@@ -1351,15 +1355,6 @@
 
 .telegram-button.destructive:hover {
     -fx-background-color: #D32F2F;
-}
-
-/* ============ SELECTION STYLING ============ */
-.text-input:focused,
-.text-area:focused {
-    -fx-highlight-fill: #4FC3F7;
-    -fx-highlight-text-fill: white;
-    -fx-focus-color: #4FC3F7;
-    -fx-faint-focus-color: rgba(79, 195, 247, 0.2);
 }
 
 /* ============ UTILITY CLASSES ============ */

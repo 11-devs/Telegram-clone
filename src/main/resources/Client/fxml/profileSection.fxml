@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Circle?>
+
+<VBox fx:id="profileContainer" focusTraversable="true" maxWidth="400.0" minWidth="350.0" prefWidth="380.0" styleClass="profile-container" stylesheets="@../css/profileSection.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.Controllers.ProfileSectionController">
+
+    <!-- Profile Header -->
+    <HBox alignment="CENTER_LEFT" minHeight="36.0" prefHeight="36.0" prefWidth="380.0" styleClass="profile-header">
+        <padding>
+            <Insets bottom="15.0" left="25.0" right="10.0" top="15.0" />
+        </padding>
+        <children>
+            <Label styleClass="profile-header-title" text="My Profile" />
+            <Region HBox.hgrow="ALWAYS" />
+            <Button fx:id="editButton" alignment="CENTER" styleClass="header-icon-button">
+                <graphic>
+                    <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                        <image>
+                            <Image url="@../images/edit-icon.png" />
+                        </image>
+                    </ImageView>
+                </graphic>
+            </Button>
+            <Button fx:id="closeButton" alignment="CENTER" styleClass="header-icon-button">
+                <graphic>
+                    <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                        <image>
+                            <Image url="@../images/close-icon.png" />
+                        </image>
+                    </ImageView>
+                </graphic>
+            </Button>
+        </children>
+    </HBox>
+
+    <!-- Profile Content -->
+    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="profile-scroll-pane" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
+        <content>
+            <VBox styleClass="profile-content-container">
+
+                <!-- Profile Picture and Name Section -->
+                <VBox alignment="CENTER_LEFT" prefWidth="375.0" styleClass="profile-main-section">
+                    <padding>
+                        <Insets bottom="30.0" left="20.0" right="20.0" top="20.0" />
+                    </padding>
+                    <children>
+                        <HBox alignment="CENTER_LEFT" spacing="20.0">
+                            <children>
+                                <!-- Profile Picture -->
+                                <StackPane alignment="CENTER" styleClass="profile-picture-container">
+                                    <children>
+                                        <ImageView fx:id="profilePictureImage" fitHeight="80.0" fitWidth="80.0" pickOnBounds="true" preserveRatio="true" styleClass="profile-picture">
+                                            <image>
+                                                <Image url="@../images/11Devs-white.png" />
+                                            </image>
+                                            <clip>
+                                                <Circle centerX="40" centerY="40" radius="40" />
+                                            </clip>
+                                        </ImageView>
+                                    </children>
+                                </StackPane>
+
+                                <!-- Name and Status -->
+                                <VBox alignment="CENTER_LEFT" spacing="5.0" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label fx:id="userNameLabel" prefHeight="30.0" prefWidth="221.0" styleClass="profile-name" text="User Name" />
+                                        <Label fx:id="statusLabel" prefHeight="18.0" prefWidth="48.0" styleClass="profile-status" text="online">
+                                            <VBox.margin>
+                                                <Insets left="2.0" />
+                                            </VBox.margin></Label>
+                                    </children>
+                                </VBox>
+                            </children>
+                        </HBox>
+                    </children>
+                </VBox>
+
+                <Separator styleClass="profile-separator" />
+
+                <!-- Profile Information Fields -->
+                <VBox prefHeight="218.0" prefWidth="375.0" styleClass="profile-fields-section">
+
+                    <!-- Phone Number -->
+                    <HBox alignment="CENTER" styleClass="profile-field-row">
+                        <padding>
+                            <Insets bottom="15.0" left="20.0" right="20.0" top="15.0" />
+                        </padding>
+                        <children>
+                            <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="field-icon">
+                                <image>
+                                    <Image url="@../images/phone-icon.png" />
+                                </image>
+                            </ImageView>
+                            <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                                <HBox.margin>
+                                    <Insets left="15.0" />
+                                </HBox.margin>
+                                <children>
+                                    <Label fx:id="phoneNumberLabel" prefHeight="19.0" prefWidth="136.0" styleClass="field-value" text="+98 111 111 1111" />
+                                    <Label styleClass="field-description" text="Mobile">
+                                        <VBox.margin>
+                                            <Insets left="3.0" />
+                                        </VBox.margin></Label>
+                                </children>
+                            </VBox>
+                        </children>
+                    </HBox>
+
+                    <!-- Bio -->
+                    <HBox alignment="TOP_LEFT" styleClass="profile-field-row">
+                        <padding>
+                            <Insets bottom="15.0" left="20.0" right="20.0" top="15.0" />
+                        </padding>
+                        <children>
+                            <VBox prefHeight="39.0" prefWidth="312.0" spacing="2.0" HBox.hgrow="ALWAYS">
+                                <children>
+                                    <Label fx:id="bioLabel" prefHeight="19.0" prefWidth="62.0" styleClass="field-value" text="Bio text">
+                                        <VBox.margin>
+                                            <Insets left="1.0" />
+                                        </VBox.margin></Label>
+                                    <Label styleClass="field-description" text="Bio">
+                                        <VBox.margin>
+                                            <Insets left="1.0" />
+                                        </VBox.margin></Label>
+                                </children>
+                                <HBox.margin>
+                                    <Insets left="40.0" />
+                                </HBox.margin>
+                            </VBox>
+                        </children>
+                    </HBox>
+
+                    <!-- Username -->
+                    <HBox alignment="CENTER_LEFT" styleClass="profile-field-row">
+                        <padding>
+                            <Insets bottom="15.0" left="20.0" right="20.0" top="15.0" />
+                        </padding>
+                        <children>
+                            <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                                <children>
+                                    <Label fx:id="usernameLabel" prefHeight="19.0" prefWidth="94.0" styleClass="id-value" text="\@UserName" />
+                                    <Label styleClass="field-description" text="Username">
+                                        <VBox.margin>
+                                            <Insets left="3.0" />
+                                        </VBox.margin></Label>
+                                </children>
+                                <HBox.margin>
+                                    <Insets left="40.0" />
+                                </HBox.margin>
+                            </VBox>
+                            <Button fx:id="qrCodeButton" styleClass="qr-code-button">
+                                <graphic>
+                                    <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                                        <image>
+                                            <Image url="@../images/qr-code-icon.png" />
+                                        </image>
+                                    </ImageView>
+                                </graphic>
+                            </Button>
+                        </children>
+                    </HBox>
+                </VBox>
+            </VBox>
+        </content>
+    </ScrollPane>
+</VBox>
