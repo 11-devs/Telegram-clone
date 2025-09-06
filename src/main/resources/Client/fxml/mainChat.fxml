@@ -324,9 +324,9 @@
                         <VBox prefWidth="433.0" styleClass="input-field-container" HBox.hgrow="ALWAYS">
                             <children>
                                 <TextArea fx:id="messageInputField" prefRowCount="1" prefWidth="433.0" promptText="Write a message..." styleClass="message-input-field" wrapText="true">
-                           <padding>
-                              <Insets top="3.0" />
-                           </padding></TextArea>
+                                    <padding>
+                                        <Insets top="3.0" />
+                                    </padding></TextArea>
                             </children>
                         </VBox>
 
@@ -349,14 +349,14 @@
     <!-- Right Panel -->
     <right>
         <VBox fx:id="rightPanel" maxWidth="420.0" minWidth="249.0" prefHeight="798.0" prefWidth="249.0" styleClass="right-panel">
-         <Button fx:id="closeRightPanelButton" onAction="#hideRightPanel" styleClass="close-right-panel-button">
-            <graphic>
-               <SVGPath content="M18 18L12 12M12 12L6 6M12 12L18 6M12 12L6 18" fill="#92A3AF" stroke="#92A3AF" strokeLineCap="ROUND" strokeLineJoin="ROUND" strokeWidth="2" />
-            </graphic>
-            <VBox.margin>
-               <Insets left="10.0" top="10.0" />
-            </VBox.margin>
-         </Button>
+            <Button fx:id="closeRightPanelButton" onAction="#hideRightPanel" styleClass="close-right-panel-button">
+                <graphic>
+                    <SVGPath content="M18 18L12 12M12 12L6 6M12 12L18 6M12 12L6 18" fill="#92A3AF" stroke="#92A3AF" strokeLineCap="ROUND" strokeLineJoin="ROUND" strokeWidth="2" />
+                </graphic>
+                <VBox.margin>
+                    <Insets left="10.0" top="10.0" />
+                </VBox.margin>
+            </Button>
             <!-- Profile Header -->
             <VBox alignment="CENTER" spacing="16.0" styleClass="profile-header-section">
                 <padding>
@@ -370,9 +370,9 @@
                                 <clip>
                                     <Circle centerX="50" centerY="50" radius="50" />
                                 </clip>
-                        <image>
-                           <Image url="@../images/11Devs-black.png" />
-                        </image>
+                                <image>
+                                    <Image url="@../images/11Devs-black.png" />
+                                </image>
                             </ImageView>
                             <Circle fx:id="profileOnlineIndicator" radius="8.0" styleClass="profile-online-indicator" visible="false" StackPane.alignment="BOTTOM_RIGHT">
                                 <StackPane.margin>
@@ -500,9 +500,9 @@
                                 <image>
                                     <Image url="@../images/GitHub-icon2.png" />
                                 </image>
-                        <HBox.margin>
-                           <Insets />
-                        </HBox.margin>
+                                <HBox.margin>
+                                    <Insets />
+                                </HBox.margin>
                             </ImageView>
                             <Label styleClass="setting-title" text="More" HBox.hgrow="ALWAYS" />
                         </children>
