@@ -37,7 +37,7 @@ public class DialogUtil {
             // Center the dialog stage with an offset downward
             Platform.runLater(() -> {
                 double centerX = parentStage.getX() + (parentStage.getWidth() - dialogStage.getWidth()) / 2;
-                double centerY = parentStage.getY() + (parentStage.getHeight() - dialogStage.getHeight()) / 2 + 50; // Offset 50px down
+                double centerY = parentStage.getY() + (parentStage.getHeight() - dialogStage.getHeight()) / 2;
                 dialogStage.setX(centerX);
                 dialogStage.setY(centerY);
             });

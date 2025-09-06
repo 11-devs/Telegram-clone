@@ -22,6 +22,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.shape.Circle;
@@ -275,6 +276,18 @@ public class MainChatController implements Initializable {
      * The message being replied to, if any.
      */
     private MessageViewModel replyToMessage;
+    /**
+     * activeMessageContextMenu.
+     */
+    private ContextMenu activeMessageContextMenu;
+    /**
+     * isEditing boolean.
+     */
+    private boolean isEditing = false;
+    /**
+     * editingMessageBubble VBox.
+     */
+    private VBox editingMessageBubble = null;
 
     // Animation timelines
     /**
@@ -289,6 +302,10 @@ public class MainChatController implements Initializable {
      * Timeline for connection status animation.
      */
     private Timeline connectionStatusTimeline;
+    /**
+     * ParallelTransition for reply animation.
+     */
+    private ParallelTransition replyPreviewAnimation;
 
     // State flags
     /**
@@ -570,6 +587,10 @@ public class MainChatController implements Initializable {
     private void loadInitialState() {
         // Set initial theme
         // updateThemeClasses(); TODO UI
+
+        // hide reply preview
+        replyPreviewContainer.setVisible(false);
+        replyPreviewContainer.setManaged(false);
 
         // Update connection status
         updateConnectionStatus(true); // TODO: Connect to the server for real status.
@@ -896,28 +917,49 @@ public class MainChatController implements Initializable {
     }
 
     /**
-     * Handles mouse clicks on a message bubble (e.g., double-click to reply, right-click for menu).
+     * Handles mouse clicks on a message bubble.
+     * Differentiates between primary (left) and secondary (right) clicks.
+     * - Double-click with the primary button triggers a reply.
+     * - A single click with the secondary button shows the context menu.
      *
      * @param event The MouseEvent triggering the action.
      */
     private void handleMessageClick(MouseEvent event) {
-        if (event.getClickCount() == 2) {
-            // Double-click to reply
+        // (Secondary Button)
+        if (event.getButton() == MouseButton.SECONDARY) {
+            showMessageContextMenu(event);
+            event.consume();
+            return;
+        }
+
+        if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
             VBox bubble = (VBox) event.getSource();
             showReplyPreview(bubble);
-        } else if (event.isSecondaryButtonDown()) {
-            // Right-click for context menu
-            showMessageContextMenu(event);
+            event.consume();
         }
     }
 
     /**
      * Displays a reply preview for the selected message bubble.
+     * Stops any previous animation before starting the new one.
      *
      * @param messageBubble The VBox representing the message to reply to.
      */
     private void showReplyPreview(VBox messageBubble) {
         if (replyPreviewContainer == null) return;
+
+        resetReplyEditState();
+
+        // Stop any ongoing animation on the container
+        if (replyPreviewAnimation != null) {
+            replyPreviewAnimation.stop();
+        }
+
+        // Reset states
+        isEditing = false;
+        editingMessageBubble = null;
+        replyToLabel.setText("");
+        replyMessageLabel.setText("");
 
         // Extract message info
         Label messageText = (Label) messageBubble.getChildren().get(
@@ -928,7 +970,9 @@ public class MainChatController implements Initializable {
         replyMessageLabel.setText(messageText.getText().length() > 100 ?
                 messageText.getText().substring(0, 97) + "..." : messageText.getText());
 
+        // Make it visible and managed before animating
         replyPreviewContainer.setVisible(true);
+        replyPreviewContainer.setManaged(true);
 
         // Animate reply preview
         replyPreviewContainer.setTranslateY(-30);
@@ -940,8 +984,8 @@ public class MainChatController implements Initializable {
         FadeTransition fadeIn = new FadeTransition(Duration.millis(200), replyPreviewContainer);
         fadeIn.setToValue(1.0);
 
-        ParallelTransition showReply = new ParallelTransition(slideDown, fadeIn);
-        showReply.play();
+        replyPreviewAnimation = new ParallelTransition(slideDown, fadeIn);
+        replyPreviewAnimation.play();
 
         // Focus message input
         messageInputField.requestFocus();
@@ -949,11 +993,15 @@ public class MainChatController implements Initializable {
 
     /**
      * Closes the reply preview with an animation.
-     * Triggered by the closeReplyButton action.
+     * Stops any previous animation before starting the new one.
      */
     @FXML
     private void closeReplyPreview() {
         if (replyPreviewContainer == null || !replyPreviewContainer.isVisible()) return;
+
+        if (replyPreviewAnimation != null) {
+            replyPreviewAnimation.stop();
+        }
 
         TranslateTransition slideUp = new TranslateTransition(Duration.millis(150), replyPreviewContainer);
         slideUp.setToY(-30);
@@ -961,13 +1009,28 @@ public class MainChatController implements Initializable {
         FadeTransition fadeOut = new FadeTransition(Duration.millis(150), replyPreviewContainer);
         fadeOut.setToValue(0);
 
-        ParallelTransition hideReply = new ParallelTransition(slideUp, fadeOut);
-        hideReply.setOnFinished(e -> {
-            replyPreviewContainer.setVisible(false);
-            replyPreviewContainer.setManaged(false);
-            replyToMessage = null;
+        replyPreviewAnimation = new ParallelTransition(slideUp, fadeOut);
+        replyPreviewAnimation.setOnFinished(e -> {
+            resetReplyEditState();
         });
-        hideReply.play();
+        replyPreviewAnimation.play();
+    }
+
+    /**
+     * Resets the reply/edit state completely.
+     * Clears the preview panel and resets state flags.
+     */
+    private void resetReplyEditState() {
+        isEditing = false;
+        editingMessageBubble = null;
+        replyToMessage = null;
+
+        replyPreviewContainer.setVisible(false);
+        replyPreviewContainer.setManaged(false);
+
+        replyToLabel.setText("");
+        replyMessageLabel.setText("");
+        messageInputField.clear();
     }
 
     // ============ DOCUMENT MESSAGE BUBBLE IMPLEMENTATION ============
@@ -1390,29 +1453,28 @@ public class MainChatController implements Initializable {
         String text = messageInputField.getText().trim();
         if (text.isEmpty() || currentSelectedUser == null) return;
 
-        // Create message with reply if present
-        String messageText = text;
-        if (replyPreviewContainer.isVisible()) {
-            messageText = "↪ " + replyMessageLabel.getText() + "\n\n" + text;
+        if (isEditing && editingMessageBubble != null) {
+            updateMessage(editingMessageBubble, text);
             closeReplyPreview();
+        } else {
+            String messageText = text;
+            if (replyPreviewContainer.isVisible()) {
+                messageText = "↪ " + replyMessageLabel.getText() + "\n\n" + text;
+                closeReplyPreview();
+            }
+
+            addMessageBubble(messageText, true, getCurrentTime(), "sent", null);
+
+            // Update chat list for new message
+            currentSelectedUser.setLastMessage(text);
+            currentSelectedUser.setTime(getCurrentTime());
+            refreshChatList();
+
+            simulateMessageDelivery();
         }
 
-        // Add message to chat
-        addMessageBubble(messageText, true, getCurrentTime(), "sent", null);
-
-        // Clear input
         messageInputField.clear();
         updateSendButtonState();
-
-        // Update chat list
-        currentSelectedUser.setLastMessage(text);
-        currentSelectedUser.setTime(getCurrentTime());
-        refreshChatList();
-
-        // Simulate message delivery
-        simulateMessageDelivery();
-
-        // Focus input for next message
         Platform.runLater(() -> messageInputField.requestFocus());
     }
 
@@ -1452,6 +1514,47 @@ public class MainChatController implements Initializable {
             statusLabel.getStyleClass().removeAll("sent", "delivered", "read");
             statusLabel.getStyleClass().add(status);
         }
+    }
+
+    /**
+     * Updates the content of an existing message bubble after editing.
+     *
+     * @param bubble   The VBox of the message to update.
+     * @param newText  The new text for the message.
+     */
+    private void updateMessage(VBox bubble, String newText) {
+        Label messageTextLabel = (Label) bubble.getChildren().stream()
+                .filter(node -> node instanceof Label && node.getStyleClass().contains("message-text"))
+                .findFirst().orElse(null);
+
+        HBox timeContainer = (HBox) bubble.getChildren().stream()
+                .filter(node -> node instanceof HBox)
+                .findFirst().orElse(null);
+
+        if (messageTextLabel == null || timeContainer == null) return;
+
+        messageTextLabel.setText(newText);
+
+        Label editedLabel = (Label) timeContainer.getChildren().stream()
+                .filter(node -> node instanceof Label && "edited-label".equals(node.getId()))
+                .findFirst().orElse(null);
+
+        if (editedLabel == null) {
+            editedLabel = new Label("edited");
+            editedLabel.setId("edited-label");
+            editedLabel.getStyleClass().add("message-time");
+            timeContainer.getChildren().add(timeContainer.getChildren().size() - 2, editedLabel);
+        }
+
+        Label timeLabel = (Label) timeContainer.getChildren().stream()
+                .filter(node -> node.getStyleClass().contains("message-time") && !"edited-label".equals(node.getId()))
+                .findFirst().orElse(null);
+
+        if (timeLabel != null) {
+            timeLabel.setText(getCurrentTime());
+        }
+
+        // TODO: Server
     }
 
     /**
@@ -1929,9 +2032,7 @@ public class MainChatController implements Initializable {
      */
     private void startVoiceCall() {
         if (currentSelectedUser == null) return;
-
-        System.out.println("Starting voice call with: " + currentSelectedUser.getUserName());
-        showCallDialog("Voice Call", currentSelectedUser.getUserName());
+        showTemporaryNotification("This feature will be implemented in the future.\n");
     }
 
     /**
@@ -1939,27 +2040,7 @@ public class MainChatController implements Initializable {
      */
     private void startVideoCall() {
         if (currentSelectedUser == null) return;
-
-        System.out.println("Starting video call with: " + currentSelectedUser.getUserName());
-        showCallDialog("Video Call", currentSelectedUser.getUserName());
-    }
-
-    /**
-     * Shows a dialog for a call with the specified type and user.
-     *
-     * @param callType The type of call (e.g., "Voice Call", "Video Call").
-     * @param userName The name of the user being called.
-     */
-    private void showCallDialog(String callType, String userName) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(callType);
-        alert.setHeaderText("Calling " + userName);
-        alert.setContentText("This would initiate a " + callType.toLowerCase() + " with " + userName);
-
-        ButtonType endCallButton = new ButtonType("End Call", ButtonBar.ButtonData.CANCEL_CLOSE);
-        alert.getButtonTypes().setAll(endCallButton);
-
-        alert.showAndWait();
+        showTemporaryNotification("This feature will be implemented in the future.\n");
     }
 
     /**
@@ -2279,30 +2360,46 @@ public class MainChatController implements Initializable {
     }
 
     /**
-     * Shows a context menu for a message with various actions.
+     * Shows a context menu for a message with appropriate actions
+     * based on whether the message is incoming or outgoing.
      *
      * @param event The MouseEvent triggering the menu.
      */
     private void showMessageContextMenu(MouseEvent event) {
-        ContextMenu menu = new ContextMenu();
+        if (activeMessageContextMenu != null && activeMessageContextMenu.isShowing()) {
+            activeMessageContextMenu.hide();
+        }
+
+        ContextMenu newMenu = new ContextMenu();
+        newMenu.setAutoHide(true);
+
+        VBox messageBubble = (VBox) event.getSource();
+
+        boolean isOutgoing = messageBubble.getStyleClass().contains("outgoing");
 
         MenuItem replyItem = new MenuItem("Reply");
-        replyItem.setOnAction(e -> showReplyPreview((VBox) event.getSource()));
+        replyItem.setOnAction(e -> showReplyPreview(messageBubble));
 
         MenuItem forwardItem = new MenuItem("Forward");
         forwardItem.setOnAction(e -> forwardMessage());
 
-        MenuItem editItem = new MenuItem("Edit");
-        editItem.setOnAction(e -> editMessage());
+        MenuItem copyItem = new MenuItem("Copy Text");
+        copyItem.setOnAction(e -> copyMessageText());
 
         MenuItem deleteItem = new MenuItem("Delete");
         deleteItem.setOnAction(e -> deleteMessage());
 
-        MenuItem copyItem = new MenuItem("Copy Text");
-        copyItem.setOnAction(e -> copyMessageText());
+        newMenu.getItems().addAll(replyItem, forwardItem, new SeparatorMenuItem(), copyItem, deleteItem);
 
-        menu.getItems().addAll(replyItem, forwardItem, editItem, new SeparatorMenuItem(), copyItem, deleteItem);
-        menu.show(mainChatContainer, event.getScreenX(), event.getScreenY());
+        if (isOutgoing) {
+            MenuItem editItem = new MenuItem("Edit");
+            editItem.setOnAction(e -> editMessage(messageBubble));
+
+            newMenu.getItems().add(2, editItem);
+        }
+
+        newMenu.show(messageBubble, event.getScreenX(), event.getScreenY());
+        activeMessageContextMenu = newMenu;
     }
 
     // ============ ATTACHMENT METHODS ============
@@ -2350,11 +2447,40 @@ public class MainChatController implements Initializable {
     }
 
     /**
-     * Edits a message (placeholder).
+     * Puts the UI into editing mode for the selected message.
+     * It uses the reply preview container to display the editing state.
+     *
+     * @param messageBubble The VBox of the message to be edited.
      */
-    private void editMessage() {
-        System.out.println("Editing message");
-        // TODO: Implement message editing (Server: Update message on server, UI: Reflect changes).
+    private void editMessage(VBox messageBubble) {
+        if (messageBubble == null) return;
+
+        resetReplyEditState();
+
+        isEditing = true;
+        editingMessageBubble = messageBubble;
+        replyToMessage = null;
+
+        Label messageTextLabel = (Label) messageBubble.getChildren().stream()
+                .filter(node -> node instanceof Label && node.getStyleClass().contains("message-text"))
+                .findFirst()
+                .orElse(null);
+
+        if (messageTextLabel == null) {
+            isEditing = false;
+            editingMessageBubble = null;
+            return;
+        }
+
+        replyToLabel.setText("Edit Message");
+        replyMessageLabel.setText(messageTextLabel.getText());
+        messageInputField.setText(messageTextLabel.getText());
+
+        replyPreviewContainer.setVisible(true);
+        replyPreviewContainer.setManaged(true);
+
+        messageInputField.requestFocus();
+        messageInputField.positionCaret(messageTextLabel.getText().length());
     }
 
     /**
