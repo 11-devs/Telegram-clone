@@ -17,7 +17,7 @@
     -fx-min-height: 60px;
     -fx-pref-height: 60px;
     -fx-alignment: CENTER_LEFT;
-    -fx-border-width: 0 0 1px 0;
+    -fx-border-width: 0 0 0 0;
     -fx-border-color: #2C3E50;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.12), 0, 0, 0, 0) 0 1px 3px;
     -fx-padding: 12.0 20.0 12.0 20.0; /* Adjusted padding for better spacing */
@@ -63,10 +63,12 @@
 
 /* User Profile Section */
 .user-profile-section {
-    -fx-background-color: #1E2832; /* Slightly lighter dark background */
+    -fx-background-color: #17212B; /* Changed to match title-bar */
     -fx-alignment: CENTER_LEFT; /* Changed to CENTER_LEFT for alignment with image */
     -fx-spacing: 15px; /* Adjusted spacing between image and text */
     -fx-padding: 15.0 20.0 15.0 20.0; /* Adjusted padding */
+    -fx-border-width: 0 0 1px 0;
+    -fx-border-color: #2C3E50;
 }
 
 .profile-picture-container {
@@ -95,15 +97,7 @@
     -fx-font-size: 14px;
 }
 
-/* Section Separator */
-.section-separator {
-    -fx-background-color: #2C3E50;
-    -fx-min-height: 1px;
-    -fx-pref-height: 1px;
-    -fx-max-height: 1px;
-    -fx-padding: 0;
-    -fx-margin: 0;
-}
+/* Section Separator - Removed */
 
 /* Menu Options ScrollPane */
 .settings-scroll-pane {
@@ -134,11 +128,18 @@
     -fx-padding: 0 20px; /* Adjust horizontal padding */
     -fx-alignment: CENTER_LEFT;
     -fx-background-radius: 6px; /* Added slight border radius */
-    -fx-transition: -fx-background-color 0.15s ease-out; /* Added transition for smooth hover */
+    -fx-transition: -fx-background-color 0.15s ease-out, -fx-effect 0.15s ease-out, -fx-scale-x 0.15s ease-out, -fx-scale-y 0.15s ease-out; /* Added transition for smooth hover */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.0), 0, 0.0, 0, 0); /* Initial transparent shadow */
+    -fx-scale-x: 1.0; /* Initial scale */
+    -fx-scale-y: 1.0;
+    -fx-max-width: infinity;
 }
 
 .menu-item-button:hover {
     -fx-background-color: #1E2832; /* Consistent hover color */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 5, 0.3, 0, 0); /* Subtle shadow on hover */
+    -fx-scale-x: 1.01; /* Very subtle scale effect */
+    -fx-scale-y: 1.01;
 }
 
 .menu-item-icon {
