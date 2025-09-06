@@ -68,7 +68,7 @@
                     <children>
                         <Label fx:id="nameLabel" styleClass="profile-name" text="Alex Johnson" />
                         <Label fx:id="phoneNumberLabel" styleClass="profile-phone" text="+1 234 567 8901" />
-                        <Label fx:id="usernameLabel" styleClass="profile-username" text="@alex_johnson" />
+                        <Label fx:id="usernameLabel" styleClass="profile-username" text="me" />
                     </children>
                 </VBox>
             </children>
