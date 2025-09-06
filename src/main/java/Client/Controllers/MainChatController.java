@@ -5,6 +5,7 @@ import Client.RpcCaller;
 import Client.Services.ChatService;
 import Client.Services.FileDownloadService;
 import Client.Services.UI.ChatUIService;
+import Client.Tasks.DownloadTask;
 import Client.Tasks.UploadTask;
 import JSocket2.Core.Client.ConnectionManager;
 import JSocket2.Protocol.Rpc.RpcResponse;
@@ -84,6 +85,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -409,6 +411,8 @@ public class MainChatController implements Initializable {
     private TimerTask typingStopTask;
     private boolean isCurrentlyTyping = false;
     private String originalEditText;
+    private final Map<String, DownloadTask> activeDownloadTasks = new ConcurrentHashMap<>();
+    private final Map<String, HBox> temporaryMessageNodes = new ConcurrentHashMap<>();
     /**
      * Initializes the controller after the FXML file is loaded.
      * Sets up the UI components, data, event handlers, and initial state.
@@ -457,7 +461,21 @@ public class MainChatController implements Initializable {
             // We can predict it for the 'open' action.
             this.storedPath = new File(transferInfo.getDestinationPath(), this.fileName).getPath();
         }
+        public DocumentInfo(GetMessageOutputModel msg) {
+            this.fileId = msg.getFileId();
+            this.fileName = msg.getFileName();
+            this.fileSize = msg.getFileSize();
+            this.fileExtension = msg.getFileExtension();
+            this.storedPath = new File(FileDownloadService.getInstance().getDocumentCacheDir().toFile(), this.fileName).getPath();
+        }
 
+        public DocumentInfo(NewMessageEventModel msg) {
+            this.fileId = msg.getFileId();
+            this.fileName = msg.getFileName();
+            this.fileSize = msg.getFileSize();
+            this.fileExtension = msg.getFileExtension();
+            this.storedPath = new File(FileDownloadService.getInstance().getDocumentCacheDir().toFile(), this.fileName).getPath();
+        }
         //<editor-fold desc="Getters and Setters">
         public String getFileId() { return fileId; }
         public void setFileId(String fileId) { this.fileId = fileId; }
@@ -516,13 +534,9 @@ public class MainChatController implements Initializable {
             if (message.getMessageType() == MessageType.TEXT) {
                 addMessageBubble(message.getTextContent(), false, formattedTime, "received", message.getSenderName(),false);
             } else if (message.getMessageType() == MessageType.MEDIA) {
-                fileDownloadService.getFileInfo(message.getFileId()).thenAcceptAsync(transferInfo -> {
-                    if (transferInfo != null) {
-                        DocumentInfo docInfo = new DocumentInfo(transferInfo);
-                        docInfo.setSenderName(message.getSenderName());
-                        Platform.runLater(() -> addDocumentMessageBubble(docInfo, false, formattedTime, "received"));
-                    }
-                });
+                DocumentInfo docInfo = new DocumentInfo(message);
+                docInfo.setSenderName(message.getSenderName());
+                addDocumentMessageBubble(docInfo, false, formattedTime, "received");
             }
 
             if (messagesScrollPane.getVvalue() > 0.9) {
@@ -552,7 +566,6 @@ public class MainChatController implements Initializable {
                     reorderAndRefreshChatList(user);
                 });
     }
-
 
     private Label findStatusLabelInMessageNode(HBox messageNode) {
         if (messageNode == null || messageNode.getChildren().isEmpty() || !(messageNode.getChildren().getFirst() instanceof VBox bubble)) {
@@ -1259,26 +1272,13 @@ public class MainChatController implements Initializable {
                             ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageId", msg.getMessageId());
                             ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageTimestamp", timestamp);
                         } else if (msg.getMessageType() == MessageType.MEDIA && msg.getMediaId() != null) {
-                            final String fileId = msg.getFileId();
-                            // Asynchronously fetch file info to build the bubble without blocking the UI thread.
-                            fileDownloadService.getFileInfo(fileId).thenAcceptAsync(transferInfo -> {
-                                if (transferInfo != null) {
-                                    DocumentInfo docInfo = new DocumentInfo(transferInfo);
-                                    docInfo.setSenderName(senderName);
-                                    // Use the new status field from the server response
-                                    String status = msg.getOutgoing() ? msg.getMessageStatus() : "received";
-                                    HBox messageNode = addDocumentMessageBubble(docInfo, msg.getOutgoing(), formattedTime, status);
-                                    // Store messageId and timestamp for later updates
-                                    ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageId", msg.getMessageId());
-                                    ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageTimestamp", timestamp);
-                                } else {
-                                    System.err.println("Could not retrieve info for fileId: " + fileId);
-                                }
-                            }).exceptionally(ex -> {
-                                System.err.println("Failed to get TransferInfo for fileId: " + fileId);
-                                ex.printStackTrace();
-                                return null;
-                            });
+                            DocumentInfo docInfo = new DocumentInfo(msg);
+                            docInfo.setSenderName(senderName);
+                            String status = msg.getOutgoing() ? msg.getMessageStatus() : "received";
+                            HBox messageNode = addDocumentMessageBubble(docInfo, msg.getOutgoing(), formattedTime, status);
+                            // Store messageId and timestamp for later updates
+                            ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageId", msg.getMessageId());
+                            ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageTimestamp", timestamp);
                         }
                     }
                     scrollToBottom();
@@ -1315,6 +1315,7 @@ public class MainChatController implements Initializable {
                 // Step 2: Create the Media DB entry via RPC.
                 CreateMediaInputModel createMediaInput = new CreateMediaInputModel(
                         UUID.fromString(fileId),
+                        file.getName(),
                         file.length(),
                         getFileExtension(file)
                 );
@@ -1883,46 +1884,274 @@ public class MainChatController implements Initializable {
      * Processes the selected document and adds it to the chat
      */
     private void processDocumentAttachment(File file) {
-        try {
-            // Create document info object
-            DocumentInfo docInfo = new DocumentInfo(
-                    file.getName(),
-                    file.length(),
-                    getFileExtension(file),
-                    file.getAbsolutePath()
-            );
+        if (currentSelectedUser == null) return;
 
-            //TODO: connect to the data base
-            // Copy file to app's document directory for persistence
-            String documentsDir = "/Client/documents"; // TODO: it has bug
-            ensureDataDirectoryExists(documentsDir);
+        DocumentInfo docInfo = new DocumentInfo(
+                file.getName(),
+                file.length(),
+                getFileExtension(file),
+                file.getAbsolutePath()
+        );
 
-            String newFileName = System.currentTimeMillis() + "_" + file.getName();
-            Path targetPath = Path.of(documentsDir + newFileName);
+        // Create a temporary ID to track the message bubble during upload
+        String tempId = UUID.randomUUID().toString();
+        // Add a temporary bubble showing "sending" status
+        HBox messageNode = addDocumentMessageBubble(docInfo, true, getCurrentTime(), "sending");
+        VBox bubble = (VBox) messageNode.getChildren().getFirst();
+        temporaryMessageNodes.put(tempId, messageNode);
 
-            // Copy file
-            Files.copy(file.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-            docInfo.setStoredPath(targetPath.toString());
+        // Get the progress indicator from the bubble's properties
+        ProgressIndicator progressIndicator = (ProgressIndicator) bubble.getProperties().get("progressIndicator");
 
-            // Add document message bubble
-            addDocumentMessageBubble(docInfo, true, getCurrentTime(), "sent");
+        var app = connectionManager.getClient();
+        ExecutorService backgroundExecutor = app.getBackgroundExecutor();
 
-            // Update chat list
-            if (currentSelectedUser != null) {
-                currentSelectedUser.setLastMessage("📄 " + file.getName());
-                currentSelectedUser.setTime(getCurrentTime());
-                refreshChatList();
+        backgroundExecutor.submit(() -> {
+            try {
+                // Step 1: Initiate upload and get a File ID from the server
+                FileInfoModel info = app.getFileTransferManager().initiateUpload(file);
+                String fileId = info.FileId;
+
+                // Step 2: Create a media entry in the database via RPC
+                CreateMediaInputModel createMediaInput = new CreateMediaInputModel(
+                        UUID.fromString(fileId),
+                        file.getName(),
+                        file.length(),
+                        getFileExtension(file)
+                );
+                RpcResponse<UUID> createMediaResponse = rpcCaller.createMediaEntry(createMediaInput);
+
+                if (createMediaResponse.getStatusCode() != StatusCode.OK) {
+                    Platform.runLater(() -> updateMessageStatus(temporaryMessageNodes.remove(tempId), "failed", null));
+                    return;
+                }
+                UUID mediaId = createMediaResponse.getPayload();
+
+                // Step 3: Set up a progress listener to update the UI
+                IProgressListener listener = (transferred, total) -> {
+                    double progress = (total > 0) ? ((double) transferred / total) : 0;
+                    Platform.runLater(() -> {
+                        if (progressIndicator != null) progressIndicator.setProgress(progress);
+                    });
+                };
+
+                // Step 4: Create and start the upload task
+                UploadTask uploadTask = new UploadTask(app.getFileTransferManager(), info, file, listener);
+                app.registerTask(fileId, uploadTask);
+
+                uploadTask.setOnSucceeded(e -> {
+                    app.unregisterTask(fileId);
+
+                    // Step 5: Once upload is complete, send the media message via RPC
+                    SendMessageInputModel messageInput = new SendMessageInputModel();
+                    messageInput.setChatId(UUID.fromString(currentSelectedUser.getUserId()));
+                    messageInput.setMessageType(MessageType.MEDIA);
+                    messageInput.setMediaId(mediaId);
+
+                    Task<RpcResponse<SendMessageOutputModel>> sendMessageTask = chatService.sendMessage(messageInput);
+                    sendMessageTask.setOnSucceeded(event -> {
+                        RpcResponse<SendMessageOutputModel> smResponse = sendMessageTask.getValue();
+                        HBox finalMessageNode = temporaryMessageNodes.remove(tempId);
+                        if (finalMessageNode != null) {
+                            if (smResponse.getStatusCode() == StatusCode.OK) {
+                                // Update the message bubble with the final "sent" status and server timestamp
+                                Platform.runLater(() -> {
+                                    updateMessageStatus(finalMessageNode, "sent", LocalDateTime.parse(smResponse.getPayload().getTimestamp()).format(DateTimeFormatter.ofPattern("HH:mm")));
+                                    VBox finalBubble = (VBox) finalMessageNode.getChildren().getFirst();
+                                    finalBubble.getProperties().put("messageId", smResponse.getPayload().getMessageId());
+                                    finalBubble.getProperties().put("messageTimestamp", LocalDateTime.parse(smResponse.getPayload().getTimestamp()));
+                                });
+                            } else {
+                                Platform.runLater(() -> updateMessageStatus(finalMessageNode, "failed", null));
+                            }
+                        }
+                    });
+                    sendMessageTask.setOnFailed(failEvent -> Platform.runLater(() -> updateMessageStatus(temporaryMessageNodes.remove(tempId), "failed", null)));
+                    new Thread(sendMessageTask).start();
+                });
+
+                uploadTask.setOnFailed(failEvent -> {
+                    app.unregisterTask(fileId);
+                    Platform.runLater(() -> updateMessageStatus(temporaryMessageNodes.remove(tempId), "failed", null));
+                });
+
+                backgroundExecutor.submit(uploadTask);
+
+            } catch (Exception ex) {
+                Platform.runLater(() -> updateMessageStatus(temporaryMessageNodes.remove(tempId), "failed", null));
+                ex.printStackTrace();
             }
-
-            // Simulate upload progress and delivery
-            simulateDocumentUpload(docInfo);
-
-        } catch (Exception e) {
-            System.err.println("Error processing document: " + e.getMessage());
-            showTemporaryNotification("Upload Error\nFailed to process the selected document.\n");
-        }
+        });
     }
 
+    /**
+     * Creates the document bubble UI with a dynamic action icon for downloading or opening,
+     * and a progress indicator for uploads/downloads.
+     */
+    private VBox createDocumentBubble(DocumentInfo docInfo, String time, String status, boolean isOutgoing) {
+        VBox bubble = new VBox();
+        bubble.setSpacing(8);
+        bubble.getStyleClass().addAll("message-bubble", "document-bubble", isOutgoing ? "outgoing" : "incoming");
+        bubble.setMaxWidth(300);
+        bubble.setPadding(new Insets(8));
+
+        HBox docContainer = new HBox(12);
+        docContainer.setAlignment(Pos.CENTER_LEFT);
+
+        StackPane iconStack = new StackPane();
+        iconStack.setAlignment(Pos.CENTER);
+        iconStack.setPrefSize(48, 48);
+
+        ImageView fileIcon = createFileTypeIcon(docInfo.getFileExtension());
+        fileIcon.setFitWidth(48);
+        fileIcon.setFitHeight(48);
+        fileIcon.setPreserveRatio(true);
+
+        ProgressIndicator progressIndicator = new ProgressIndicator(0);
+        progressIndicator.setVisible(false);
+        progressIndicator.setPrefSize(52, 52);
+        progressIndicator.getStyleClass().add("download-progress-indicator");
+
+        Button actionButton = new Button();
+        actionButton.getStyleClass().add("document-action-icon");
+
+        iconStack.getChildren().addAll(fileIcon, progressIndicator, actionButton);
+
+        VBox fileInfo = new VBox(4);
+        HBox.setHgrow(fileInfo, Priority.ALWAYS);
+        Label fileName = new Label(docInfo.getFileName());
+        fileName.getStyleClass().addAll("document-name", isOutgoing ? "outgoing" : "incoming");
+        fileName.setWrapText(true);
+        Label fileDetails = new Label(formatFileSize(docInfo.getFileSize()) + " • " + docInfo.getFileExtension().toUpperCase());
+        fileDetails.getStyleClass().addAll("document-details", isOutgoing ? "outgoing" : "incoming");
+        fileInfo.getChildren().addAll(fileName, fileDetails);
+
+        // Store UI components in the bubble's properties for later access
+        bubble.getProperties().put("progressIndicator", progressIndicator);
+        bubble.getProperties().put("actionButton", actionButton);
+
+        if (isOutgoing && "sending".equals(status)) {
+            progressIndicator.setVisible(true);
+            actionButton.setVisible(false);
+        } else {
+            File localFile = new File(docInfo.getStoredPath());
+            // Check if the file is already downloaded
+            if (localFile.exists() && docInfo.getFileSize() == localFile.length()) {
+                actionButton.setGraphic(createIconView("/Client/images/context-menu/forward.png", 24)); // Re-using an existing icon
+                actionButton.setOnAction(e -> openDocument(docInfo));
+            } else {
+                actionButton.setGraphic(createIconView("/Client/images/context-menu/download.png", 24));
+                actionButton.setOnAction(e -> startDownload(docInfo, progressIndicator, actionButton, bubble));
+            }
+        }
+
+        docContainer.getChildren().addAll(iconStack, fileInfo);
+
+        HBox timeContainer = new HBox(4);
+        timeContainer.setAlignment(Pos.CENTER_RIGHT);
+        timeContainer.setPadding(new Insets(4, 0, 0, 0));
+        Label timeLabel = new Label(time);
+        timeLabel.getStyleClass().addAll("message-time", isOutgoing ? "outgoing" : "incoming");
+        timeContainer.getChildren().add(timeLabel);
+
+        if (isOutgoing && status != null) {
+            Label statusLabel = new Label(getStatusIcon(status));
+            statusLabel.getStyleClass().addAll("message-status", status);
+            timeContainer.getChildren().add(statusLabel);
+        }
+
+        bubble.getChildren().addAll(docContainer, timeContainer);
+        bubble.setOnMouseClicked(this::handleMessageClick);
+        bubble.setUserData(docInfo);
+
+        return bubble;
+    }
+
+    /**
+     * Helper method to safely create an ImageView for an icon, with a fallback.
+     */
+    private ImageView createIconView(String resourcePath, int size) {
+        ImageView iconView = new ImageView();
+        try {
+            URL resource = getClass().getResource(resourcePath);
+            if (resource == null) {
+                throw new IOException("Icon resource not found: " + resourcePath);
+            }
+            Image iconImage = new Image(resource.toExternalForm());
+            iconView.setImage(iconImage);
+        } catch (Exception e) {
+            System.err.println("Failed to load icon: " + resourcePath + ". Using placeholder. Error: " + e.getMessage());
+            try { // Fallback to a known existing icon
+                Image fallbackImage = new Image(Objects.requireNonNull(getClass().getResource("/Client/images/context-menu/forward.png")).toExternalForm());
+                iconView.setImage(fallbackImage);
+            } catch (Exception ex) { /* If even fallback fails, icon will be empty */ }
+        }
+        iconView.setFitHeight(size);
+        iconView.setFitWidth(size);
+        iconView.setPreserveRatio(true);
+        return iconView;
+    }
+
+    /**
+     * Starts the download for a given media file and updates the UI accordingly.
+     */
+    private void startDownload(DocumentInfo docInfo, ProgressIndicator progressIndicator, Button actionButton, VBox bubble) {
+        String fileId = docInfo.getFileId();
+        if (fileId == null || activeDownloadTasks.containsKey(fileId)) return;
+
+        // Change button to a "cancel" icon
+        actionButton.setGraphic(createIconView("/Client/images/context-menu/delete.png", 24)); // Re-using delete icon for cancel
+        actionButton.setOnAction(e -> cancelDownload(fileId));
+        progressIndicator.setProgress(0);
+        progressIndicator.setVisible(true);
+
+        var app = connectionManager.getClient();
+        var transferManager = app.getFileTransferManager();
+        var executor = app.getBackgroundExecutor();
+
+        // The download process must be run on a background thread because initiateDownload is a blocking network call.
+        executor.submit(() -> {
+            try {
+                // Step 1: Explicitly initiate the download. This prepares local temp files and gets final TransferInfo.
+                String destinationPath = fileDownloadService.getDocumentCacheDir().toString();
+                TransferInfo info = transferManager.initiateDownload(fileId, destinationPath);
+
+                if (info == null) {
+                    Platform.runLater(() -> resetDownloadUI(progressIndicator, actionButton, docInfo, bubble, "Failed to get file info."));
+                    return;
+                }
+
+                // Update the stored path in docInfo to reflect the actual final location
+                docInfo.setStoredPath(new File(info.getDestinationPath(), info.getFileName() + "." + info.getFileExtension()).getPath());
+
+                // Step 2: Create listener and task for the download process.
+                IProgressListener listener = (transferred, total) -> {
+                    double progress = (total > 0) ? ((double) transferred / total) : 0;
+                    Platform.runLater(() -> progressIndicator.setProgress(progress));
+                };
+
+                DownloadTask downloadTask = new DownloadTask(transferManager, info, null, fileId, listener);
+
+                downloadTask.setOnSucceeded(e -> {
+                    activeDownloadTasks.remove(fileId);
+                    Platform.runLater(() -> {
+                        progressIndicator.setVisible(false);
+                        actionButton.setGraphic(createIconView("/Client/images/context-menu/forward.png", 24)); // Re-using icon for "open"
+                        actionButton.setOnAction(evt -> openDocument(docInfo));
+                    });
+                });
+                downloadTask.setOnFailed(e -> Platform.runLater(() -> resetDownloadUI(progressIndicator, actionButton, docInfo, bubble, "Download failed.")));
+                downloadTask.setOnCancelled(e -> Platform.runLater(() -> resetDownloadUI(progressIndicator, actionButton, docInfo, bubble, "Download cancelled.")));
+
+                activeDownloadTasks.put(fileId, downloadTask);
+                executor.submit(downloadTask);
+
+            } catch (IOException e) {
+                Platform.runLater(() -> resetDownloadUI(progressIndicator, actionButton, docInfo, bubble, "Error starting download."));
+                e.printStackTrace();
+            }
+        });
+    }
     /**
      * Creates a document message bubble with file info and controls
      */
@@ -1959,106 +2188,25 @@ public class MainChatController implements Initializable {
         return messageContainer;
     }
 
+
+    private void resetDownloadUI(ProgressIndicator progressIndicator, Button actionButton, DocumentInfo docInfo, VBox bubble, String notificationMessage) {
+        activeDownloadTasks.remove(docInfo.getFileId());
+        Platform.runLater(() -> {
+            progressIndicator.setVisible(false);
+            actionButton.setGraphic(createIconView("/Client/images/context-menu/download.png", 24));
+            actionButton.setOnAction(evt -> startDownload(docInfo, progressIndicator, actionButton, bubble));
+            if (notificationMessage != null) showTemporaryNotification(notificationMessage);
+        });
+    }
+
     /**
-     * Creates the document bubble UI with file icon, info, and open button
+     * Cancels an active download task.
      */
-    private VBox createDocumentBubble(DocumentInfo docInfo, String time, String status, boolean isOutgoing) {
-        VBox bubble = new VBox();
-        bubble.setSpacing(8);
-        bubble.getStyleClass().addAll("message-bubble", "document-bubble", isOutgoing ? "outgoing" : "incoming");
-        bubble.setMaxWidth(250);
-        bubble.setPadding(new Insets(12));
-
-        // Document content container
-        HBox docContainer = new HBox();
-        docContainer.setSpacing(12);
-        docContainer.setAlignment(Pos.CENTER_LEFT);
-
-        // File icon
-        VBox iconContainer = new VBox();
-        iconContainer.setAlignment(Pos.CENTER);
-        iconContainer.setPrefSize(48, 48);
-        iconContainer.getStyleClass().add("document-icon-container");
-
-        // Create icon based on file type
-        ImageView fileIcon = createFileTypeIcon(docInfo.getFileExtension());
-        fileIcon.setFitWidth(70);
-        fileIcon.setFitHeight(70);
-        fileIcon.setPreserveRatio(true);
-
-        iconContainer.getChildren().add(fileIcon);
-
-        // File info
-        VBox fileInfo = new VBox();
-        fileInfo.setSpacing(4);
-        fileInfo.setAlignment(Pos.CENTER_LEFT);
-        HBox.setHgrow(fileInfo, Priority.ALWAYS);
-
-        // File name
-        Label fileName = new Label(docInfo.getFileName());
-        fileName.getStyleClass().addAll("document-name", isOutgoing ? "outgoing" : "incoming");
-        fileName.setWrapText(true);
-        fileName.setMaxWidth(100);
-
-        // File size and type
-        Label fileDetails = new Label(formatFileSize(docInfo.getFileSize()) + " • " +
-                docInfo.getFileExtension().toUpperCase());
-        fileDetails.getStyleClass().addAll("document-details", isOutgoing ? "outgoing" : "incoming");
-
-        fileInfo.getChildren().addAll(fileName, fileDetails);
-
-        // Action buttons container
-        VBox actionsContainer = new VBox();
-        actionsContainer.setSpacing(4);
-        actionsContainer.setAlignment(Pos.CENTER);
-
-        // Open button
-        Button openButton = new Button("Open");
-        openButton.getStyleClass().addAll("document-action-button", isOutgoing ? "outgoing" : "incoming");
-        openButton.setPrefWidth(120);
-        openButton.setOnAction(e -> openDocument(docInfo));
-
-        // Download/Save button (for received files)
-        Button saveButton = null;
-        if (!isOutgoing) {
-            saveButton = new Button("Save");
-            saveButton.getStyleClass().addAll("document-action-button", "secondary");
-            saveButton.setPrefWidth(60);
-            saveButton.setOnAction(e -> saveDocument(docInfo));
+    private void cancelDownload(String fileId) {
+        DownloadTask task = activeDownloadTasks.get(fileId);
+        if (task != null) {
+            task.cancel(true);
         }
-
-        actionsContainer.getChildren().add(openButton);
-        if (saveButton != null) {
-            actionsContainer.getChildren().add(saveButton);
-        }
-
-        docContainer.getChildren().addAll(iconContainer, fileInfo, actionsContainer);
-
-        // Time and status container
-        HBox timeContainer = new HBox();
-        timeContainer.setSpacing(4);
-        timeContainer.setAlignment(Pos.CENTER_RIGHT);
-        timeContainer.setPadding(new Insets(4, 0, 0, 0));
-
-        Label timeLabel = new Label(time);
-        timeLabel.getStyleClass().addAll("message-time", isOutgoing ? "outgoing" : "incoming");
-        timeContainer.getChildren().add(timeLabel);
-
-        // Add status for outgoing messages
-        if (isOutgoing && status != null) {
-            Label statusLabel = new Label(getStatusIcon(status));
-            statusLabel.getStyleClass().addAll("message-status", status);
-            timeContainer.getChildren().add(statusLabel);
-        }
-
-        bubble.getChildren().addAll(docContainer, timeContainer);
-
-        // Add click handler for message options
-        bubble.setOnMouseClicked(this::handleMessageClick);
-
-        bubble.setUserData(docInfo);
-
-        return bubble;
     }
 
     /**
@@ -3433,14 +3581,14 @@ public class MainChatController implements Initializable {
         }
 
         if (isDocument) {
-            MenuItem downloadItem = createIconMenuItem("Download", "/Client/images/context-menu/download.png");
-            downloadItem.setOnAction(e -> {
+            MenuItem saveAsItem = createIconMenuItem("Save As...", "/Client/images/context-menu/download.png");
+            saveAsItem.setOnAction(e -> {
                 Object userData = messageBubble.getUserData();
                 if (userData instanceof DocumentInfo) {
                     saveDocument((DocumentInfo) userData);
                 }
             });
-            newMenu.getItems().add(downloadItem);
+            newMenu.getItems().add(saveAsItem);
         } else {
             MenuItem copyItem = createIconMenuItem("Copy Text", "/Client/images/context-menu/copy.png");
             copyItem.setOnAction(e -> copyMessageText(messageBubble));
@@ -3454,7 +3602,6 @@ public class MainChatController implements Initializable {
         newMenu.show(messageBubble, event.getScreenX(), event.getScreenY());
         activeMessageContextMenu = newMenu;
     }
-
     /**
      * Helper method to create a MenuItem with a custom Image icon.
      *

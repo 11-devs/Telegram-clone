@@ -28,7 +28,9 @@ public class MediaRpcController extends RpcControllerBase {
         if (media != null) {
             return Ok(media.getId());
         }
-         media = new Media();
+        media = new Media();
+        media.setFileName(model.getFileName());
+        media.setFileExtension(model.getFileExtension());
         media.setSize(model.getSize());
         media.setType(determineMediaType(model.getFileExtension()));
         // The URL is ignored as per the requirement; a conventional path is stored instead.

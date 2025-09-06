@@ -14,6 +14,12 @@ public class Media extends BaseEntity {
     @Column(nullable = false)
     private String fileId;
 
+    @Column(nullable = false)
+    private String fileName;
+
+    @Column(nullable = true)
+    private String fileExtension;
+
     private Long size; // in bytes
 
     private String mimeType;
@@ -37,6 +43,22 @@ public class Media extends BaseEntity {
 
     public void setFileId(String fileId) {
         this.fileId = fileId;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    public String getFileExtension() {
+        return fileExtension;
+    }
+
+    public void setFileExtension(String fileExtension) {
+        this.fileExtension = fileExtension;
     }
 
     public Long getSize() {
