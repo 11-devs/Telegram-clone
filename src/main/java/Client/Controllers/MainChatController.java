@@ -31,6 +31,8 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import com.jfoenix.controls.JFXToggleButton;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 
 import java.awt.*;
 import java.io.File;
@@ -2384,17 +2386,16 @@ public class MainChatController implements Initializable {
         forwardItem.setOnAction(e -> forwardMessage());
 
         MenuItem copyItem = new MenuItem("Copy Text");
-        copyItem.setOnAction(e -> copyMessageText());
+        copyItem.setOnAction(e -> copyMessageText(messageBubble));
 
         MenuItem deleteItem = new MenuItem("Delete");
-        deleteItem.setOnAction(e -> deleteMessage());
+        deleteItem.setOnAction(e -> deleteMessage(messageBubble));
 
         newMenu.getItems().addAll(replyItem, forwardItem, new SeparatorMenuItem(), copyItem, deleteItem);
 
         if (isOutgoing) {
             MenuItem editItem = new MenuItem("Edit");
             editItem.setOnAction(e -> editMessage(messageBubble));
-
             newMenu.getItems().add(2, editItem);
         }
 
@@ -2484,19 +2485,54 @@ public class MainChatController implements Initializable {
     }
 
     /**
-     * Deletes a message (placeholder).
+     * Deletes a message from the UI and optionally from the backend.
+     *
+     * @param messageBubble The VBox of the message to be deleted.
      */
-    private void deleteMessage() {
-        System.out.println("Deleting message");
-        // TODO: Implement message deletion (Server: Remove message from server, UI: Remove from UI).
+    private void deleteMessage(VBox messageBubble) {
+        if (messageBubble == null) return;
+
+        // Remove the HBox that contains the VBox message bubble
+        if (messageBubble.getParent() instanceof HBox) {
+            ((HBox) messageBubble.getParent()).getChildren().remove(messageBubble); // remove bubble from HBox
+            messagesContainer.getChildren().remove(messageBubble.getParent()); // remove HBox from messagesContainer
+        } else {
+            messagesContainer.getChildren().remove(messageBubble); // Fallback: remove VBox directly
+        }
+
+        // TODO: (Server) Send delete request to the server
+        System.out.println("Message deleted from UI. (Implement server deletion)");
+
+        // Check if the chat is now empty
+        if (messagesContainer.getChildren().isEmpty()) {
+            showEmptyChatState();
+            // TODO: Update currentSelectedUser.lastMessage accordingly
+        }
     }
 
     /**
-     * Copies the text of a message to the clipboard (placeholder).
+     * Copies the text of a message to the system clipboard.
+     *
+     * @param messageBubble The VBox of the message from which to copy the text.
      */
-    private void copyMessageText() {
-        System.out.println("Copying message text");
-        // TODO: Implement text copying to clipboard (UI: Use JavaFX Clipboard API).
+    private void copyMessageText(VBox messageBubble) {
+        if (messageBubble == null) return;
+
+        Label messageTextLabel = (Label) messageBubble.getChildren().stream()
+                .filter(node -> node instanceof Label && node.getStyleClass().contains("message-text"))
+                .findFirst()
+                .orElse(null);
+
+        if (messageTextLabel != null) {
+            final Clipboard clipboard = Clipboard.getSystemClipboard();
+            final ClipboardContent content = new ClipboardContent();
+            content.putString(messageTextLabel.getText());
+            clipboard.setContent(content);
+            showTemporaryNotification("Message text copied to clipboard!");
+            System.out.println("Text copied: " + messageTextLabel.getText());
+        } else {
+            System.err.println("Could not find message text label in the bubble to copy.");
+        }
     }
 
     // ============ UTILITY METHODS ============
