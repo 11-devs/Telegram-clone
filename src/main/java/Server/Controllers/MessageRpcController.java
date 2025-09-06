@@ -277,7 +277,7 @@ public class MessageRpcController extends RpcControllerBase {
                 System.err.println("Failed to send message edited event to " + member.getAccount().getId() + ": " + e.getMessage());
             }
         }
-        return Ok("Message edited successfully.");
+        return Ok();
     }
 
     public RpcResponse<Object> deleteMessage(DeleteMessageInputModel model) {
@@ -304,7 +304,7 @@ public class MessageRpcController extends RpcControllerBase {
                 System.err.println("Failed to send message deleted event to " + member.getAccount().getId() + ": " + e.getMessage());
             }
         }
-        return Ok("Message deleted successfully.");
+        return Ok();
     }
 
     public void markChatAsRead(MarkChatAsReadInputModel model) {

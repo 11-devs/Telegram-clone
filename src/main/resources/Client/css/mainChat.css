@@ -683,7 +683,9 @@
     -fx-background-radius: 18 18 18 4;
     -fx-border-radius: 18 18 18 4;
 }
-
+.edited-indicator {
+    -fx-text-fill : white
+}
 .message-time {
     -fx-font-size: 11px;
     -fx-font-weight: 400;
