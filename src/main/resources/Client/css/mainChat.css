@@ -1023,10 +1023,11 @@
 
 /* ============ TELEGRAM CONTEXT MENU STYLE ============ */
 .context-menu {
-    -fx-background-color: #212B36;
+    -fx-background-color: #17212B;
     -fx-background-insets: 0;
     -fx-background-radius: 8px;
     -fx-border-width: 0;
+    -fx-pref-width: 150px;
 }
 
 .context-menu .menu-item > .label {
@@ -1046,7 +1047,7 @@
 
 .context-menu .menu-item:focused,
 .context-menu .menu-item:hover {
-    -fx-background-color: #2D3B4D;
+    -fx-background-color: #232E3C;
 }
 
 /* ============ CHAT LIST CELL CUSTOM STYLING ============ */

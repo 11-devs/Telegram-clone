@@ -33,7 +33,7 @@ import javafx.util.Duration;
 import com.jfoenix.controls.JFXToggleButton;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
-import javafx.scene.shape.SVGPath;
+import javafx.geometry.Point2D;
 
 import java.awt.*;
 import java.io.File;
@@ -262,7 +262,10 @@ public class MainChatController implements Initializable {
     @FXML private Button closeRightPanelButton;
 
     // ============ DATA AND STATE ============
-
+    /**
+     * Default users name.
+     */
+    private String ownUsername = "Me";
     /**
      * ObservableList of all chat users.
      */
@@ -947,54 +950,58 @@ public class MainChatController implements Initializable {
     }
 
     /**
-     * Displays a reply preview for the selected message bubble.
-     * Stops any previous animation before starting the new one.
+     * Displays a reply preview. It resets any prior editing state and configures
+     * the preview panel for a reply action.
      *
      * @param messageBubble The VBox representing the message to reply to.
      */
     private void showReplyPreview(VBox messageBubble) {
-        if (replyPreviewContainer == null) return;
+        if (replyPreviewContainer == null || messageBubble == null) return;
 
+        // 1. Reset data state WITHOUT hiding the panel
         resetReplyEditState();
 
-        // Stop any ongoing animation on the container
+        // Stop any ongoing animation
         if (replyPreviewAnimation != null) {
             replyPreviewAnimation.stop();
         }
 
-        // Reset states
-        isEditing = false;
-        editingMessageBubble = null;
-        replyToLabel.setText("");
-        replyMessageLabel.setText("");
+        // 2. Determine the sender's name
+        boolean isOwnMessage = messageBubble.getStyleClass().contains("outgoing");
+        String replyToName = isOwnMessage ? this.ownUsername : (currentSelectedUser != null ? currentSelectedUser.getUserName() : "User");
 
-        // Extract message info
-        Label messageText = (Label) messageBubble.getChildren().get(
-                messageBubble.getChildren().size() == 3 ? 1 : 0 // Account for sender name
-        );
+        // 3. Extract message text
+        Label messageTextLabel = (Label) messageBubble.getChildren().stream()
+                .filter(node -> node instanceof Label && node.getStyleClass().contains("message-text"))
+                .findFirst().orElse(null);
 
-        replyToLabel.setText(currentSelectedUser != null ? currentSelectedUser.getUserName() : "User");
-        replyMessageLabel.setText(messageText.getText().length() > 100 ?
-                messageText.getText().substring(0, 97) + "..." : messageText.getText());
+        if (messageTextLabel == null) return;
+        String originalMessageText = messageTextLabel.getText();
 
-        // Make it visible and managed before animating
-        replyPreviewContainer.setVisible(true);
-        replyPreviewContainer.setManaged(true);
+        // 4. Update UI labels
+        replyToLabel.setText("Reply to " + replyToName);
+        replyMessageLabel.setText(originalMessageText.length() > 100 ?
+                originalMessageText.substring(0, 97) + "..." : originalMessageText);
+        messageInputField.clear(); // Clear input field for the new reply
 
-        // Animate reply preview
-        replyPreviewContainer.setTranslateY(-30);
-        replyPreviewContainer.setOpacity(0);
+        // 5. If the panel was hidden, show it now with animation
+        if (!replyPreviewContainer.isVisible()) {
+            replyPreviewContainer.setVisible(true);
+            replyPreviewContainer.setManaged(true);
 
-        TranslateTransition slideDown = new TranslateTransition(Duration.millis(200), replyPreviewContainer);
-        slideDown.setToY(0);
+            replyPreviewContainer.setTranslateY(-30);
+            replyPreviewContainer.setOpacity(0);
 
-        FadeTransition fadeIn = new FadeTransition(Duration.millis(200), replyPreviewContainer);
-        fadeIn.setToValue(1.0);
+            TranslateTransition slideDown = new TranslateTransition(Duration.millis(200), replyPreviewContainer);
+            slideDown.setToY(0);
 
-        replyPreviewAnimation = new ParallelTransition(slideDown, fadeIn);
-        replyPreviewAnimation.play();
+            FadeTransition fadeIn = new FadeTransition(Duration.millis(200), replyPreviewContainer);
+            fadeIn.setToValue(1.0);
 
-        // Focus message input
+            replyPreviewAnimation = new ParallelTransition(slideDown, fadeIn);
+            replyPreviewAnimation.play();
+        }
+
         messageInputField.requestFocus();
     }
 
@@ -1018,26 +1025,26 @@ public class MainChatController implements Initializable {
 
         replyPreviewAnimation = new ParallelTransition(slideUp, fadeOut);
         replyPreviewAnimation.setOnFinished(e -> {
+            // Hide the panel and then reset the state data
+            replyPreviewContainer.setVisible(false);
+            replyPreviewContainer.setManaged(false);
             resetReplyEditState();
         });
         replyPreviewAnimation.play();
     }
 
     /**
-     * Resets the reply/edit state completely.
-     * Clears the preview panel and resets state flags.
+     * Resets only the data and state flags for reply/edit.
+     * Does NOT hide the UI container, allowing for smooth transitions between states.
      */
     private void resetReplyEditState() {
         isEditing = false;
         editingMessageBubble = null;
         replyToMessage = null;
 
-        replyPreviewContainer.setVisible(false);
-        replyPreviewContainer.setManaged(false);
 
         replyToLabel.setText("");
         replyMessageLabel.setText("");
-        messageInputField.clear();
     }
 
     // ============ DOCUMENT MESSAGE BUBBLE IMPLEMENTATION ============
@@ -1392,25 +1399,31 @@ public class MainChatController implements Initializable {
 
     /**
      * Performs a search on the chat list based on the input text.
+     * If the search text is empty, it resets the list to show all chats.
      *
      * @param searchText The text to search for.
      */
     private void performSearch(String searchText) {
         if (searchText == null || searchText.trim().isEmpty()) {
+            filteredChatUsers.setAll(allChatUsers);
+            chatListView.scrollTo(0);
             return;
         }
 
         ObservableList<UserViewModel> searchResults = FXCollections.observableArrayList();
-        String lowerCaseSearch = searchText.toLowerCase();
+        String lowerCaseSearch = searchText.toLowerCase().trim();
 
         for (UserViewModel user : allChatUsers) {
-            if (user.getUserName().toLowerCase().contains(lowerCaseSearch) ||
-                    (user.getLastMessage() != null && user.getLastMessage().toLowerCase().contains(lowerCaseSearch))) {
+            boolean nameMatches = user.getUserName().toLowerCase().contains(lowerCaseSearch);
+            boolean messageMatches = user.getLastMessage() != null && user.getLastMessage().toLowerCase().contains(lowerCaseSearch);
+
+            if (nameMatches || messageMatches) {
                 searchResults.add(user);
             }
         }
 
         filteredChatUsers.setAll(searchResults);
+        chatListView.scrollTo(0);
     }
 
     // ============ MESSAGE INPUT HANDLING ============
@@ -2054,36 +2067,65 @@ public class MainChatController implements Initializable {
     }
 
     /**
-     * Shows a context menu with options for the current chat.
+     * Shows a context menu with options for the current chat, complete with icons.
+     * The menu is positioned correctly relative to the 'moreOptionsButton'.
      */
     private void showMoreOptions() {
-        ContextMenu menu = new ContextMenu();
+        if (activeMessageContextMenu != null && activeMessageContextMenu.isShowing()) {
+            activeMessageContextMenu.hide();
+        }
 
-        MenuItem viewProfileItem = new MenuItem("View Profile");
+        ContextMenu menu = new ContextMenu();
+        menu.setAutoHide(true);
+
+        MenuItem viewProfileItem = createIconMenuItem("View Profile", "/Client/images/context-menu/profile.png");
         viewProfileItem.setOnAction(e -> toggleRightPanel());
 
-        MenuItem searchItem = new MenuItem("Search Messages");
+        MenuItem searchItem = createIconMenuItem("Search Messages", "/Client/images/context-menu/search.png");
         searchItem.setOnAction(e -> showSearchInChat());
 
-        MenuItem muteItem = new MenuItem(currentSelectedUser != null && currentSelectedUser.isMuted() ? "Unmute" : "Mute");
+        String muteText = (currentSelectedUser != null && currentSelectedUser.isMuted()) ? "Unmute" : "Mute";
+        String muteIcon = (currentSelectedUser != null && currentSelectedUser.isMuted()) ? "/Client/images/context-menu/unmute.png" : "/Client/images/context-menu/mute.png";
+        MenuItem muteItem = createIconMenuItem(muteText, muteIcon);
         muteItem.setOnAction(e -> toggleMute());
 
-        MenuItem pinItem = new MenuItem(currentSelectedUser != null && currentSelectedUser.isPinned() ? "Unpin" : "Pin");
+        String pinText = (currentSelectedUser != null && currentSelectedUser.isPinned()) ? "Unpin" : "Pin";
+        String pinIcon = (currentSelectedUser != null && currentSelectedUser.isPinned()) ? "/Client/images/context-menu/unpin.png" : "/Client/images/context-menu/pin.png";
+        MenuItem pinItem = createIconMenuItem(pinText, pinIcon);
         pinItem.setOnAction(e -> togglePin());
 
-        MenuItem clearHistoryItem = new MenuItem("Clear History");
+        MenuItem clearHistoryItem = createIconMenuItem("Clear History", "/Client/images/context-menu/clear.png");
         clearHistoryItem.setOnAction(e -> clearChatHistory());
 
-        MenuItem blockUserItem = new MenuItem("Block User");
+        MenuItem blockUserItem = createIconMenuItem("Block User", "/Client/images/context-menu/block.png");
         blockUserItem.setOnAction(e -> blockUser());
 
         menu.getItems().addAll(
-                viewProfileItem, searchItem, new SeparatorMenuItem(),
-                muteItem, pinItem, new SeparatorMenuItem(),
-                clearHistoryItem, blockUserItem
+                viewProfileItem,
+                searchItem,
+                muteItem,
+                pinItem,
+                clearHistoryItem,
+                blockUserItem
         );
 
-        menu.show(moreOptionsButton, moreOptionsButton.getLayoutX(), moreOptionsButton.getLayoutY() + moreOptionsButton.getHeight());
+        Point2D buttonBottomRight = new Point2D(moreOptionsButton.getWidth(), moreOptionsButton.getHeight());
+        Point2D screenBottomRight = moreOptionsButton.localToScreen(buttonBottomRight);
+
+        menu.show(moreOptionsButton, -10000, -10000);
+        double menuWidth = menu.getWidth();
+        menu.hide();
+
+        double xOffset = 15;
+        double yOffset = -5;
+
+        menu.show(
+                moreOptionsButton,
+                (screenBottomRight.getX() - menuWidth) + xOffset,
+                screenBottomRight.getY() + yOffset
+        );
+
+        activeMessageContextMenu = menu;
     }
 
     // ============ UTILITY METHODS ============
@@ -2273,23 +2315,14 @@ public class MainChatController implements Initializable {
     private void clearChatHistory() {
         if (currentSelectedUser == null) return;
 
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION); // TODO UI
-        alert.setTitle("Clear Chat History");
-        alert.setHeaderText("Clear history with " + currentSelectedUser.getUserName() + "?");
-        alert.setContentText("This will permanently delete all messages in this chat.");
+        messagesContainer.getChildren().clear();
+        showEmptyChatState();
 
-        alert.showAndWait().ifPresent(response -> {
-            if (response == ButtonType.OK) {
-                messagesContainer.getChildren().clear();
-                showEmptyChatState();
+        // Update last message in chat list
+        currentSelectedUser.setLastMessage("");
+        refreshChatList();
 
-                // Update last message in chat list
-                currentSelectedUser.setLastMessage("");
-                refreshChatList();
-
-                showTemporaryNotification("Chat history cleared");
-            }
-        });
+        showTemporaryNotification("Chat history cleared");
     }
 
     /**
@@ -2298,21 +2331,12 @@ public class MainChatController implements Initializable {
     private void blockUser() {
         if (currentSelectedUser == null) return;
 
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION); // TODO UI
-        alert.setTitle("Block User");
-        alert.setHeaderText("Block " + currentSelectedUser.getUserName() + "?");
-        alert.setContentText("You will no longer receive messages from this user.");
+        String userName = currentSelectedUser.getUserName();
+        allChatUsers.remove(currentSelectedUser);
+        filteredChatUsers.remove(currentSelectedUser);
 
-        alert.showAndWait().ifPresent(response -> {
-            if (response == ButtonType.OK) {
-                String userName = currentSelectedUser.getUserName();
-                allChatUsers.remove(currentSelectedUser);
-                filteredChatUsers.remove(currentSelectedUser);
-
-                goBackToWelcomeState();
-                showTemporaryNotification("Blocked " + userName);
-            }
-        });
+        goBackToWelcomeState();
+        showTemporaryNotification("Blocked " + userName);
     }
 
     /**
@@ -2498,40 +2522,62 @@ public class MainChatController implements Initializable {
     }
 
     /**
-     * Puts the UI into editing mode for the selected message.
-     * It uses the reply preview container to display the editing state.
+     * Puts the UI into editing mode. It resets any prior reply state and configures
+     * the preview panel for an edit action.
      *
      * @param messageBubble The VBox of the message to be edited.
      */
     private void editMessage(VBox messageBubble) {
         if (messageBubble == null) return;
 
+        // 1. Reset data state WITHOUT hiding the panel
         resetReplyEditState();
 
-        isEditing = true;
-        editingMessageBubble = messageBubble;
-        replyToMessage = null;
-
-        Label messageTextLabel = (Label) messageBubble.getChildren().stream()
-                .filter(node -> node instanceof Label && node.getStyleClass().contains("message-text"))
-                .findFirst()
-                .orElse(null);
-
-        if (messageTextLabel == null) {
-            isEditing = false;
-            editingMessageBubble = null;
-            return;
+        // Stop any ongoing animation
+        if (replyPreviewAnimation != null) {
+            replyPreviewAnimation.stop();
         }
 
-        replyToLabel.setText("Edit Message");
-        replyMessageLabel.setText(messageTextLabel.getText());
-        messageInputField.setText(messageTextLabel.getText());
+        // 2. Set the new editing state
+        isEditing = true;
+        editingMessageBubble = messageBubble;
 
-        replyPreviewContainer.setVisible(true);
-        replyPreviewContainer.setManaged(true);
+        // 3. Extract message text
+        Label messageTextLabel = (Label) messageBubble.getChildren().stream()
+                .filter(node -> node instanceof Label && node.getStyleClass().contains("message-text"))
+                .findFirst().orElse(null);
+
+        if (messageTextLabel == null) {
+            resetReplyEditState(); // Abort if text not found
+            return;
+        }
+        String originalMessageText = messageTextLabel.getText();
+
+        // 4. Update UI labels and input field
+        replyToLabel.setText("Edit Message");
+        replyMessageLabel.setText(originalMessageText);
+        messageInputField.setText(originalMessageText);
+
+        // 5. If the panel was hidden, show it now with animation
+        if (!replyPreviewContainer.isVisible()) {
+            replyPreviewContainer.setVisible(true);
+            replyPreviewContainer.setManaged(true);
+
+            replyPreviewContainer.setTranslateY(-30);
+            replyPreviewContainer.setOpacity(0);
+
+            TranslateTransition slideDown = new TranslateTransition(Duration.millis(200), replyPreviewContainer);
+            slideDown.setToY(0);
+
+            FadeTransition fadeIn = new FadeTransition(Duration.millis(200), replyPreviewContainer);
+            fadeIn.setToValue(1.0);
+
+            replyPreviewAnimation = new ParallelTransition(slideDown, fadeIn);
+            replyPreviewAnimation.play();
+        }
 
         messageInputField.requestFocus();
-        messageInputField.positionCaret(messageTextLabel.getText().length());
+        messageInputField.positionCaret(originalMessageText.length());
     }
 
     /**
