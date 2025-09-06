@@ -1,3 +1,4 @@
+app.log
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
@@ -45,4 +46,6 @@ bin/
 
 ### Project ###
 /src/files/
-logs/
+/logs/
+/Client/
+/ClientData/
