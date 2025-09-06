@@ -6,6 +6,8 @@ import JSocket2.Protocol.StatusCode;
 import Server.DaoManager;
 import Shared.Api.Models.AccountController.*;
 import Shared.Models.Account.Account;
+import Shared.Models.Chat.PrivateChat;
+import Shared.Models.Chat.SavedMessages;
 import Shared.Models.PendingAuth.PendingAuth;
 import Shared.Models.Session.Session;
 import Shared.Utils.PasswordUtil;
@@ -280,6 +282,8 @@ public RpcResponse<Boolean> isPhoneNumberRegistered(String phoneNumber){
         account.setPhoneNumber(model.getPhoneNumber());
         account.setHashedPassword(PasswordUtil.hash("12345678"));
         daoManager.getAccountDAO().insert(account);
+        var savedMessage = new SavedMessages(account);
+        daoManager.getSavedMessagesDAO().insert(savedMessage);
         String accessKey = generateAccessKey(account,model.getDeviceInfo());
         var output = new BasicRegisterOutputModel(accessKey);
         return Ok(output);
