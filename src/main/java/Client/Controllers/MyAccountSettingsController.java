@@ -1,11 +1,23 @@
 package Client.Controllers;
-
+import Client.AppConnectionManager;
+import Client.RpcCaller;
+import Client.Tasks.UploadTask;
+import JSocket2.Core.Client.ConnectionManager;
+import JSocket2.Protocol.Rpc.RpcResponse;
+import JSocket2.Protocol.StatusCode;
+import JSocket2.Protocol.Transfer.FileInfoModel;
+import JSocket2.Protocol.Transfer.IProgressListener;
+import JSocket2.Utils.FileUtil;
+import Shared.Api.Models.AccountController.GetAccountInfoOutputModel;
+import Shared.Api.Models.AccountController.SetProfilePictureInputModel;
+import Shared.Api.Models.AccountController.UpdateNameInputModel;
+import Shared.Api.Models.MediaController.CreateMediaInputModel;
+import Shared.Utils.AlertUtil;
 import Shared.Utils.SceneUtil;
+import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
@@ -15,7 +27,8 @@ import javafx.stage.Stage;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Objects;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
 
 public class MyAccountSettingsController {
 
@@ -52,6 +65,9 @@ public class MyAccountSettingsController {
     private String originalUsername;
     private String originalBio;
 
+    private ConnectionManager connectionManager;
+    private RpcCaller rpcCaller;
+
     public void setParentController(SettingsController parentController) {
         this.parentController = parentController;
     }
@@ -66,7 +82,8 @@ public class MyAccountSettingsController {
 
     @FXML
     private void initialize() {
-        loadUserData();
+        connectionManager = AppConnectionManager.getInstance().getConnectionManager();
+        rpcCaller = AppConnectionManager.getInstance().getRpcCaller();
         setupClickableFields();
 
         bioTextArea.textProperty().addListener((obs, oldVal, newVal) -> {
@@ -74,15 +91,15 @@ public class MyAccountSettingsController {
         });
     }
 
-    private void loadUserData() {
-        // In a real app, this data would come from a user service or model
-        originalFirstName = "Ali";
-        originalLastName = "Ghaedrahmat";
-        originalUsername = "@AliGhaedrahmat";
-        originalBio = "Any details such as age, occupation or city.\nExample: 23 y.o. designer from San Francisco";
-
+    public void setUserData(GetAccountInfoOutputModel data) {
+        originalFirstName = data.getFirstName();
+        originalLastName = data.getLastName();
+        originalUsername = data.getUsername() != null ? "@" + data.getUsername() : "";
+        originalBio = data.getBio() != null ? data.getBio() : "Any details such as age, occupation or city.\\\\nExample: 23 y.o. designer from San Francisco";
+        phoneValueLabel.setText(data.getPhoneNumber());
         updateUIFields();
 
+        // TODO: Load profile picture from data.getProfilePictureId()
         try {
             Image profileImage = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Client/images/11Devs-white.png")));
             profilePictureImage.setImage(profileImage);
@@ -95,7 +112,6 @@ public class MyAccountSettingsController {
         userNameField.setText(originalFirstName + " " + originalLastName);
         nameValueField.setText(originalFirstName + " " + originalLastName);
         statusLabel.setText("online");
-        phoneValueLabel.setText("+98 901 650 1463");
         usernameValueField.setText(originalUsername);
         bioTextArea.setText(originalBio);
     }
@@ -119,11 +135,38 @@ public class MyAccountSettingsController {
     }
 
     public void saveChanges() {
-        // Logic to save bio changes and other settings not handled by dialogs
-        originalBio = bioTextArea.getText();
-        // In a real app, you would save these values to a database or server.
+        String newBio = bioTextArea.getText();
+
+        if (!Objects.equals(originalBio, newBio)) {
+            Task<RpcResponse<Object>> setBioTask = new Task<>() {
+                @Override
+                protected RpcResponse<Object> call() throws Exception {
+                    return rpcCaller.setBio(newBio);
+                }
+            };
+
+            setBioTask.setOnSucceeded(event -> {
+                RpcResponse<Object> response = setBioTask.getValue();
+                if (response.getStatusCode() == StatusCode.OK) {
+                    originalBio = newBio;
+                    System.out.println("Bio updated successfully.");
+                } else {
+                    System.err.println("Failed to update bio: " + response.getMessage());
+                    Platform.runLater(() -> bioTextArea.setText(originalBio));
+                }
+            });
+
+            setBioTask.setOnFailed(event -> {
+                System.err.println("Task failed to update bio.");
+                setBioTask.getException().printStackTrace();
+                Platform.runLater(() -> bioTextArea.setText(originalBio));
+            });
+
+            new Thread(setBioTask).start();
+        }
         System.out.println("Changes saved!");
     }
+
 
     public void discardChanges() {
         // Reset UI fields to original values
@@ -133,20 +176,191 @@ public class MyAccountSettingsController {
 
     @FXML
     private void handleChangePhoto() {
-        System.out.println("Change photo clicked");
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Select Profile Picture");
         fileChooser.getExtensionFilters().addAll(
                 new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg", "*.gif")
         );
         File selectedFile = fileChooser.showOpenDialog(dialogStage);
+
         if (selectedFile != null) {
-            Image newImage = new Image(selectedFile.toURI().toString());
-            profilePictureImage.setImage(newImage);
-            // TODO: Upload new profile picture to server
+            changePhotoButton.setDisable(true);
+            IProgressListener listener = (transferred, total) -> {
+                double frac = (total > 0) ? ((double) transferred / total) : 0;
+                int percentage = (int) (frac * 100);
+                Platform.runLater(() -> {
+                    if (dialogStage != null) {
+                        dialogStage.setTitle("Uploading... " + percentage + "%");
+                    }
+                });
+            };
+
+            ExecutorService backgroundExecutor = connectionManager.getClient().getBackgroundExecutor();
+            backgroundExecutor.submit(() -> {
+                try {
+                    FileInfoModel info = connectionManager.getClient().getFileTransferManager().initiateUpload(selectedFile);
+                    String fileId = info.FileId;
+                    CreateMediaInputModel createMediaInput = new CreateMediaInputModel(
+                            UUID.fromString(fileId),
+                            selectedFile.getName(),
+                            selectedFile.length(),
+                            FileUtil.getFileExtension(selectedFile)
+                    );
+                    RpcResponse<UUID> createMediaResponse = rpcCaller.createMediaEntry(createMediaInput);
+
+                    if (createMediaResponse.getStatusCode() != StatusCode.OK) {
+                        System.err.println("Failed to create media entry for profile photo: " + createMediaResponse.getMessage());
+                        Platform.runLater(this::restoreUIOnFailure);
+                        return;
+                    }
+
+                    UploadTask uploadTask = new UploadTask(connectionManager.getClient().getFileTransferManager(), info, selectedFile, listener);
+                    connectionManager.getClient().registerTask(fileId, uploadTask);
+
+                    uploadTask.setOnSucceeded(e -> {
+                        try {
+                            String mediaId = createMediaResponse.getPayload().toString();
+                            setProfilePictureOnServer(mediaId, selectedFile);
+                        } catch (Exception ex) {
+                            System.err.println("Error setting profile picture after upload: " + ex.getMessage());
+                            Platform.runLater(this::restoreUIOnFailure);
+                        } finally {
+                            connectionManager.getClient().unregisterTask(fileId);
+                        }
+                    });
+
+                    uploadTask.setOnFailed(e -> Platform.runLater(() -> {
+                        connectionManager.getClient().unregisterTask(fileId);
+                        restoreUIOnFailure();
+                    }));
+
+                    uploadTask.setOnCancelled(e -> Platform.runLater(() -> {
+                        connectionManager.getClient().unregisterTask(fileId);
+                        restoreUIOnFailure();
+                    }));
+
+                    backgroundExecutor.submit(uploadTask);
+
+                } catch (Exception e) {
+                    Platform.runLater(() -> {
+                        System.err.println("Error initiating upload: " + e.getMessage());
+                        restoreUIOnFailure();
+                    });
+                }
+            });
         }
     }
+    private void setProfilePictureOnServer(String mediaId, File imageFile) {
+        SetProfilePictureInputModel model = new SetProfilePictureInputModel(mediaId);
+        Task<RpcResponse<Object>> setProfilePictureTask = new Task<>() {
+            @Override
+            protected RpcResponse<Object> call() throws Exception {
+                return rpcCaller.setProfilePicture(model);
+            }
+        };
 
+        setProfilePictureTask.setOnSucceeded(event -> {
+            RpcResponse<Object> response = setProfilePictureTask.getValue();
+            if (response.getStatusCode() == StatusCode.OK) {
+                Platform.runLater(() -> {
+                    Image newImage = new Image(imageFile.toURI().toString());
+                    profilePictureImage.setImage(newImage);
+                    System.out.println("Profile picture updated successfully.");
+                    restoreUIOnSuccess();
+                });
+            } else {
+                System.err.println("Failed to set profile picture on server: " + response.getMessage());
+                Platform.runLater(this::restoreUIOnFailure);
+            }
+        });
+
+        setProfilePictureTask.setOnFailed(event -> {
+            System.err.println("Task to set profile picture failed.");
+            setProfilePictureTask.getException().printStackTrace();
+            Platform.runLater(this::restoreUIOnFailure);
+        });
+
+        new Thread(setProfilePictureTask).start();
+    }
+    private void restoreUIOnSuccess() {
+        if (dialogStage != null) {
+            dialogStage.setTitle("Settings");
+        }
+        changePhotoButton.setDisable(false);
+    }
+    private void restoreUIOnFailure() {
+        if (dialogStage != null) {
+            dialogStage.setTitle("Settings");
+        }
+        changePhotoButton.setDisable(false);
+        System.err.println("Profile picture update failed.");
+    }
+
+    public void updateName(String firstName, String lastName) {
+        UpdateNameInputModel model = new UpdateNameInputModel(firstName, lastName);
+        Task<RpcResponse<Object>> updateNameTask = new Task<>() {
+            @Override
+            protected RpcResponse<Object> call() throws Exception {
+                return rpcCaller.updateName(model);
+            }
+        };
+
+        updateNameTask.setOnSucceeded(event -> {
+            RpcResponse<Object> response = updateNameTask.getValue();
+            if (response.getStatusCode() == StatusCode.OK) {
+                Platform.runLater(() -> {
+                    this.originalFirstName = firstName;
+                    this.originalLastName = lastName;
+                    updateUIFields();
+                    if (parentController != null) {
+                        parentController.updateDisplayNameOnHeader(firstName + " " + lastName);
+                    }
+                    System.out.println("Name updated to: " + firstName + " " + lastName);
+                });
+            } else {
+                System.err.println("Failed to update name: " + response.getMessage());
+            }
+        });
+
+        updateNameTask.setOnFailed(event -> {
+            System.err.println("Task failed to update name.");
+            updateNameTask.getException().printStackTrace();
+        });
+
+        new Thread(updateNameTask).start();
+    }
+
+    public void updateUsername(String username) {
+        Task<RpcResponse<Object>> setUsernameTask = new Task<>() {
+            @Override
+            protected RpcResponse<Object> call() throws Exception {
+                return rpcCaller.setUsername(username);
+            }
+        };
+
+        setUsernameTask.setOnSucceeded(event -> {
+            RpcResponse<Object> response = setUsernameTask.getValue();
+            if (response.getStatusCode() == StatusCode.OK) {
+                Platform.runLater(() -> {
+                    this.originalUsername = "@" + username;
+                    updateUIFields();
+                    if (parentController != null) {
+                        parentController.updateUsernameOnHeader(this.originalUsername);
+                    }
+                    System.out.println("Username updated to: " + username);
+                });
+            } else {
+                System.err.println("Failed to update username: " + response.getMessage());
+            }
+        });
+
+        setUsernameTask.setOnFailed(event -> {
+            System.err.println("Task failed to update username.");
+            setUsernameTask.getException().printStackTrace();
+        });
+
+        new Thread(setUsernameTask).start();
+    }
     @FXML
     private void handleEditNameClick() {
         System.out.println("Edit Name clicked");
@@ -162,25 +376,11 @@ public class MyAccountSettingsController {
     private void handleEditUsernameClick() {
         System.out.println("Edit Username clicked");
         try {
-            SceneUtil.createDialog("/Client/fxml/editUsernameDialog.fxml", dialogStage, this, originalUsername.substring(1), "Edit Username").showAndWait();
+            // Strip the '@' prefix before passing to the dialog
+            String currentUsername = originalUsername.startsWith("@") ? originalUsername.substring(1) : originalUsername;
+            SceneUtil.createDialog("/Client/fxml/editUsernameDialog.fxml", dialogStage, this, currentUsername, "Edit Username").showAndWait();
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    // Methods called by dialogs to update this controller's state
-    public void updateName(String firstName, String lastName) {
-        this.originalFirstName = firstName; // Update internal state
-        this.originalLastName = lastName;
-        updateUIFields(); // Refresh UI
-        System.out.println("Name updated to: " + firstName + " " + lastName);
-        // TODO: Call RPC to update name on server
-    }
-
-    public void updateUsername(String username) {
-        this.originalUsername = "@" + username; // Update internal state
-        updateUIFields(); // Refresh UI
-        System.out.println("Username updated to: " + username);
-        // TODO: Call RPC to update username on server
     }
 }

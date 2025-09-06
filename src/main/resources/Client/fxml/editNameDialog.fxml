@@ -16,7 +16,7 @@
       </Label>
       <VBox spacing="5.0">
          <children>
-            <Label styleClass="field-label-dialog-active" text="First name" />
+            <Label fx:id="firstNameLabel" styleClass="field-label-dialog" text="First name" />
             <TextField fx:id="firstNameField" styleClass="dialog-text-field" />
          </children>
          <VBox.margin>
@@ -25,7 +25,7 @@
       </VBox>
       <VBox spacing="5.0">
          <children>
-            <Label styleClass="field-label-dialog" text="Last name" />
+            <Label fx:id="lastNameLabel" styleClass="field-label-dialog" text="Last name" />
             <TextField fx:id="lastNameField" styleClass="dialog-text-field" />
          </children>
          <VBox.margin>

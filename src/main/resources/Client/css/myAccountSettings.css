@@ -1,11 +1,17 @@
 /* Client/css/myAccountSettings.css */
+/*
+ * This stylesheet provides specific styles for the "My Account" settings section.
+ * It is designed to integrate with and build upon the base styles from settings.css.
+ */
 
+/* The root container inherits the base font and background from settings.css,
+   but we can define it here for clarity if this component were used standalone. */
 .settings-sub-section {
     -fx-background-color: #17212B;
     -fx-font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 
-/* ScrollPane */
+/* ScrollPane styles are aligned with settings.css for a consistent look and feel. */
 .profile-scroll-pane {
     -fx-background-color: transparent;
     -fx-border-color: transparent;
@@ -27,9 +33,10 @@
     -fx-padding: 10;
 }
 
+/* Using the enhanced dropshadow effect from settings.css for consistency. */
 .profile-picture {
     -fx-smooth: true;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 8, 0.3, 0, 2);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 10, 0.4, 0, 3);
 }
 
 .change-photo-button {
@@ -39,28 +46,38 @@
     -fx-translate-x: 35;
     -fx-translate-y: 35;
     -fx-cursor: hand;
+    -fx-transition: -fx-background-color 0.15s ease-out;
 }
 
 .change-photo-button:hover {
     -fx-background-color: #29B6F6;
 }
 
+/* The profile name in this view serves as a main title, so it's intentionally larger
+   than the profile name in the main settings header. */
 .profile-name {
     -fx-text-fill: #FFFFFF;
     -fx-font-size: 24px;
     -fx-font-weight: 500;
 }
 
+/* Status label uses the application's accent color, consistent with settings.css. */
 .profile-status {
     -fx-text-fill: #4FC3F7;
     -fx-font-size: 14px;
     -fx-font-weight: 400;
 }
 
-/* Separator */
-.profile-separator, .field-separator {
+/* Separators use a consistent color from the main theme. */
+.profile-separator {
     -fx-background-color: #2C3E50;
     -fx-pref-height: 1px;
+}
+
+.field-separator {
+    -fx-background-color: #2C3E50;
+    -fx-pref-height: 1px;
+    -fx-margin: 0 20 0 54; /* Indented to align with text content. */
 }
 
 /* Details Section */
@@ -75,10 +92,12 @@
 
 .field-icon {
     -fx-opacity: 0.6;
-    -fx-fill: #92A3AF; /* Default fill for SVGPath icons */
+    -fx-fill: #92A3AF; /* Consistent icon color. */
 }
 
-.field-label {
+/* Typography for field labels and values matches the application's design system. */
+.field-label,
+.field-value-description {
     -fx-text-fill: #92A3AF;
     -fx-font-size: 13px;
 }
@@ -86,12 +105,6 @@
 .field-value {
     -fx-text-fill: white;
     -fx-font-size: 16px;
-    -fx-font-weight: 400;
-}
-
-.field-value-description {
-    -fx-text-fill: #92A3AF;
-    -fx-font-size: 13px;
     -fx-font-weight: 400;
 }
 
@@ -103,6 +116,7 @@
 }
 
 /* Editable Fields Styling */
+/* This style provides a base for inline-editable fields. */
 .editable-field {
     -fx-background-color: transparent;
     -fx-text-fill: white;
@@ -114,6 +128,7 @@
     -fx-background-insets: 0;
 }
 
+/* Active editing state is highlighted with the accent color. */
 .editable-field:editable {
     -fx-cursor: text;
     -fx-text-fill: white;
@@ -121,45 +136,79 @@
     -fx-highlight-fill: #4FC3F7;
 }
 
+/* Enhanced TextArea styling for better usability. */
 .text-area.editable-field {
-    -fx-text-fill: #92A3AF;
-    -fx-font-size: 14px;
-    -fx-prompt-text-fill: #92A3AF;
-}
-
-.text-area.editable-field:editable {
-    -fx-text-fill: white;
-}
-
-.text-area .content {
     -fx-background-color: transparent;
+    -fx-text-fill: #92A3AF; /* Default text is less prominent. */
+    -fx-font-size: 14px;
+    -fx-prompt-text-fill: #5a6978;
+    -fx-border-color: #555555; /* Default underline indicates it's an input. */
+    -fx-highlight-fill: #4FC3F7;
+    -fx-transition: border-color 0.2s ease-in-out, background-color 0.2s ease-in-out;
 }
 
+.text-area.editable-field:focused {
+    -fx-background-color: rgba(79, 195, 247, 0.05); /* Subtle glow on focus. */
+    -fx-text-fill: white; /* Text becomes white for active editing. */
+    -fx-border-color: transparent transparent #4FC3F7 transparent; /* Highlight underline. */
+}
+
+.text-area .content,
 .text-area:focused .content {
     -fx-background-color: transparent;
 }
 
+/* Username/ID value is styled with the accent color. */
 .id-value {
    -fx-text-fill: #4FC3F7;
    -fx-font-size: 16px;
    -fx-font-weight: 400;
-   -fx-cursor:hand;
 }
 
-/* Scrollbar */
+/* Ensure the text cursor doesn't change when hovering over the ID value in a clickable row. */
+.clickable-row .id-value {
+   -fx-cursor: inherit;
+}
+
+/* Clickable rows for navigation, styled to match menu items in settings.css */
+.clickable-row {
+    -fx-cursor: hand;
+    -fx-background-radius: 6px;
+    -fx-transition: -fx-background-color 0.15s ease-out, -fx-effect 0.15s ease-out, -fx-scale-x 0.15s ease-out, -fx-scale-y 0.15s ease-out;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.0), 0, 0.0, 0, 0);
+    -fx-scale-x: 1.0;
+    -fx-scale-y: 1.0;
+}
+
+.clickable-row:hover {
+    -fx-background-color: #1E2832; /* Consistent hover color from settings.css */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 5, 0.3, 0, 0); /* Subtle shadow on hover */
+    -fx-scale-x: 1.01;
+    -fx-scale-y: 1.01;
+}
+
+.chevron-icon {
+    -fx-fill: #92A3AF;
+    -fx-opacity: 0.6;
+}
+
+/* Scrollbar styles are aligned with settings.css for consistency. */
 .profile-scroll-pane .scroll-bar:vertical {
     -fx-background-color: transparent;
-    -fx-border-color: transparent;
-    -fx-pref-width: 6px;
+    -fx-pref-width: 8px; /* Matched from settings.css */
+    -fx-padding: 2px;     /* Matched from settings.css */
 }
 
 .profile-scroll-pane .scroll-bar:vertical .track {
     -fx-background-color: transparent;
+    -fx-background-radius: 4px;
+    -fx-border-radius: 4px;
 }
 
 .profile-scroll-pane .scroll-bar:vertical .thumb {
     -fx-background-color: rgba(146, 163, 175, 0.3);
-    -fx-background-radius: 3px;
+    -fx-background-insets: 0;
+    -fx-background-radius: 4px; /* Matched from settings.css */
 }
 
 .profile-scroll-pane .scroll-bar:vertical .thumb:hover {

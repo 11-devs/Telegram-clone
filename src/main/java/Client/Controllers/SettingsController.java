@@ -1,7 +1,15 @@
 package Client.Controllers;
 
+import Client.AppConnectionManager;
+import Client.RpcCaller;
+import JSocket2.Core.Client.ConnectionManager;
+import JSocket2.Protocol.Rpc.RpcResponse;
+import JSocket2.Protocol.StatusCode;
+import Shared.Api.Models.AccountController.GetAccountInfoOutputModel;
 import Shared.Utils.AlertUtil;
 import Shared.Utils.DialogUtil;
+import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -43,6 +51,10 @@ public class SettingsController {
 
     private Stage dialogStage;
     private Object parentController;
+    private Object currentSubController;
+    private ConnectionManager connectionManager;
+    private RpcCaller rpcCaller;
+    private GetAccountInfoOutputModel accountInfo;
 
     public void setDialogStage(Stage dialogStage) {
         this.dialogStage = dialogStage;
@@ -54,9 +66,10 @@ public class SettingsController {
 
     @FXML
     private void initialize() {
-        nameLabel.setText("My Account");
-        phoneNumberLabel.setText("+98 912 345 6789");
-        usernameLabel.setText("@me");
+        connectionManager = AppConnectionManager.getInstance().getConnectionManager();
+        rpcCaller = AppConnectionManager.getInstance().getRpcCaller();
+        loadInitialUserData();
+
         try {
             Image profileImage = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Client/images/11Devs-white.png")));
             profilePictureImage.setImage(profileImage);
@@ -69,6 +82,49 @@ public class SettingsController {
         settingsContentPane.setVisible(false);
         settingsContentPane.setManaged(false);
         settingsContentPane.getChildren().clear();
+    }
+
+    private void loadInitialUserData() {
+        Task<RpcResponse<GetAccountInfoOutputModel>> getAccountInfoTask = new Task<>() {
+            @Override
+            protected RpcResponse<GetAccountInfoOutputModel> call() throws Exception {
+                return rpcCaller.getAccountInfo();
+            }
+        };
+
+        getAccountInfoTask.setOnSucceeded(event -> {
+            RpcResponse<GetAccountInfoOutputModel> response = getAccountInfoTask.getValue();
+            if (response.getStatusCode() == StatusCode.OK) {
+                this.accountInfo = response.getPayload();
+                Platform.runLater(() -> {
+                    String fullName = this.accountInfo.getFirstName() + " " + this.accountInfo.getLastName();
+                    String username = this.accountInfo.getUsername() != null ? "@" + this.accountInfo.getUsername() : "";
+                    updateUserInfoOnHeader(this.accountInfo);
+                    // TODO: Load profile picture from accountInfo.getProfilePictureId()
+                });
+            } else {
+                System.err.println("Failed to load user data: " + response.getMessage());
+                Platform.runLater(() -> {
+                    AlertUtil.showError("Failed to load account information: " + response.getMessage());
+                    if (dialogStage != null) {
+                        dialogStage.close();
+                    }
+                });
+            }
+        });
+
+        getAccountInfoTask.setOnFailed(event -> {
+            System.err.println("Task failed to get user data.");
+            getAccountInfoTask.getException().printStackTrace();
+            Platform.runLater(() -> {
+                AlertUtil.showError("An error occurred while loading account information.");
+                if (dialogStage != null) {
+                    dialogStage.close();
+                }
+            });
+        });
+
+        new Thread(getAccountInfoTask).start();
     }
 
     @FXML
@@ -132,14 +188,43 @@ public class SettingsController {
         showSubSection("/Client/fxml/batteryAnimationsSettings.fxml", "Battery and Animations");
     }
 
+    public void updateUserInfoOnHeader(GetAccountInfoOutputModel model) {
+        String name = model.getFirstName() + " " + model.getLastName();
+        updateDisplayNameOnHeader(name);
+        updateUsernameOnHeader(model.getUsername());
+        if (model.getPhoneNumber() != null && !model.getPhoneNumber().trim().isEmpty()) {
+            phoneNumberLabel.setText(model.getPhoneNumber());
+        }
+    }
+    public void updateUsernameOnHeader(String username){
+        if (username != null && !username.trim().isEmpty()) {
+            usernameLabel.setText("@" + username);
+        }
+    }
+    public void updateDisplayNameOnHeader(String name){
+        if (name != null && !name.trim().isEmpty()) {
+            nameLabel.setText(name);
+        }
+    }
+
     // Method to show a subsection within the settings dialog
     private void showSubSection(String fxmlPath, String title) {
+        if (fxmlPath.contains("myAccountSettings.fxml") && accountInfo == null) {
+            //AlertUtil.showWarning("User data is still loading. Please try again in a moment.");
+            return;
+        }
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
             Parent subSectionRoot = loader.load();
 
             // Set parent controller and dialog stage to the sub-section controller
             Object subController = loader.getController();
+            this.currentSubController = subController;
+
+            if (subController instanceof MyAccountSettingsController myAccountController) {
+                myAccountController.setUserData(accountInfo);
+            }
+
             if (subController != null) {
                 try {
                     subController.getClass().getMethod("setParentController", SettingsController.class).invoke(subController, this);
@@ -173,10 +258,16 @@ public class SettingsController {
 
     // Method to navigate back to the main settings content
     public void goBackToMainSettings() {
+        if (currentSubController instanceof MyAccountSettingsController) {
+            ((MyAccountSettingsController) currentSubController).saveChanges();
+            loadInitialUserData();
+        }
+        currentSubController = null;
+
         settingsTitleLabel.setText("Settings");
         backButton.setVisible(false);
         backButton.setManaged(false);
-        
+
         settingsContentPane.getChildren().clear();
         settingsContentPane.setVisible(false);
         settingsContentPane.setManaged(false);

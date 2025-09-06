@@ -16,6 +16,10 @@ public class EditNameDialogController {
     private Button cancelButton;
     @FXML
     private Button saveButton;
+    @FXML
+    private Label firstNameLabel;
+    @FXML
+    private Label lastNameLabel;
 
     private Stage dialogStage;
     private MyAccountSettingsController parentController;
@@ -23,7 +27,23 @@ public class EditNameDialogController {
     @FXML
     private void initialize() {
         System.out.println("EditNameDialogController initialized.");
+        firstNameField.focusedProperty().addListener((obs, oldVal, newVal) -> {
+            updateLabelFocus(firstNameLabel, newVal);
+        });
+        lastNameField.focusedProperty().addListener((obs, oldVal, newVal) -> {
+            updateLabelFocus(lastNameLabel, newVal);
+        });
         firstNameField.requestFocus(); // Request focus for the first name field when the dialog is shown.
+    }
+
+    private void updateLabelFocus(Label label, boolean focused) {
+        if (focused) {
+            label.getStyleClass().remove("field-label-dialog");
+            label.getStyleClass().add("field-label-dialog-active");
+        } else {
+            label.getStyleClass().remove("field-label-dialog-active");
+            label.getStyleClass().add("field-label-dialog");
+        }
     }
 
     public void setDialogStage(Stage dialogStage) {

@@ -113,4 +113,17 @@ public class RpcCaller extends RpcCallerBase {
     public RpcResponse<Object> toggleChatMute(ToggleChatMuteInputModel model) throws IOException {
         return callRpcAndGetResponse("ChatRpcController", "toggleChatMute", Object.class, model);
     }
+
+
+    public RpcResponse<GetAccountInfoOutputModel> getAccountInfo() throws IOException {
+        return callRpcAndGetResponse("AccountRpcController", "getAccountInfo", GetAccountInfoOutputModel.class);
+    }
+
+    public RpcResponse<Object> setProfilePicture(SetProfilePictureInputModel model) throws IOException {
+        return callRpcAndGetResponse("AccountRpcController", "setProfilePicture", Object.class, model);
+
+    }
+    public RpcResponse<Object> updateName(UpdateNameInputModel model) throws IOException {
+        return callRpcAndGetResponse("AccountRpcController", "updateName", Object.class, model);
+    }
 }

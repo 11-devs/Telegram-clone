@@ -385,22 +385,74 @@ public RpcResponse<Boolean> isPhoneNumberRegistered(String phoneNumber){
     }
 
     public RpcResponse<Object> setUsername(String username){
-        var account = daoManager.getAccountDAO().findById(getCurrentUser().getUserId());
+        UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
+        Account account = daoManager.getAccountDAO().findById(currentUserId);
+        if (account == null) {
+            return NotFound();
+        }
         account.setUsername(username);
         daoManager.getAccountDAO().update(account);
         return Ok();
     }
     public RpcResponse<Object> setBio(String bio){
-        var account = daoManager.getAccountDAO().findById(getCurrentUser().getUserId());
+        UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
+        Account account = daoManager.getAccountDAO().findById(currentUserId);
+        if (account == null) {
+            return NotFound();
+        }
         account.setBio(bio);
         daoManager.getAccountDAO().update(account);
+        return Ok();
+    }
+
+    public RpcResponse<Object> updateName(UpdateNameInputModel model) {
+        UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
+        Account account = daoManager.getAccountDAO().findById(currentUserId);
+        if (account == null) {
+            return NotFound();
+        }
+
+        account.setFirstName(model.getFirstName());
+        account.setLastName(model.getLastName());
+        daoManager.getAccountDAO().update(account);
+
         return Ok();
     }
     private String generateOTP() {
         int otp = 10000 + (int)(Math.random() * 90000);
         return String.valueOf(otp);
     }
+    public RpcResponse<Object> getAccountInfo() {
+        UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
+        Account account = daoManager.getAccountDAO().findById(currentUserId);
+        if (account == null) {
+            return NotFound();
+        }
 
+        GetAccountInfoOutputModel output = new GetAccountInfoOutputModel();
+        output.setFirstName(account.getFirstName());
+        output.setLastName(account.getLastName());
+        output.setUsername(account.getUsername());
+        output.setBio(account.getBio());
+        output.setPhoneNumber(account.getPhoneNumber());
+        output.setProfilePictureId(account.getProfilePictureId());
+        output.setStatus(account.getStatus());
+
+        return Ok(output);
+    }
+
+    public RpcResponse<Object> setProfilePicture(SetProfilePictureInputModel model) {
+        UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
+        Account account = daoManager.getAccountDAO().findById(currentUserId);
+        if (account == null) {
+            return NotFound();
+        }
+
+        account.setProfilePictureId(model.getProfilePictureId());
+        daoManager.getAccountDAO().update(account);
+
+        return Ok();
+    }
     //private String generateAccessToken(account account) {
     //    return UUID.randomUUID().toString();
     //}
