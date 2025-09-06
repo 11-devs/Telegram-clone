@@ -612,7 +612,13 @@ public class MainChatController implements Initializable {
         allChatUsers.stream()
                 .filter(user -> user.getUserId().equals(eventModel.getChatId().toString()))
                 .findFirst()
-                .ifPresent(this::reorderAndRefreshChatList);
+                .ifPresent(user -> {
+                    if (eventModel.isLastMessageDeleted()) {
+                        user.setLastMessage(eventModel.getNewLastMessageContent());
+                        user.setTime(eventModel.getNewLastMessageTimestamp());
+                    }
+                    reorderAndRefreshChatList(user);
+                });
     }
 
 
@@ -2341,7 +2347,7 @@ public class MainChatController implements Initializable {
             HBox messageNode = addMessageBubble(messageText, true, getCurrentTime(), "sent", null, false);
             // Send message to the server in a background task
             SendMessageInputModel input = new SendMessageInputModel();
-            input.setChatId(UUID.fromString(currentSelectedUser.getUserId())); // This is the chat ID
+            input.setChatId(UUID.fromString(currentSelectedUser.getUserId()));
             input.setTextContent(text);
             input.setMessageType(MessageType.TEXT);
             Task<RpcResponse<SendMessageOutputModel>> sendMessageTask = chatService.sendMessage(input);
@@ -2383,7 +2389,7 @@ public class MainChatController implements Initializable {
             // Update chat list for new message
             currentSelectedUser.setLastMessage(text);
             currentSelectedUser.setTime(getCurrentTime());
-            refreshChatList();
+            reorderAndRefreshChatList(currentSelectedUser);
 
             simulateMessageDelivery();
         }
@@ -3607,7 +3613,6 @@ public class MainChatController implements Initializable {
      */
     private void editMessage(VBox messageBubble) {
         if (messageBubble == null) return;
-        editingMessageBubble = messageBubble;
         // 1. Reset data state WITHOUT hiding the panel
         resetReplyEditState();
 

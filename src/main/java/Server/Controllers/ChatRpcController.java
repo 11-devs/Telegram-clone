@@ -8,14 +8,13 @@ import Shared.Models.Account.Account;
 import Shared.Models.Chat.*;
 import Shared.Models.Membership.Membership;
 import Shared.Models.Membership.MembershipType;
-import Shared.Models.Message.MediaMessage;
 import Shared.Models.Message.Message;
 import Shared.Models.Message.TextMessage;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.TypedQuery;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -23,7 +22,6 @@ import java.util.stream.Collectors;
 
 public class ChatRpcController extends RpcControllerBase {
     private final DaoManager daoManager;
-    //private final TypingEvent typingEvent;
 
     public ChatRpcController(DaoManager daoManager) {
         this.daoManager = daoManager;
@@ -41,9 +39,7 @@ public class ChatRpcController extends RpcControllerBase {
                     output.setId(chat.getId());
                     output.setType(chat.getType().toString());
 
-                    // --- MODIFIED LOGIC: Handle title and picture for Private Chats ---
                     if (chat.getType() == ChatType.PRIVATE) {
-                        // For a private chat, find the other member to use their name and profile picture.
                         List<Membership> chatMembers = daoManager.getMembershipDAO().findAllByField("chat.id", chat.getId());
                         Optional<Account> otherUserOpt = chatMembers.stream()
                                 .map(Membership::getAccount)
@@ -56,29 +52,22 @@ public class ChatRpcController extends RpcControllerBase {
                             output.setTitle(otherUserName.trim());
                             output.setProfilePictureId(otherUser.getProfilePictureId());
                         } else {
-                            // Fallback if the other user isn't found (e.g., deleted account)
                             output.setTitle("Deleted Account");
                             output.setProfilePictureId(null);
                         }
                     } else {
-                        // For groups and channels, use their stored title and picture.
                         output.setTitle(chat.getTitle());
                         output.setProfilePictureId(chat.getProfilePictureId());
                     }
-                    // --- END OF MODIFIED LOGIC --
 
-                    // Find the last message for this chat
-                    Message lastMessage = daoManager.getMessageDAO().findOneByJpql("SELECT m FROM Message m JOIN FETCH m.sender WHERE m.chat.id = :chatId ORDER BY m.timestamp DESC",query ->{
+                    Message lastMessage = daoManager.getMessageDAO().findOneByJpql("SELECT m FROM Message m JOIN FETCH m.sender WHERE m.chat.id = :chatId AND m.isDeleted = false ORDER BY m.timestamp DESC", query -> {
                         query.setParameter("chatId", chat.getId());
                         query.setMaxResults(1);
                     });
 
                     if (lastMessage != null) {
-                        // Set last message content using a switch on the type for proxy safety
                         switch (lastMessage.getType()) {
                             case TEXT:
-                                // FIX: The cast ((TextMessage) lastMessage) can fail if 'lastMessage' is a Hibernate proxy.
-                                // To prevent this, we fetch the specific TextMessage entity using its ID, which is safe.
                                 TextMessage textMessage = daoManager.getEntityManager().find(TextMessage.class, lastMessage.getId());
                                 if (textMessage != null) {
                                     output.setLastMessage(textMessage.getTextContent());
@@ -97,38 +86,44 @@ public class ChatRpcController extends RpcControllerBase {
                                 output.setLastMessage("...");
                                 break;
                         }
-
-                        // Set timestamp in ISO format for client-side parsing
                         output.setLastMessageTimestamp(lastMessage.getTimestamp().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-
-                        // Set sender name
                         Account sender = lastMessage.getSender();
                         if (sender != null) {
                             output.setLastMessageSenderName(sender.getFirstName());
                         }
-
                     } else {
-                        // Handle chats with no messages
                         output.setLastMessage("");
                         output.setLastMessageTimestamp(null);
                         output.setLastMessageSenderName("");
                     }
-                    Message lastReadMessage = membership.getLastReadMessage();
-                    long unreadCount = 0;
-                    if (lastReadMessage == null) {
-                        // If user has never read anything, count all messages not sent by them.
-                        String jpql = "SELECT COUNT(m) FROM Message m WHERE m.chat.id = :chatId AND m.sender.id != :senderId";
+
+                    // SOFT-DELETE FIX: Safely get the last read timestamp without touching the proxy object.
+                    LocalDateTime lastReadTimestamp = null;
+                    try {
+                        TypedQuery<LocalDateTime> tsQuery = daoManager.getEntityManager().createQuery(
+                                "SELECT msg.timestamp FROM Membership mem JOIN mem.lastReadMessage msg " +
+                                        "WHERE mem.id = :membershipId AND msg.isDeleted = false", LocalDateTime.class);
+                        tsQuery.setParameter("membershipId", membership.getId());
+                        lastReadTimestamp = tsQuery.getSingleResult();
+                    } catch (NoResultException e) {
+                        // Expected if last read message was deleted or never existed.
+                    }
+
+                    long unreadCount;
+                    if (lastReadTimestamp == null) {
+                        // If no valid last read message exists, count all non-deleted messages not sent by the current user.
+                        String jpql = "SELECT COUNT(m) FROM Message m WHERE m.chat.id = :chatId AND m.sender.id != :senderId AND m.isDeleted = false";
                         unreadCount = daoManager.getMessageDAO().countByJpql(jpql, query -> {
                             query.setParameter("chatId", chat.getId());
                             query.setParameter("senderId", currentUserId);
                         });
                     } else {
-                        // Count messages newer than the last one read that were not sent by the current user.
-                        final LocalDateTime lastReadTimestamp = lastReadMessage.getTimestamp();
-                        String jpql = "SELECT COUNT(m) FROM Message m WHERE m.chat.id = :chatId AND m.timestamp > :lastReadTimestamp AND m.sender.id != :senderId";
+                        // Count non-deleted messages newer than the last valid one read.
+                        final LocalDateTime finalLastReadTimestamp = lastReadTimestamp;
+                        String jpql = "SELECT COUNT(m) FROM Message m WHERE m.chat.id = :chatId AND m.timestamp > :lastReadTimestamp AND m.sender.id != :senderId AND m.isDeleted = false";
                         unreadCount = daoManager.getMessageDAO().countByJpql(jpql, query -> {
                             query.setParameter("chatId", chat.getId());
-                            query.setParameter("lastReadTimestamp", lastReadTimestamp);
+                            query.setParameter("lastReadTimestamp", finalLastReadTimestamp);
                             query.setParameter("senderId", currentUserId);
                         });
                     }
@@ -139,31 +134,25 @@ public class ChatRpcController extends RpcControllerBase {
 
         return Ok(chatInfoList);
     }
+
     public RpcResponse<Object> getChatByUsername(String username) {
         UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
-
-        // 1. Find the target user by username
         Account targetUser = daoManager.getAccountDAO().findByField("username", username.toLowerCase());
         if (targetUser == null) {
             return NotFound();
         }
-
-        // Don't allow clicking on your own username to prevent confusion
         if (targetUser.getId().equals(currentUserId)) {
             return BadRequest("Cannot open a chat with yourself this way.");
         }
 
-        // 2. Find if a private chat already exists between the two users
         String jpql = "SELECT pc FROM PrivateChat pc WHERE " +
                 "(pc.user1.id = :user1Id AND pc.user2.id = :user2Id) OR " +
                 "(pc.user1.id = :user2Id AND pc.user2.id = :user1Id)";
-
         PrivateChat privateChat = daoManager.getPrivateChatDAO().findOneByJpql(jpql, query -> {
             query.setParameter("user1Id", currentUserId);
             query.setParameter("user2Id", targetUser.getId());
         });
 
-        // 3. If no chat exists, create one along with memberships
         if (privateChat == null) {
             Account currentUser = daoManager.getAccountDAO().findById(currentUserId);
             if (currentUser == null) {
@@ -187,7 +176,6 @@ public class ChatRpcController extends RpcControllerBase {
             daoManager.getMembershipDAO().insert(targetUserMembership);
         }
 
-        // 4. Map the chat to the output model for the client
         GetChatInfoOutputModel output = new GetChatInfoOutputModel();
         output.setId(privateChat.getId());
         output.setType(privateChat.getType().toString());
