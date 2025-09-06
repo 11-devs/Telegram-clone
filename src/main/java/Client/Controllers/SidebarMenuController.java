@@ -216,7 +216,7 @@ public class SidebarMenuController implements Initializable {
         toggleSidebar(false); // Close sidebar
         Stage parentStage = primaryStage != null ? primaryStage : (Stage) sidebarMenuContainer.getScene().getWindow();
         try {
-            Stage dialogStage = applyDialogAnimation(parentStage, this);
+            Stage dialogStage = applyDialogAnimation(parentStage, this, "/Client/fxml/profileSection.fxml", "My Profile");
             dialogStage.setResizable(false); // Prevent resizing
             dialogStage.sizeToScene(); // Use default size from FXML
 
@@ -283,8 +283,23 @@ public class SidebarMenuController implements Initializable {
     @FXML
     private void handleSettings() {
         System.out.println("Settings clicked");
-        // TODO: Navigate to settings view
-        toggleSidebar(false); // Close sidebar
+        toggleSidebar(false);
+        Stage parentStage = primaryStage != null ? primaryStage : (Stage) sidebarMenuContainer.getScene().getWindow();
+        try {
+            Stage dialogStage = applyDialogAnimation(parentStage, this, "/Client/fxml/settings.fxml", "Settings");
+            dialogStage.setResizable(false);
+            dialogStage.sizeToScene();
+
+            Platform.runLater(() -> {
+                double centerX = parentStage.getX() + (parentStage.getWidth() - dialogStage.getWidth()) / 2;
+                double centerY = parentStage.getY() + (parentStage.getHeight() - dialogStage.getHeight()) / 2;
+                dialogStage.setX(centerX);
+                dialogStage.setY(centerY);
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Error loading settings dialog: " + e.getMessage());
+        }
     }
 
     /**
@@ -334,7 +349,7 @@ public class SidebarMenuController implements Initializable {
     /**
      * Apply animation for dialog display and hide
      */
-    private Stage applyDialogAnimation(Stage parentStage, Object controller) throws IOException {
+    private Stage applyDialogAnimation(Stage parentStage, Object controller, String fxmlPath, String title) throws IOException {
         // Apply dim effect to parent stage with animation
         ColorAdjust dimEffect = new ColorAdjust();
         parentStage.getScene().getRoot().setEffect(dimEffect);
@@ -346,7 +361,7 @@ public class SidebarMenuController implements Initializable {
         fadeIn.play();
 
         // Create and show dialog
-        Stage dialogStage = SceneUtil.createDialog("/Client/fxml/profileSection.fxml", parentStage, controller, null, "My Profile");
+        Stage dialogStage = SceneUtil.createDialog(fxmlPath, parentStage, controller, null, title);
 
         // Show and wait until dialog is closed
         dialogStage.showAndWait();

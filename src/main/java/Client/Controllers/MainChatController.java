@@ -25,6 +25,8 @@ import Shared.Events.Models.UserIsTypingEventModel;
 import Shared.Models.*;
 //import Shared.Utils.SidebarUtil;
 import Shared.Models.Message.MessageType;
+import Shared.Utils.DialogUtil;
+import Shared.Utils.SceneUtil;
 import Shared.Utils.TelegramCellUtils;
 import Shared.Utils.TextUtil;
 import com.google.gson.Gson;
@@ -47,6 +49,7 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.effect.ColorAdjust;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
@@ -3222,7 +3225,32 @@ public class MainChatController implements Initializable {
      */
     private void openSettings() {
         System.out.println("Opening settings");
-        // TODO: Implement settings dialog (UI: Design settings UI, Server: Fetch user settings).
+        Stage parentStage = (Stage) mainChatContainer.getScene().getWindow();
+        try {
+            ColorAdjust dimEffect = new ColorAdjust();
+            parentStage.getScene().getRoot().setEffect(dimEffect);
+
+            Timeline fadeIn = new Timeline(
+                    new KeyFrame(Duration.ZERO, new KeyValue(dimEffect.brightnessProperty(), 0)),
+                    new KeyFrame(Duration.millis(300), new KeyValue(dimEffect.brightnessProperty(), -0.3, Interpolator.EASE_BOTH))
+            );
+            fadeIn.play();
+
+            Stage dialogStage = SceneUtil.createDialog("/Client/fxml/settings.fxml", parentStage, this, null, "Settings");
+
+            dialogStage.showAndWait();
+
+            Timeline fadeOut = new Timeline(
+                    new KeyFrame(Duration.ZERO, new KeyValue(dimEffect.brightnessProperty(), -0.3, Interpolator.EASE_BOTH)),
+                    new KeyFrame(Duration.millis(300), new KeyValue(dimEffect.brightnessProperty(), 0))
+            );
+            fadeOut.setOnFinished(e -> parentStage.getScene().getRoot().setEffect(null));
+            fadeOut.play();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Error loading settings dialog: " + e.getMessage());
+        }
     }
 
     /**
