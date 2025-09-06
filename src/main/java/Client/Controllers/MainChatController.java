@@ -1025,10 +1025,13 @@ public class MainChatController implements Initializable {
 
         replyPreviewAnimation = new ParallelTransition(slideUp, fadeOut);
         replyPreviewAnimation.setOnFinished(e -> {
-            // Hide the panel and then reset the state data
+            // Hide the panel
             replyPreviewContainer.setVisible(false);
             replyPreviewContainer.setManaged(false);
+
+            // Reset the state data AND clear the input field
             resetReplyEditState();
+            messageInputField.clear();
         });
         replyPreviewAnimation.play();
     }
@@ -1041,7 +1044,6 @@ public class MainChatController implements Initializable {
         isEditing = false;
         editingMessageBubble = null;
         replyToMessage = null;
-
 
         replyToLabel.setText("");
         replyMessageLabel.setText("");
