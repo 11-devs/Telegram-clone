@@ -22,139 +22,143 @@
                 <Insets bottom="12.0" left="20.0" right="20.0" top="12.0" />
             </padding>
             <children>
+                <Button fx:id="backButton" managed="false" onAction="#goBackToMainSettings" styleClass="icon-button" visible="false">
+                    <graphic>
+                        <SVGPath content="M12 8a.5.5 0 0 1-.5.5H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H11.5a.5.5 0 0 1 .5.5" fill="#92A3AF" scaleX="1.5" scaleY="1.5" />
+                    </graphic>
+                </Button>
                 <Label fx:id="settingsTitleLabel" styleClass="settings-title" text="Settings">
                     <HBox.margin>
-                        <Insets />
+                        <Insets left="10.0" />
                     </HBox.margin>
                 </Label>
                 <Region HBox.hgrow="ALWAYS" />
                 <Button fx:id="moreOptionsButton" styleClass="icon-button">
                     <graphic>
-                        <!-- Existing SVGPath for More Options is accurate to image -->
                         <SVGPath content="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" scaleX="1" scaleY="1" styleClass="svg-icon" />
                     </graphic>
                 </Button>
                 <Button fx:id="closeButton" onAction="#handleClose" styleClass="icon-button">
                     <graphic>
-                        <!-- Existing SVGPath for Close Button is accurate to image -->
                         <SVGPath content="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" scaleX="1" scaleY="1" styleClass="svg-icon" />
                     </graphic>
                 </Button>
             </children>
         </HBox>
 
-        <!-- User Profile Section -->
-        <HBox alignment="CENTER_LEFT" styleClass="user-profile-section">
-            <padding>
-                <Insets bottom="15.0" left="20.0" right="20.0" top="15.0" />
-            </padding>
-            <children>
-                <StackPane onMouseClicked="#handleProfilePictureClick" styleClass="profile-picture-container">
+        <!-- StackPane to hold main settings and sub-sections -->
+        <StackPane VBox.vgrow="ALWAYS">
+            <!-- Main Settings Content (initially visible) -->
+            <VBox fx:id="mainSettingsContent">
+                <!-- User Profile Section -->
+                <HBox alignment="CENTER_LEFT" styleClass="user-profile-section">
+                    <padding>
+                        <Insets bottom="15.0" left="20.0" right="20.0" top="15.0" />
+                    </padding>
                     <children>
-                        <ImageView fx:id="profilePictureImage" fitHeight="70.0" fitWidth="70.0" pickOnBounds="true" preserveRatio="true" styleClass="profile-picture">
-                            <image>
-                                <Image url="@../images/11Devs-white.png" />
-                            </image>
-                            <clip>
-                                <Circle centerX="35" centerY="35" radius="35" />
-                            </clip>
-                        </ImageView>
+                        <StackPane onMouseClicked="#handleProfilePictureClick" styleClass="profile-picture-container">
+                            <children>
+                                <ImageView fx:id="profilePictureImage" fitHeight="70.0" fitWidth="70.0" pickOnBounds="true" preserveRatio="true" styleClass="profile-picture">
+                                    <image>
+                                        <Image url="@../images/11Devs-white.png" />
+                                    </image>
+                                    <clip>
+                                        <Circle centerX="35" centerY="35" radius="35" />
+                                    </clip>
+                                </ImageView>
+                            </children>
+                        </StackPane>
+                        <VBox alignment="CENTER_LEFT" spacing="2.0" HBox.hgrow="ALWAYS">
+                            <HBox.margin>
+                                <Insets left="15.0" />
+                            </HBox.margin>
+                            <children>
+                                <Label fx:id="nameLabel" styleClass="profile-name" text="Alex Johnson" />
+                                <Label fx:id="phoneNumberLabel" styleClass="profile-phone" text="+1 234 567 8901" />
+                                <Label fx:id="usernameLabel" styleClass="profile-username" text="me" />
+                            </children>
+                        </VBox>
                     </children>
-                </StackPane>
-                <VBox alignment="CENTER_LEFT" spacing="2.0" HBox.hgrow="ALWAYS">
-                    <HBox.margin>
-                        <Insets left="15.0" />
-                    </HBox.margin>
-                    <children>
-                        <Label fx:id="nameLabel" styleClass="profile-name" text="Alex Johnson" />
-                        <Label fx:id="phoneNumberLabel" styleClass="profile-phone" text="+1 234 567 8901" />
-                        <Label fx:id="usernameLabel" styleClass="profile-username" text="me" />
-                    </children>
-                </VBox>
-            </children>
-        </HBox>
+                </HBox>
 
-        <Separator styleClass="section-separator" />
+                <Separator styleClass="section-separator" />
 
-        <!-- Menu Options ScrollPane -->
-        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" prefHeight="442.0" prefWidth="400.0" styleClass="settings-scroll-pane" VBox.vgrow="ALWAYS">
-            <content>
-                <VBox styleClass="menu-options-container">
-                    <children>
-                        <Button fx:id="myAccountButton" onAction="#handleMyAccount" styleClass="menu-item-button">
-                            <graphic>
-                                <HBox alignment="CENTER_LEFT" spacing="15.0" HBox.hgrow="ALWAYS">
-                                    <!-- User/Account Icon -->
-                                    <SVGPath content="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.93 0 3.5 1.57 3.5 3.5S13.93 12 12 12 8.5 10.43 8.5 8.5 10.07 5 12 5zm0 14.2c-2.6 0-4.9-1.39-6.2-3.48.04-2.07 4.1-3.2 6.2-3.2s6.16 1.13 6.2 3.2c-1.3 2.09-3.6 3.48-6.2 3.48z" styleClass="menu-item-icon" />
-                                    <Label styleClass="menu-item-text" text="My Account" HBox.hgrow="ALWAYS" />
-                                </HBox>
-                            </graphic>
-                        </Button>
-                        <Button fx:id="notificationsButton" onAction="#handleNotifications" styleClass="menu-item-button">
-                            <graphic>
-                                <HBox alignment="CENTER_LEFT" spacing="15.0" HBox.hgrow="ALWAYS">
-                                    <!-- Bell/Notification Icon -->
-                                    <SVGPath content="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.55-.45-1-1-1s-1 .45-1 1v.68C7.63 4.36 6 6.93 6 11v5l-2 2v1h16v-1l-2-2z" styleClass="menu-item-icon" />
-                                    <Label styleClass="menu-item-text" text="Notifications and Sounds" HBox.hgrow="ALWAYS" />
-                                </HBox>
-                            </graphic>
-                        </Button>
-                        <Button fx:id="privacySecurityButton" onAction="#handlePrivacySecurity" styleClass="menu-item-button">
-                            <graphic>
-                                <HBox alignment="CENTER_LEFT" spacing="15.0" HBox.hgrow="ALWAYS">
-                                    <!-- Lock/Privacy Icon -->
-                                    <SVGPath content="M18 10h-1V7c0-2.76-2.24-5-5-5S7 4.24 7 7v3H6c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm-3-8V7c0-1.66 1.34-3 3-3s3 1.34 3 3v3H9z" styleClass="menu-item-icon" />
-                                    <Label styleClass="menu-item-text" text="Privacy and Security" HBox.hgrow="ALWAYS" />
-                                </HBox>
-                            </graphic>
-                        </Button>
-                        <Button fx:id="chatSettingsButton" onAction="#handleChatSettings" styleClass="menu-item-button">
-                            <graphic>
-                                <HBox alignment="CENTER_LEFT" spacing="15.0" HBox.hgrow="ALWAYS">
-                                    <!-- Chat Bubble Icon -->
-                                    <SVGPath content="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" styleClass="menu-item-icon" />
-                                    <Label styleClass="menu-item-text" text="Chat Settings" HBox.hgrow="ALWAYS" />
-                                </HBox>
-                            </graphic>
-                        </Button>
-                        <Button fx:id="foldersButton" onAction="#handleFolders" styleClass="menu-item-button">
-                            <graphic>
-                                <HBox alignment="CENTER_LEFT" spacing="15.0" HBox.hgrow="ALWAYS">
-                                    <!-- Folder Icon -->
-                                    <SVGPath content="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" styleClass="menu-item-icon" />
-                                    <Label styleClass="menu-item-text" text="Folders" HBox.hgrow="ALWAYS" />
-                                </HBox>
-                            </graphic>
-                        </Button>
-                        <Button fx:id="advancedButton" onAction="#handleAdvanced" styleClass="menu-item-button">
-                            <graphic>
-                                <HBox alignment="CENTER_LEFT" spacing="15.0" HBox.hgrow="ALWAYS">
-                                    <!-- Gear/Advanced Icon -->
-                                    <SVGPath content="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.09-.77-1.72-1.07L14 2h-4l-.5 2.1c-.63.3-1.2.67-1.72 1.07l-2.49-1c-.22-.08-.49 0-.61.22l-2 3.46c-.12.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.09.77 1.72 1.07L10 22h4l.5-2.1c.63-.3 1.2-.67 1.72-1.07l2.49 1c.22.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" styleClass="menu-item-icon" />
-                                    <Label styleClass="menu-item-text" text="Advanced" HBox.hgrow="ALWAYS" />
-                                </HBox>
-                            </graphic>
-                        </Button>
-                        <Button fx:id="speakersCameraButton" onAction="#handleSpeakersCamera" styleClass="menu-item-button">
-                            <graphic>
-                                <HBox alignment="CENTER_LEFT" spacing="15.0" HBox.hgrow="ALWAYS">
-                                    <SVGPath content="M12.1657 2.14424C12.8728 2.50021 13 3.27314 13 3.7446V20.2561C13 20.7286 12.8717 21.4998 12.1656 21.8554C11.416 22.2331 10.7175 21.8081 10.3623 21.4891L4.95001 16.6248H3.00001C1.89544 16.6248 1.00001 15.7293 1.00001 14.6248L1 9.43717C1 8.3326 1.89543 7.43717 3 7.43717H4.94661L10.3623 2.51158C10.7163 2.19354 11.4151 1.76635 12.1657 2.14424ZM11 4.63507L6.00618 9.17696C5.82209 9.34439 5.58219 9.43717 5.33334 9.43717H3L3.00001 14.6248H5.33334C5.58015 14.6248 5.81823 14.716 6.00179 14.881L11 19.3731V4.63507Z M16.0368 4.73124C16.1852 4.19927 16.7368 3.88837 17.2688 4.03681C20.6116 4.9696 23 8.22106 23 12C23 15.779 20.6116 19.0304 17.2688 19.9632C16.7368 20.1117 16.1852 19.8007 16.0368 19.2688C15.8884 18.7368 16.1993 18.1852 16.7312 18.0368C19.1391 17.3649 21 14.9567 21 12C21 9.04332 19.1391 6.63512 16.7312 5.96321C16.1993 5.81477 15.8884 5.2632 16.0368 4.73124Z M16.2865 8.04192C15.7573 7.88372 15.2001 8.18443 15.0419 8.71357C14.8837 9.24271 15.1844 9.79992 15.7136 9.95812C16.3702 10.1544 17 10.9209 17 12C17 13.0791 16.3702 13.8456 15.7136 14.0419C15.1844 14.2001 14.8837 14.7573 15.0419 15.2865C15.2001 15.8156 15.7573 16.1163 16.2865 15.9581C17.9301 15.4667 19 13.8076 19 12C19 10.1924 17.9301 8.53333 16.2865 8.04192Z" styleClass="menu-item-icon" />
-                                    <Label styleClass="menu-item-text" text="Speakers and Camera" HBox.hgrow="ALWAYS" />
-                                </HBox>
-                            </graphic>
-                        </Button>
-                        <Button fx:id="batteryAnimationsButton" onAction="#handleBatteryAnimations" styleClass="menu-item-button">
-                            <graphic>
-                                <HBox alignment="CENTER_LEFT" spacing="15.0" HBox.hgrow="ALWAYS">
-                                    <!-- Battery Icon -->
-                                    <SVGPath content="M17 4h-3V2h-4v2H7v18h10V4zm-2 14H9v-2h6v2zm0-4H9v-2h6v2z" styleClass="menu-item-icon" />
-                                    <Label styleClass="menu-item-text" text="Battery and Animations" HBox.hgrow="ALWAYS" />
-                                </HBox>
-                            </graphic>
-                        </Button>
-                    </children>
-                </VBox>
-            </content>
-        </ScrollPane>
+                <!-- Menu Options ScrollPane -->
+                <ScrollPane fitToWidth="true" hbarPolicy="NEVER" prefHeight="442.0" prefWidth="400.0" styleClass="settings-scroll-pane" VBox.vgrow="ALWAYS">
+                    <content>
+                        <VBox styleClass="menu-options-container">
+                            <children>
+                                <Button fx:id="myAccountButton" onAction="#handleMyAccount" styleClass="menu-item-button">
+                                    <graphic>
+                                        <HBox alignment="CENTER_LEFT" spacing="15.0" HBox.hgrow="ALWAYS">
+                                            <SVGPath content="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.93 0 3.5 1.57 3.5 3.5S13.93 12 12 12 8.5 10.43 8.5 8.5 10.07 5 12 5zm0 14.2c-2.6 0-4.9-1.39-6.2-3.48.04-2.07 4.1-3.2 6.2-3.2s6.16 1.13 6.2 3.2c-1.3 2.09-3.6 3.48-6.2 3.48z" styleClass="menu-item-icon" />
+                                            <Label styleClass="menu-item-text" text="My Account" HBox.hgrow="ALWAYS" />
+                                        </HBox>
+                                    </graphic>
+                                </Button>
+                                <Button fx:id="notificationsButton" onAction="#handleNotifications" styleClass="menu-item-button">
+                                    <graphic>
+                                        <HBox alignment="CENTER_LEFT" spacing="15.0" HBox.hgrow="ALWAYS">
+                                            <SVGPath content="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.55-.45-1-1-1s-1 .45-1 1v.68C7.63 4.36 6 6.93 6 11v5l-2 2v1h16v-1l-2-2z" styleClass="menu-item-icon" />
+                                            <Label styleClass="menu-item-text" text="Notifications and Sounds" HBox.hgrow="ALWAYS" />
+                                        </HBox>
+                                    </graphic>
+                                </Button>
+                                <Button fx:id="privacySecurityButton" onAction="#handlePrivacySecurity" styleClass="menu-item-button">
+                                    <graphic>
+                                        <HBox alignment="CENTER_LEFT" spacing="15.0" HBox.hgrow="ALWAYS">
+                                            <SVGPath content="M18 10h-1V7c0-2.76-2.24-5-5-5S7 4.24 7 7v3H6c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm-3-8V7c0-1.66 1.34-3 3-3s3 1.34 3 3v3H9z" styleClass="menu-item-icon" />
+                                            <Label styleClass="menu-item-text" text="Privacy and Security" HBox.hgrow="ALWAYS" />
+                                        </HBox>
+                                    </graphic>
+                                </Button>
+                                <Button fx:id="chatSettingsButton" onAction="#handleChatSettings" styleClass="menu-item-button">
+                                    <graphic>
+                                        <HBox alignment="CENTER_LEFT" spacing="15.0" HBox.hgrow="ALWAYS">
+                                            <SVGPath content="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" styleClass="menu-item-icon" />
+                                            <Label styleClass="menu-item-text" text="Chat Settings" HBox.hgrow="ALWAYS" />
+                                        </HBox>
+                                    </graphic>
+                                </Button>
+                                <Button fx:id="foldersButton" onAction="#handleFolders" styleClass="menu-item-button">
+                                    <graphic>
+                                        <HBox alignment="CENTER_LEFT" spacing="15.0" HBox.hgrow="ALWAYS">
+                                            <SVGPath content="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" styleClass="menu-item-icon" />
+                                            <Label styleClass="menu-item-text" text="Folders" HBox.hgrow="ALWAYS" />
+                                        </HBox>
+                                    </graphic>
+                                </Button>
+                                <Button fx:id="advancedButton" onAction="#handleAdvanced" styleClass="menu-item-button">
+                                    <graphic>
+                                        <HBox alignment="CENTER_LEFT" spacing="15.0" HBox.hgrow="ALWAYS">
+                                            <SVGPath content="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.09-.77-1.72-1.07L14 2h-4l-.5 2.1c-.63.3-1.2.67-1.72 1.07l-2.49-1c-.22-.08-.49 0-.61.22l-2 3.46c-.12.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.09.77 1.72 1.07L10 22h4l.5-2.1c.63-.3 1.2-.67 1.72-1.07l2.49 1c.22-.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" styleClass="menu-item-icon" />
+                                            <Label styleClass="menu-item-text" text="Advanced" HBox.hgrow="ALWAYS" />
+                                        </HBox>
+                                    </graphic>
+                                </Button>
+                                <Button fx:id="speakersCameraButton" onAction="#handleSpeakersCamera" styleClass="menu-item-button">
+                                    <graphic>
+                                        <HBox alignment="CENTER_LEFT" spacing="15.0" HBox.hgrow="ALWAYS">
+                                            <SVGPath content="M12.1657 2.14424C12.8728 2.50021 13 3.27314 13 3.7446V20.2561C13 20.7286 12.8717 21.4998 12.1656 21.8554C11.416 22.2331 10.7175 21.8081 10.3623 21.4891L4.95001 16.6248H3.00001C1.89544 16.6248 1.00001 15.7293 1.00001 14.6248L1 9.43717C1 8.3326 1.89543 7.43717 3 7.43717H4.94661L10.3623 2.51158C10.7163 2.19354 11.4151 1.76635 12.1657 2.14424ZM11 4.63507L6.00618 9.17696C5.82209 9.34439 5.58219 9.43717 5.33334 9.43717H3L3.00001 14.6248H5.33334C5.58015 14.6248 5.81823 14.716 6.00179 14.881L11 19.3731V4.63507Z M16.0368 4.73124C16.1852 4.19927 16.7368 3.88837 17.2688 4.03681C20.6116 4.9696 23 8.22106 23 12C23 15.779 20.6116 19.0304 17.2688 19.9632C16.7368 20.1117 16.1852 19.8007 16.0368 19.2688C15.8884 18.7368 16.1993 18.1852 16.7312 18.0368C19.1391 17.3649 21 14.9567 21 12C21 9.04332 19.1391 6.63512 16.7312 5.96321C16.1993 5.81477 15.8884 5.2632 16.0368 4.73124Z M16.2865 8.04192C15.7573 7.88372 15.2001 8.18443 15.0419 8.71357C14.8837 9.24271 15.1844 9.79992 15.7136 9.95812C16.3702 10.1544 17 10.9209 17 12C17 13.0791 16.3702 13.8456 15.7136 14.0419C15.1844 14.2001 14.8837 14.7573 15.0419 15.2865C15.2001 15.8156 15.7573 16.1163 16.2865 15.9581C17.9301 15.4667 19 13.8076 19 12C19 10.1924 17.9301 8.53333 16.2865 8.04192Z" styleClass="menu-item-icon" />
+                                            <Label styleClass="menu-item-text" text="Speakers and Camera" HBox.hgrow="ALWAYS" />
+                                        </HBox>
+                                    </graphic>
+                                </Button>
+                                <Button fx:id="batteryAnimationsButton" onAction="#handleBatteryAnimations" styleClass="menu-item-button">
+                                    <graphic>
+                                        <HBox alignment="CENTER_LEFT" spacing="15.0" HBox.hgrow="ALWAYS">
+                                            <SVGPath content="M17 4h-3V2h-4v2H7v18h10V4zm-2 14H9v-2h6v2zm0-4H9v-2h6v2z" styleClass="menu-item-icon" />
+                                            <Label styleClass="menu-item-text" text="Battery and Animations" HBox.hgrow="ALWAYS" />
+                                        </HBox>
+                                    </graphic>
+                                </Button>
+                            </children>
+                        </VBox>
+                    </content>
+                </ScrollPane>
+            </VBox>
+            <!-- Placeholder for sub-sections (initially hidden) -->
+            <StackPane fx:id="settingsContentPane" />
+        </StackPane>
     </children>
 </VBox>

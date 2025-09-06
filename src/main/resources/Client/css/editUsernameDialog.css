@@ -1,0 +1,58 @@
+/* Client/css/editUsernameDialog.css */
+
+.dialog-root {
+    -fx-background-color: #202B36; /* Slightly lighter background than parent to make it pop */
+    -fx-font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    -fx-padding: 0;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 15, 0.5, 0, 0); /* Add a subtle shadow */
+}
+
+.dialog-title {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 20px;
+    -fx-font-weight: 600;
+}
+
+.username-prefix {
+    -fx-text-fill: #92A3AF;
+    -fx-font-size: 16px;
+    -fx-font-weight: 400;
+    -fx-translate-y: 2px; /* Adjust vertical alignment with text field */
+}
+
+.dialog-text-field {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: 400;
+    -fx-padding: 2px 0px;
+    -fx-border-width: 0 0 1px 0;
+    -fx-border-color: #555555;
+    -fx-background-insets: 0;
+}
+
+.dialog-text-field:focused {
+    -fx-border-color: transparent transparent #4FC3F7 transparent;
+    -fx-highlight-fill: #4FC3F7;
+}
+
+.dialog-description {
+    -fx-text-fill: #92A3AF;
+    -fx-font-size: 13px;
+    -fx-wrap-text: true;
+}
+
+.dialog-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #4FC3F7;
+    -fx-font-size: 14px;
+    -fx-padding: 8px 15px;
+    -fx-cursor: hand;
+}
+
+.dialog-button:hover {
+    -fx-background-color: rgba(79, 195, 247, 0.1);
+    -fx-background-radius: 5px;
+}

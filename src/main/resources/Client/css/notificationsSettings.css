@@ -1,0 +1,36 @@
+/* Client/css/notificationsSettings.css */
+
+.settings-sub-section {
+    -fx-background-color: #17212B;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+}
+
+.sub-section-header {
+    -fx-text-fill: #4FC3F7; /* Telegram blue */
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
+.settings-checkbox {
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-padding: 5 0 5 0;
+}
+
+.settings-checkbox .box {
+    -fx-background-color: #2F3A4A;
+    -fx-border-color: #313C49;
+    -fx-border-radius: 3px;
+    -fx-background-radius: 3px;
+    -fx-padding: 3px;
+}
+
+.settings-checkbox:selected .box {
+    -fx-background-color: #2F6EA5;
+    -fx-border-color: #2F6EA5;
+}
+
+.settings-checkbox .mark {
+    -fx-background-color: white;
+}

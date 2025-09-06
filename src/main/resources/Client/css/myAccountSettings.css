@@ -1,0 +1,167 @@
+/* Client/css/myAccountSettings.css */
+
+.settings-sub-section {
+    -fx-background-color: #17212B;
+    -fx-font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+/* ScrollPane */
+.profile-scroll-pane {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.profile-scroll-pane .viewport,
+.profile-scroll-pane .content {
+    -fx-background-color: transparent;
+}
+
+/* Profile Picture Section */
+.profile-main-section {
+    -fx-background-color: transparent;
+}
+
+.profile-picture-container {
+    -fx-padding: 10;
+}
+
+.profile-picture {
+    -fx-smooth: true;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 8, 0.3, 0, 2);
+}
+
+.change-photo-button {
+    -fx-background-color: #4FC3F7;
+    -fx-background-radius: 50%;
+    -fx-padding: 8;
+    -fx-translate-x: 35;
+    -fx-translate-y: 35;
+    -fx-cursor: hand;
+}
+
+.change-photo-button:hover {
+    -fx-background-color: #29B6F6;
+}
+
+.profile-name {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 24px;
+    -fx-font-weight: 500;
+}
+
+.profile-status {
+    -fx-text-fill: #4FC3F7;
+    -fx-font-size: 14px;
+    -fx-font-weight: 400;
+}
+
+/* Separator */
+.profile-separator, .field-separator {
+    -fx-background-color: #2C3E50;
+    -fx-pref-height: 1px;
+}
+
+/* Details Section */
+.profile-fields-section {
+    -fx-background-color: transparent;
+}
+
+.profile-field-row {
+    -fx-background-color: transparent;
+    -fx-padding: 15 20 15 20;
+}
+
+.field-icon {
+    -fx-opacity: 0.6;
+    -fx-fill: #92A3AF; /* Default fill for SVGPath icons */
+}
+
+.field-label {
+    -fx-text-fill: #92A3AF;
+    -fx-font-size: 13px;
+}
+
+.field-value {
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: 400;
+}
+
+.field-value-description {
+    -fx-text-fill: #92A3AF;
+    -fx-font-size: 13px;
+    -fx-font-weight: 400;
+}
+
+.char-count-label {
+    -fx-text-fill: #92A3AF;
+    -fx-font-size: 13px;
+    -fx-text-alignment: right;
+    -fx-max-width: infinity;
+}
+
+/* Editable Fields Styling */
+.editable-field {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: 400;
+    -fx-padding: 2px 0px;
+    -fx-border-width: 0 0 1px 0;
+    -fx-border-color: transparent;
+    -fx-background-insets: 0;
+}
+
+.editable-field:editable {
+    -fx-cursor: text;
+    -fx-text-fill: white;
+    -fx-border-color: transparent transparent #4FC3F7 transparent;
+    -fx-highlight-fill: #4FC3F7;
+}
+
+.text-area.editable-field {
+    -fx-text-fill: #92A3AF;
+    -fx-font-size: 14px;
+    -fx-prompt-text-fill: #92A3AF;
+}
+
+.text-area.editable-field:editable {
+    -fx-text-fill: white;
+}
+
+.text-area .content {
+    -fx-background-color: transparent;
+}
+
+.text-area:focused .content {
+    -fx-background-color: transparent;
+}
+
+.id-value {
+   -fx-text-fill: #4FC3F7;
+   -fx-font-size: 16px;
+   -fx-font-weight: 400;
+   -fx-cursor:hand;
+}
+
+/* Scrollbar */
+.profile-scroll-pane .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-pref-width: 6px;
+}
+
+.profile-scroll-pane .scroll-bar:vertical .track {
+    -fx-background-color: transparent;
+}
+
+.profile-scroll-pane .scroll-bar:vertical .thumb {
+    -fx-background-color: rgba(146, 163, 175, 0.3);
+    -fx-background-radius: 3px;
+}
+
+.profile-scroll-pane .scroll-bar:vertical .thumb:hover {
+    -fx-background-color: rgba(146, 163, 175, 0.5);
+}

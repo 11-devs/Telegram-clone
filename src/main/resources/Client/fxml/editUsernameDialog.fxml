@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox fx:id="dialogRoot" prefHeight="300.0" prefWidth="320.0" styleClass="dialog-root" stylesheets="@../css/editUsernameDialog.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.Controllers.EditUsernameDialogController">
+   <children>
+      <Label styleClass="dialog-title" text="Username">
+         <VBox.margin>
+            <Insets bottom="30.0" left="20.0" right="20.0" top="20.0" />
+         </VBox.margin>
+      </Label>
+      <HBox alignment="CENTER_LEFT" spacing="5.0">
+         <children>
+            <Label styleClass="username-prefix" text="@" />
+            <TextField fx:id="usernameField" HBox.hgrow="ALWAYS" styleClass="dialog-text-field" />
+         </children>
+         <VBox.margin>
+            <Insets bottom="20.0" left="20.0" right="20.0" />
+         </VBox.margin>
+      </HBox>
+      <Label styleClass="dialog-description" text="You can choose a username on Telegram. If you do, other people will be able to find you by this username and contact you without knowing your phone number.">
+         <VBox.margin>
+            <Insets bottom="10.0" left="20.0" right="20.0" />
+         </VBox.margin>
+      </Label>
+      <Label styleClass="dialog-description" text="You can use a-z, 0-9 and underscores. Minimum length is 5 characters.">
+         <VBox.margin>
+            <Insets bottom="20.0" left="20.0" right="20.0" />
+         </VBox.margin>
+      </HBox>
+      <HBox alignment="BOTTOM_RIGHT" VBox.vgrow="ALWAYS">
+         <children>
+            <Button fx:id="cancelButton" mnemonicParsing="false" onAction="#handleCancel" styleClass="dialog-button" text="Cancel">
+               <HBox.margin>
+                  <Insets right="10.0" />
+               </HBox.margin>
+            </Button>
+            <Button fx:id="saveButton" mnemonicParsing="false" onAction="#handleSave" styleClass="dialog-button" text="Save" />
+         </children>
+         <padding>
+            <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+         </padding>
+      </HBox>
+   </children>
+</VBox>

@@ -1,0 +1,38 @@
+/* Client/css/foldersSettings.css */
+
+.settings-sub-section {
+    -fx-background-color: #17212B;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+}
+
+.sub-section-header {
+    -fx-text-fill: #4FC3F7; /* Telegram blue */
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
+.sub-section-content {
+    -fx-text-fill: #D5D8DC;
+    -fx-font-size: 14px;
+    -fx-padding: 10px 0;
+}
+
+.setting-action-button {
+    -fx-background-color: #2F6EA5;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 5px;
+    -fx-padding: 8px 15px;
+    -fx-cursor: hand;
+    -fx-pref-width: 250px;
+}
+
+.setting-action-button:hover {
+    -fx-background-color: #3476AB;
+}
+
+.setting-action-button:pressed {
+    -fx-background-color: #265B88;
+}

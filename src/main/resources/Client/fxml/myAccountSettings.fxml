@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.shape.SVGPath?>
+
+<VBox fx:id="root" prefHeight="550.0" prefWidth="400.0" styleClass="settings-sub-section" stylesheets="@../css/settings.css, @../css/myAccountSettings.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.Controllers.MyAccountSettingsController">
+    <!-- Content -->
+    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="profile-scroll-pane" VBox.vgrow="ALWAYS">
+        <content>
+            <VBox styleClass="profile-content-container">
+                <!-- Profile Picture Section -->
+                <VBox alignment="CENTER" spacing="10" styleClass="profile-main-section">
+                    <padding>
+                        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+                    </padding>
+                    <children>
+                        <StackPane alignment="CENTER" styleClass="profile-picture-container">
+                            <ImageView fx:id="profilePictureImage" fitHeight="100.0" fitWidth="100.0" pickOnBounds="true" preserveRatio="true" styleClass="profile-picture">
+                                <image>
+                                    <Image url="@../images/11Devs-white.png" />
+                                </image>
+                                <clip>
+                                    <Circle centerX="50" centerY="50" radius="50" />
+                                </clip>
+                            </ImageView>
+                            <Button fx:id="changePhotoButton" onAction="#handleChangePhoto" styleClass="change-photo-button">
+                                <graphic>
+                                    <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
+                                        <image>
+                                            <Image url="@../images/camera-icon.png" />
+                                        </image>
+                                    </ImageView>
+                                </graphic>
+                            </Button>
+                        </StackPane>
+                        <Label fx:id="userNameField" alignment="CENTER" styleClass="editable-field, profile-name" text="Ali" />
+                        <Label fx:id="statusLabel" styleClass="profile-status" text="online" />
+                    </children>
+                </VBox>
+
+                <Separator styleClass="profile-separator" />
+
+                <!-- Details Section -->
+                <VBox styleClass="profile-fields-section">
+                    <children>
+                        <!-- Bio Section -->
+                        <HBox alignment="TOP_LEFT" styleClass="profile-field-row" spacing="10.0">
+                            <padding>
+                                <Insets bottom="15.0" left="20.0" right="20.0" top="15.0" />
+                            </padding>
+                            <children>
+                                <VBox alignment="TOP_LEFT" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label styleClass="field-label" text="Bio" />
+                                        <TextArea fx:id="bioTextArea" prefRowCount="3" promptText="Any details such as age, occupation or city. Example: 23 y.o. designer from San Francisco" styleClass="editable-field, text-area" wrapText="true">
+                                            <VBox.margin>
+                                                <Insets top="5.0" />
+                                            </VBox.margin>
+                                        </TextArea>
+                                        <Label fx:id="bioCharCountLabel" alignment="CENTER_RIGHT" styleClass="char-count-label" text="0/70" maxWidth="1.7976931348623157E308">
+                                            <HBox.margin>
+                                                <Insets left="40.0" />
+                                            </HBox.margin>
+                                            <VBox.margin>
+                                                <Insets top="5.0" />
+                                            </VBox.margin>
+                                        </Label>
+                                    </children>
+                                </VBox>
+                            </children>
+                        </HBox>
+                        <Separator styleClass="field-separator" />
+
+                        <!-- Name Section -->
+                        <HBox fx:id="nameRow" alignment="CENTER_LEFT" styleClass="profile-field-row" spacing="10.0">
+                            <padding>
+                                <Insets bottom="15.0" left="20.0" right="20.0" top="15.0" />
+                            </padding>
+                            <children>
+                                <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="field-icon">
+                                    <image>
+                                        <Image url="@../images/profile-icon.png" />
+                                    </image>
+                                </ImageView>
+                                <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label styleClass="field-value-description" text="Name" />
+                                        <Label fx:id="nameValueField" styleClass="editable-field" text="Ali Ghaedrahmat" />
+                                    </children>
+                                </VBox>
+                            </children>
+                        </HBox>
+                        <Separator styleClass="field-separator" />
+
+                        <!-- Phone Number Section -->
+                        <HBox alignment="CENTER_LEFT" styleClass="profile-field-row" spacing="10.0">
+                            <padding>
+                                <Insets bottom="15.0" left="20.0" right="20.0" top="15.0" />
+                            </padding>
+                            <children>
+                                <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="field-icon">
+                                    <image>
+                                        <Image url="@../images/phone-icon.png" />
+                                    </image>
+                                </ImageView>
+                                <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label styleClass="field-value-description" text="Mobile" />
+                                        <Label fx:id="phoneValueLabel" styleClass="field-value" text="+98 901 650 1463" />
+                                    </children>
+                                </VBox>
+                            </children>
+                        </HBox>
+                        <Separator styleClass="field-separator" />
+
+                        <!-- Username Section -->
+                        <HBox fx:id="usernameRow" alignment="CENTER_LEFT" styleClass="profile-field-row" spacing="10.0">
+                            <padding>
+                                <Insets bottom="15.0" left="20.0" right="20.0" top="15.0" />
+                            </padding>
+                            <children>
+                                <SVGPath content="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c5.52 0 10-4.48 10-10S17.52 2 12 2zm0 1.5c4.71 0 8.5 3.79 8.5 8.5S16.71 20.5 12 20.5 3.5 16.71 3.5 12 7.29 3.5 12 3.5zm0 2.5a6 6 0 1 0 0 12 6 6 0 0 0 0-12zm0 2a4 4 0 1 1 0 8 4 4 0 0 1 0-8zM12 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" fill="#92A3AF" styleClass="field-icon" />
+                                <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label styleClass="field-value-description" text="Username" />
+                                        <Label fx:id="usernameValueField" styleClass="editable-field, id-value" text="@AliGhaedrahmat" />
+                                    </children>
+                                </VBox>
+                            </children>
+                        </HBox>
+                        <Separator styleClass="field-separator" />
+                    </children>
+                </VBox>
+            </VBox>
+        </content>
+    </ScrollPane>
+</VBox>
