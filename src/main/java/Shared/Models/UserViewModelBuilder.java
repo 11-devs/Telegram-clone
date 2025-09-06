@@ -73,6 +73,11 @@ public class UserViewModelBuilder {
         return this;
     }
 
+    public UserViewModelBuilder userRole(String role) {
+        user.setUserRole(role);
+        return this;
+    }
+
     public UserViewModelBuilder messagePreview(String preview) {
         user.setMessagePreview(preview);
         return this;

@@ -1264,8 +1264,8 @@ public class MainChatController implements Initializable {
                             String status = msg.getOutgoing() ? msg.getMessageStatus() : "received";
                             HBox messageNode = addMessageBubble(msg.getTextContent(), msg.getOutgoing(), formattedTime, status, senderName,msg.isEdited());
                             // Store messageId and timestamp for later updates
-                            ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageId", msg.getMessageId());
-                            ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageTimestamp", timestamp);
+                            messageNode.getChildren().getFirst().getProperties().put("messageId", msg.getMessageId());
+                            messageNode.getChildren().getFirst().getProperties().put("messageTimestamp", timestamp);
                         } else if (msg.getMessageType() == MessageType.MEDIA && msg.getMediaId() != null) {
                             final String fileId = msg.getFileId();
                             // Asynchronously fetch file info to build the bubble without blocking the UI thread.
@@ -1383,6 +1383,19 @@ public class MainChatController implements Initializable {
             }
         });
         }
+
+    /**
+     * Checks if the current logged-in user is an admin in the currently selected chat.
+     *
+     * @return true if the user is an admin, false otherwise.
+     */
+    private boolean isCurrentUserAdmin() {
+        if (currentSelectedUser == null) {
+            return false;
+        }
+        // TODO:Server
+        return "ADMIN".equalsIgnoreCase(currentSelectedUser.getUserRole());
+    }
 
     // ============ MESSAGE HANDLING ============
 
@@ -2613,12 +2626,15 @@ public class MainChatController implements Initializable {
     }
 
     /**
-     * Enables chat controls when a chat is selected.
+     * Enables chat controls, but with restrictions for non-admins in channels.
      */
     private void enableChatControls() {
-        messageInputField.setDisable(false);
-        sendButton.setDisable(false);
-        attachmentButton.setDisable(false);
+        boolean canSendMessage = currentSelectedUser == null || currentSelectedUser.getType() != UserType.CHANNEL || isCurrentUserAdmin();
+
+        messageInputField.setDisable(!canSendMessage);
+        sendButton.setDisable(!canSendMessage);
+        attachmentButton.setDisable(!canSendMessage);
+
         callButton.setDisable(false);
         videoCallButton.setDisable(false);
         searchInChatButton.setDisable(false);
@@ -2760,6 +2776,7 @@ public class MainChatController implements Initializable {
 
         // Update notification status
         notificationStatusLabel.setText(user.isMuted() ? "Disabled" : "Enabled");
+        notificationsToggle.setSelected(!user.isMuted());
         updateNotificationToggle(!user.isMuted());
     }
 
@@ -3217,20 +3234,33 @@ public class MainChatController implements Initializable {
     }
 
     /**
-     * Toggles the notification mute state for the current user.
-     * This method now listens to the toggle button's action.
+     * Toggles the mute state for the current user and updates all related UI components.
+     * This is the single source of truth for changing the mute status.
      */
-    private void toggleNotifications() {
+    private void toggleMuteState() {
         if (currentSelectedUser == null) return;
 
-        boolean isEnabled = notificationsToggle.isSelected();
-        currentSelectedUser.setMuted(!isEnabled);
+        boolean newMuteState = !currentSelectedUser.isMuted();
 
-        notificationStatusLabel.setText(isEnabled ? "Enabled" : "Disabled");
-        mutedIcon.setVisible(!isEnabled);
+        currentSelectedUser.setMuted(newMuteState);
 
-        String message = (isEnabled ? "Unmuted" : "Muted") + " " + currentSelectedUser.getUserName();
+        notificationsToggle.setSelected(!newMuteState);
+
+        notificationStatusLabel.setText(newMuteState ? "Disabled" : "Enabled");
+
+        mutedIcon.setVisible(newMuteState);
+
+        String message = (newMuteState ? "Muted" : "Unmuted") + " " + currentSelectedUser.getUserName();
         showTemporaryNotification(message);
+
+        refreshChatList();
+    }
+
+    /**
+     * Handles the action from the JFXToggleButton.
+     */
+    private void toggleNotifications() {
+        toggleMuteState();
     }
 
     /**
@@ -3258,10 +3288,10 @@ public class MainChatController implements Initializable {
     }
 
     /**
-     * Toggles the mute state of the current chat.
+     * Handles the action from the ContextMenu's "Mute/Unmute" item.
      */
     private void toggleMute() {
-        toggleNotifications();
+        toggleMuteState();
     }
 
     /**
@@ -3364,8 +3394,8 @@ public class MainChatController implements Initializable {
     }
 
     /**
-     * Shows a context menu for a message with actions relevant to its type (text vs. document)
-     * and sender (incoming vs. outgoing).
+     * Shows a context menu with actions dynamically enabled/disabled based on chat type,
+     * message type, sender, and user role (admin/member).
      *
      * @param event The MouseEvent triggering the menu.
      */
@@ -3380,38 +3410,54 @@ public class MainChatController implements Initializable {
         VBox messageBubble = (VBox) event.getSource();
         boolean isOutgoing = messageBubble.getStyleClass().contains("outgoing");
         boolean isDocument = messageBubble.getStyleClass().contains("document-bubble");
+        boolean isChannel = currentSelectedUser != null && currentSelectedUser.getType() == UserType.CHANNEL;
 
         MenuItem replyItem = createIconMenuItem("Reply", "/Client/images/context-menu/reply.png");
         replyItem.setOnAction(e -> showReplyPreview(messageBubble));
+        if (isChannel && !isCurrentUserAdmin()) {
+            replyItem.setDisable(true);
+        }
 
         MenuItem forwardItem = createIconMenuItem("Forward", "/Client/images/context-menu/forward.png");
         forwardItem.setOnAction(e -> forwardMessage());
 
-        newMenu.getItems().addAll(replyItem, forwardItem);
+        MenuItem editItem = createIconMenuItem("Edit", "/Client/images/context-menu/edit.png");
+        editItem.setOnAction(e -> editMessage(messageBubble));
 
-        if (isOutgoing && !isDocument) {
-            MenuItem editItem = createIconMenuItem("Edit", "/Client/images/context-menu/edit.png");
-            editItem.setOnAction(e -> editMessage(messageBubble));
-            newMenu.getItems().add(1, editItem);
-        }
+        MenuItem downloadItem = createIconMenuItem("Download", "/Client/images/context-menu/download.png");
+        downloadItem.setOnAction(e -> {
+            if (messageBubble.getUserData() instanceof DocumentInfo) {
+                saveDocument((DocumentInfo) messageBubble.getUserData());
+            }
+        });
 
-        if (isDocument) {
-            MenuItem downloadItem = createIconMenuItem("Download", "/Client/images/context-menu/download.png");
-            downloadItem.setOnAction(e -> {
-                Object userData = messageBubble.getUserData();
-                if (userData instanceof DocumentInfo) {
-                    saveDocument((DocumentInfo) userData);
-                }
-            });
-            newMenu.getItems().add(downloadItem);
-        } else {
-            MenuItem copyItem = createIconMenuItem("Copy Text", "/Client/images/context-menu/copy.png");
-            copyItem.setOnAction(e -> copyMessageText(messageBubble));
-            newMenu.getItems().add(copyItem);
-        }
+        MenuItem copyItem = createIconMenuItem("Copy Text", "/Client/images/context-menu/copy.png");
+        copyItem.setOnAction(e -> copyMessageText(messageBubble));
 
         MenuItem deleteItem = createIconMenuItem("Delete", "/Client/images/context-menu/delete.png");
         deleteItem.setOnAction(e -> deleteMessage(messageBubble));
+        if (!isOutgoing && !isCurrentUserAdmin()) {
+            deleteItem.setDisable(true);
+        }
+
+        newMenu.getItems().add(replyItem);
+
+        if (isOutgoing && !isDocument && (!isChannel || isCurrentUserAdmin())) {
+            newMenu.getItems().add(editItem);
+        }
+
+        newMenu.getItems().add(forwardItem);
+        newMenu.getItems().add(new SeparatorMenuItem());
+
+        if (isDocument) {
+            newMenu.getItems().add(downloadItem);
+            // copy link TODO: in the future
+            // MenuItem copyLinkItem = createIconMenuItem("Copy Link", ...);
+            // newMenu.getItems().add(copyLinkItem);
+        } else {
+            newMenu.getItems().add(copyItem);
+        }
+
         newMenu.getItems().add(deleteItem);
 
         newMenu.show(messageBubble, event.getScreenX(), event.getScreenY());
