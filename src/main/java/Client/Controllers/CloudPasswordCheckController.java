@@ -56,7 +56,6 @@ public class CloudPasswordCheckController {
     private void initialize() {
         connectionManager = AppConnectionManager.getInstance().getConnectionManager();
         rpcCaller = AppConnectionManager.getInstance().getRpcCaller();
-        // Animation of moving from a little further right to the main target
         if (infoBox != null) {
             infoBox.setTranslateX(75);
             var transition = new javafx.animation.TranslateTransition(javafx.util.Duration.seconds(0.5), infoBox);
@@ -65,7 +64,6 @@ public class CloudPasswordCheckController {
             transition.setCycleCount(1);
             transition.play();
         }
-        // Animation of moving from a little further lower to the main target
         if (submitButton != null) {
             submitButton.setTranslateY(50);
             var transition = new javafx.animation.TranslateTransition(javafx.util.Duration.seconds(0.5), submitButton);
@@ -74,12 +72,12 @@ public class CloudPasswordCheckController {
             transition.setCycleCount(1);
             transition.play();
         }
-        passwordField.requestFocus(); // Initial focus on password field
+        passwordField.requestFocus();
     }
 
     @FXML
     private void handleSettings() {
-        // TODO: develop setting dialog
+
     }
 
     @FXML
@@ -92,7 +90,7 @@ public class CloudPasswordCheckController {
         String password = passwordField.getText();
         if (password != null && !password.isEmpty()) {
             System.out.println("Cloud password entered: " + password);
-            // TODO: Add password validation logic
+
             Task<RpcResponse<LoginOutputModel>> loginTask = new Task<RpcResponse<LoginOutputModel>>() {
                 @Override
                 protected RpcResponse<LoginOutputModel> call() throws Exception {
@@ -138,7 +136,6 @@ public class CloudPasswordCheckController {
                 loginTask.getException().printStackTrace();
             });
 
-            // Start the background task
             new Thread(loginTask).start();
         } else {
             System.out.println("Please enter a password.");
@@ -150,7 +147,6 @@ public class CloudPasswordCheckController {
     private void handleForgotPassword() {
         System.out.println("Forgot password link clicked.");
         if (phoneNumber == null || phoneNumber.isEmpty()) {
-            // Fallback if phone number is not available for some reason
             changeSceneWithSameSize(root, "/Client/fxml/phoneNumber.fxml");
             return;
         }
@@ -178,44 +174,15 @@ public class CloudPasswordCheckController {
                         changeSceneWithSameSize(root, "/Client/fxml/verificationViaEmail.fxml", (VerificationViaEmailController controller) -> {
                             controller.setRequestCodeEmailOutputModel(emailOutputModel);
                             controller.setPasswordResetMode(true);
+                            controller.setPhoneNumber(this.phoneNumber);
                         });
                     } else if ("no_email_setup".equals(status)) {
-                        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-                        alert.setTitle("No Email Found");
-                        alert.setHeaderText("You have not set up an email for password recovery.");
-                        alert.setContentText("You can reset your account, which will delete all your cloud data, or try to remember your password.");
-
-                        ButtonType buttonTypeReset = new ButtonType("Reset Account");
-                        ButtonType buttonTypeCancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
-
-                        alert.getButtonTypes().setAll(buttonTypeReset, buttonTypeCancel);
-
-                        Optional<ButtonType> result = alert.showAndWait();
-                        if (result.isPresent() && result.get() == buttonTypeReset) {
-                            Task<RpcResponse<Object>> resetAccountTask = new Task<>() {
-                                @Override
-                                protected RpcResponse<Object> call() throws Exception {
-                                    return rpcCaller.resetAccount(phoneNumber, DeviceUtil.getDeviceInfo());
-                                }
-                            };
-
-                            resetAccountTask.setOnSucceeded(e -> {
-                                var resetResponse = resetAccountTask.getValue();
-                                if (resetResponse.getStatusCode() == StatusCode.OK) {
-                                    Map<String, String> resetPayload = (Map<String, String>) resetResponse.getPayload();
-                                    String accessKey = resetPayload.get("accessKey");
-                                    try {
-                                        if (AccessKeyManager.LoginWithAccessKey(accessKey, connectionManager.getClient()) == StatusCode.OK) {
-                                            changeSceneWithSameSize(root, "/Client/fxml/mainChat.fxml");
-                                        }
-                                    } catch (IOException ex) {
-                                        ex.printStackTrace();
-                                    }
-                                }
+                        // Directly navigate to ResetAccount.fxml without an intermediate alert
+                        Platform.runLater(() -> {
+                            changeSceneWithSameSize(root, "/Client/fxml/resetAccount.fxml", (ResetAccountController controller) -> {
+                                controller.setPhoneNumber(this.phoneNumber);
                             });
-
-                            new Thread(resetAccountTask).start();
-                        }
+                        });
                     }
                 });
             } else {
@@ -230,16 +197,16 @@ public class CloudPasswordCheckController {
             }
         });
 
-         resetTask.setOnFailed(event -> {
-                event.getSource().getException().printStackTrace();
-                Platform.runLater(() -> {
-                    Alert errorAlert = new Alert(Alert.AlertType.ERROR);
-                    errorAlert.setTitle("Error");
-                    errorAlert.setHeaderText("Password Reset Failed");
-                    errorAlert.setContentText("An unexpected error occurred. Please check your connection and try again.");
-                    errorAlert.showAndWait();
-                });
+        resetTask.setOnFailed(event -> {
+            event.getSource().getException().printStackTrace();
+            Platform.runLater(() -> {
+                Alert errorAlert = new Alert(Alert.AlertType.ERROR);
+                errorAlert.setTitle("Error");
+                errorAlert.setHeaderText("Password Reset Failed");
+                errorAlert.setContentText("An unexpected error occurred. Please check your connection and try again.");
+                errorAlert.showAndWait();
             });
+        });
 
         new Thread(resetTask).start();
     }

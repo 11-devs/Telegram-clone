@@ -4,7 +4,7 @@
 
 .back-button {
     -fx-background-color: transparent;
-    -fx-padding: 0; /* Remove extra padding */
+    -fx-padding: 0;
 }
 
 .back-button:hover {
@@ -33,7 +33,7 @@
     -fx-cursor: hand;
 }
 
-.email-label {
+.title {
     -fx-text-fill: #FFFFFF;
     -fx-font-size: 18px;
     -fx-font-weight: bold;
@@ -43,50 +43,56 @@
     -fx-text-fill: #72879B;
     -fx-font-size: 14px;
     -fx-text-alignment: center;
+}
+
+.warning-label {
+    -fx-text-fill: #ee1111;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-alignment: center;
     -fx-wrap-text: true;
-    -fx-max-width: 300px;
 }
 
-.code-fields {
-    -fx-alignment: center;
+.check-box {
+    -fx-font-size: 14px;
 }
 
-.code-field {
+.check-box .box {
     -fx-background-color: #2F3A4A;
-    -fx-text-fill: #FFFFFF;
-    -fx-font-size: 18px;
-    -fx-alignment: center;
-    -fx-background-radius: 10px;
+    -fx-border-color: #313C49;
+    -fx-border-radius: 3px;
+    -fx-background-radius: 3px;
+    -fx-padding: 3px;
 }
 
-.code-field:focused {
-    -fx-border-color: #5288C1;
-    -fx-border-width: 2px;
-    -fx-background-radius: 10px;
-    -fx-border-radius: 10px;
-}
-
-.next-button {
+.check-box:selected .box {
     -fx-background-color: #2F6EA5;
+    -fx-border-color: #2F6EA5;
+}
+
+.check-box .mark {
+    -fx-background-color: white;
+}
+
+.reset-button {
+    -fx-background-color: #dc3545;
     -fx-text-fill: #FFFFFF;
     -fx-font-size: 16px;
-    -fx-font-weight: bold;
     -fx-background-radius: 5px;
     -fx-padding: 8px 15px;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 5, 0.5, 0, 0);
 }
 
-.next-button:hover {
-    -fx-background-color: #3476AB;
+.reset-button:hover {
+    -fx-background-color: #c82333;
 }
 
-.sms-link {
-    -fx-font-size: 12px;
-    -fx-text-fill: #6BB0F5;
-    -fx-cursor: hand;
-    -fx-underline: false;
+.status-label {
+    -fx-font-size: 13px;
+    -fx-text-fill: #28a745;
+    -fx-alignment: center-left;
 }
 
-.sms-link:hover {
-    -fx-underline: true;
+.status-label:error {
+    -fx-text-fill: #d34343;
 }

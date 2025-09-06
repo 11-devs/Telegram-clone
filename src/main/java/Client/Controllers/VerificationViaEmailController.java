@@ -18,13 +18,15 @@ import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.Optional;
 
 import static Shared.Utils.SceneUtil.changeSceneWithSameSize;
 
@@ -33,6 +35,7 @@ public class VerificationViaEmailController {
     private RpcCaller rpcCaller;
     private RequestCodeEmailOutputModel requestCodeEmailOutputModel;
     private boolean isPasswordResetMode = false;
+    private String phoneNumber;
 
     @FXML
     private VBox root;
@@ -58,6 +61,10 @@ public class VerificationViaEmailController {
 
     public void setPasswordResetMode(boolean passwordResetMode) {
         isPasswordResetMode = passwordResetMode;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 
     @FXML
@@ -182,6 +189,37 @@ public class VerificationViaEmailController {
     @FXML
     private void handleBack() {
         changeSceneWithSameSize(root, "/Client/fxml/phoneNumber.fxml");
+    }
+
+    @FXML
+    private void handleNoEmailAccess() {
+        System.out.println("No email access link clicked.");
+        if (phoneNumber == null || phoneNumber.isEmpty()) {
+            // This should not happen if the phone number is passed correctly
+            System.err.println("Phone number is not available for account reset.");
+            changeSceneWithSameSize(root, "/Client/fxml/phoneNumber.fxml");
+            return;
+        }
+
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("No Email Access");
+        alert.setHeaderText("You are about to reset your account.");
+        alert.setContentText("Resetting your account will delete all your cloud data. This action is irreversible. Do you want to proceed?");
+
+        ButtonType buttonTypeReset = new ButtonType("Reset Account");
+        ButtonType buttonTypeCancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+        alert.getButtonTypes().setAll(buttonTypeReset, buttonTypeCancel);
+
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent() && result.get() == buttonTypeReset) {
+            // Navigate to ResetAccount.fxml instead of performing the reset directly
+            Platform.runLater(() -> {
+                changeSceneWithSameSize(root, "/Client/fxml/resetAccount.fxml", (ResetAccountController controller) -> {
+                    controller.setPhoneNumber(this.phoneNumber);
+                });
+            });
+        }
     }
 
     @FXML
