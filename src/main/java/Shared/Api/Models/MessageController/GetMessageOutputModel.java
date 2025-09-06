@@ -14,6 +14,9 @@ public class GetMessageOutputModel {
     private boolean isEdited;
     private MessageType messageType;
     private String textContent;
+    private UUID mediaId;
+    private String fileId;
+    private String messageStatus; // New field
 
     public boolean getOutgoing() {
         return isOutgoing;
@@ -23,9 +26,6 @@ public class GetMessageOutputModel {
         isOutgoing = outgoing;
     }
 
-
-    private UUID mediaId;
-
     public String getFileId() {
         return fileId;
     }
@@ -34,7 +34,13 @@ public class GetMessageOutputModel {
         this.fileId = fileId;
     }
 
-    private String fileId;
+    public String getMessageStatus() {
+        return messageStatus;
+    }
+
+    public void setMessageStatus(String messageStatus) {
+        this.messageStatus = messageStatus;
+    }
 
     //<editor-fold desc="Getters and Setters">
     public UUID getMessageId() {
@@ -108,4 +114,5 @@ public class GetMessageOutputModel {
     public void setMediaId(UUID mediaId) {
         this.mediaId = mediaId;
     }
+    //</editor-fold>
 }

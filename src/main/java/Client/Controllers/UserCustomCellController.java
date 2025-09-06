@@ -2,6 +2,7 @@ package Client.Controllers;
 
 import Shared.Models.UserViewModel;
 import Shared.Models.UserType;
+import javafx.beans.value.ChangeListener;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
@@ -58,7 +59,7 @@ public class UserCustomCellController {
 
     private UserViewModel currentUser;
     private boolean isSelected = false;
-
+    private ChangeListener<String> messageStatusListener;
     @FXML
     public void initialize() {
         setupClickHandlers();
@@ -133,7 +134,8 @@ public class UserCustomCellController {
 
     private String formatDraftText(String lastMessage) {
         if (lastMessage != null && !lastMessage.isEmpty()) {
-            return "Draft: " + (lastMessage.length() > 35 ? lastMessage.substring(0, 32) + "..." : lastMessage);
+            String strippedMessage = stripFormattingForPreview(lastMessage);
+            return "Draft: " + (strippedMessage.length() > 35 ? strippedMessage.substring(0, 32) + "..." : strippedMessage);
         } else {
             return "Draft: No draft";
         }
@@ -141,7 +143,8 @@ public class UserCustomCellController {
 
     private String formatLastMessageText(String lastMessage) {
         if (lastMessage != null && !lastMessage.isEmpty()) {
-            return lastMessage.length() > 35 ? lastMessage.substring(0, 32) + "..." : lastMessage;
+            String strippedMessage = stripFormattingForPreview(lastMessage);
+            return strippedMessage.length() > 35 ? strippedMessage.substring(0, 32) + "..." : strippedMessage;
         } else {
             return "No messages yet";
         }
@@ -212,6 +215,20 @@ public class UserCustomCellController {
             default -> "";
         }));
         statusIconSvg.getStyleClass().add("status-icon");
+        messageStatusListener = (obs, oldStatus, newStatus) -> {
+            statusIconSvg.getStyleClass().removeAll("sent", "delivered", "read");
+            if (newStatus != null && !newStatus.equals("none")) {
+                statusIconSvg.getStyleClass().add(newStatus);
+            }
+        };
+        currentUser.messageStatusProperty().addListener(messageStatusListener);
+
+        // Set initial state correctly
+        String initialStatus = currentUser.getMessageStatus();
+        statusIconSvg.getStyleClass().removeAll("sent", "delivered", "read");
+        if (initialStatus != null && !initialStatus.equals("none")) {
+            statusIconSvg.getStyleClass().add(initialStatus);
+        }
     }
 
     private void bindMutedPinnedIcons() {
@@ -257,8 +274,33 @@ public class UserCustomCellController {
         }
         if (mutedIcon != null) mutedIcon.visibleProperty().unbind();
         if (pinnedIcon != null) pinnedIcon.visibleProperty().unbind();
+        if (currentUser != null && messageStatusListener != null) {
+            currentUser.messageStatusProperty().removeListener(messageStatusListener);
+            messageStatusListener = null;
+        }
     }
 
+    private String stripFormattingForPreview(String text) {
+        if (text == null || text.isEmpty()) {
+            return text;
+        }
+
+        String result = text;
+
+        // 1. Spoilers: ||content|| -> ██████
+        result = result.replaceAll("\\|\\|.*?\\|\\|", "██████");
+
+        // 2. Bold: **content** -> content
+        result = result.replaceAll("\\*\\*(.*?)\\*\\*", "$1");
+
+        // 3. Italic: __content__ -> content
+        result = result.replaceAll("__(.*?)__", "$1");
+
+        // 4. Underline: ++content++ -> content
+        result = result.replaceAll("\\+\\+(.*?)\\+\\+", "$1");
+
+        return result;
+    }
     // Update cell appearance and content
 
     private void updateCellContent() {

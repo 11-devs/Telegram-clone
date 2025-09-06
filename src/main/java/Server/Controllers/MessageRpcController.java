@@ -1,3 +1,4 @@
+// Entire file content is provided for clarity as multiple methods are changed or added.
 package Server.Controllers;
 
 import JSocket2.Protocol.Rpc.RpcControllerBase;
@@ -16,7 +17,7 @@ import Shared.Models.Message.TextMessage;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter; // Import for formatting
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -56,28 +57,66 @@ public class MessageRpcController extends RpcControllerBase {
         if (message.getChat() != null) {
             output.setChatId(message.getChat().getId());
         }
-        // Convert LocalDateTime to String for the output model
         output.setTimestamp(message.getTimestamp() != null ? message.getTimestamp().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) : null);
         output.setEdited(message.isEdited());
         output.setMessageType(message.getType());
-        output.setOutgoing(Objects.equals(output.getSenderId().toString(), getCurrentUser().getUserId()));
-        if (message instanceof TextMessage) {
-            output.setTextContent(((TextMessage) message).getTextContent());
-        } else if (message instanceof MediaMessage) {
-            Media media = ((MediaMessage) message).getMedia();
-            if (media != null) {
-                output.setMediaId(media.getId());
-                output.setFileId(media.getFileId());
+
+        boolean isOutgoing = Objects.equals(output.getSenderId().toString(), getCurrentUser().getUserId());
+        output.setOutgoing(isOutgoing);
+
+        // Determine message status for outgoing messages
+        if (isOutgoing) {
+            List<Membership> otherMembers = daoManager.getMembershipDAO().findByJpql(
+                    "SELECT m FROM Membership m LEFT JOIN FETCH m.lastReadMessage WHERE m.chat.id = :chatId AND m.account.id != :senderId",
+                    q -> {
+                        q.setParameter("chatId", message.getChat().getId());
+                        q.setParameter("senderId", message.getSender().getId());
+                    }
+            );
+
+            boolean isReadByAll = !otherMembers.isEmpty() && otherMembers.stream().allMatch(m ->
+                    m.getLastReadMessage() != null && !m.getLastReadMessage().getTimestamp().isBefore(message.getTimestamp())
+            );
+
+            if (isReadByAll) {
+                output.setMessageStatus("read");
+            } else {
+                output.setMessageStatus("delivered");
             }
+        } else {
+            output.setMessageStatus("none"); // Status is not relevant for incoming messages.
         }
+
+        // ============================ THE DEFINITIVE FIX ============================
+        // The 'message' object from the list is a proxy of the base class.
+        // A direct cast will fail. We must use EntityManager.find() to get the
+        // correctly-typed subclass instance. This is efficient as the data is already
+        // in the L1 cache from the previous query.
+        switch (message.getType()) {
+            case TEXT:
+                TextMessage textMessage = daoManager.getEntityManager().find(TextMessage.class, message.getId());
+                if (textMessage != null) {
+                    output.setTextContent(textMessage.getTextContent());
+                }
+                break;
+            case MEDIA:
+                MediaMessage mediaMessage = daoManager.getEntityManager().find(MediaMessage.class, message.getId());
+                if (mediaMessage != null) {
+                    Media media = mediaMessage.getMedia();
+                    if (media != null) {
+                        output.setMediaId(media.getId());
+                        output.setFileId(media.getFileId());
+                    }
+                }
+                break;
+        }
+        // ===========================================================================
 
         return output;
     }
 
-    // Corrected method signature and logic for getMessageById
-    // Changed return type from Object to GetMessageOutputModel
     public RpcResponse<Object> getMessageById(GetMessageByIdInputModel model) {
-        Message message = daoManager.getMessageDAO().findById(model.getMessageId()); // Used model.getMessageId()
+        Message message = daoManager.getMessageDAO().findById(model.getMessageId());
         if (message == null) {
             return BadRequest("Message not found.");
         }
@@ -85,18 +124,23 @@ public class MessageRpcController extends RpcControllerBase {
         return Ok(output);
     }
 
-    // Return type already correct
     public RpcResponse<List<GetMessageOutputModel>> getMessagesByChat(GetMessageByChatInputModel model) {
-        List<Message> messages = daoManager.getMessageDAO().findAllByField("chat.id", model.getChatId());
+        // This query correctly and efficiently fetches all the necessary data.
+        List<Message> messages = daoManager.getMessageDAO().findByJpql(
+                "SELECT m FROM Message m JOIN FETCH m.sender s LEFT JOIN FETCH TREAT(m AS MediaMessage).media WHERE m.chat.id = :chatId",
+                query -> query.setParameter("chatId", model.getChatId())
+        );
+
         if (messages == null || messages.isEmpty()) {
             return Ok(List.of());
         }
+
+        // The mapMessageToOutputModel method now safely handles the proxy objects from the list.
         List<GetMessageOutputModel> outputList = messages.stream()
                 .map(this::mapMessageToOutputModel)
                 .collect(Collectors.toList());
         return Ok(outputList);
     }
-
 
     private void broadcastNewMessageEvent(Message message) {
         List<Membership> members = daoManager.getMembershipDAO().findAllByField("chat.id", message.getChat().getId());
@@ -180,7 +224,16 @@ public class MessageRpcController extends RpcControllerBase {
         newMessage.setType(model.getMessageType());
 
         daoManager.getMessageDAO().insert(newMessage);
+        Membership senderMembership = daoManager.getMembershipDAO().findAllByField("chat.id", chat.getId())
+                .stream()
+                .filter(m -> m.getAccount().getId().equals(sender.getId()))
+                .findFirst()
+                .orElse(null);
 
+        if (senderMembership != null) {
+            senderMembership.setLastReadMessage(newMessage);
+            daoManager.getMembershipDAO().update(senderMembership);
+        }
         broadcastNewMessageEvent(newMessage);
 
         SendMessageOutputModel output = new SendMessageOutputModel(
@@ -259,27 +312,58 @@ public class MessageRpcController extends RpcControllerBase {
         Chat chat = daoManager.getChatDAO().findById(model.getChatId());
         if (chat == null) return;
 
-        if (chat.getType() == Shared.Models.Chat.ChatType.PRIVATE) {
-            List<Membership> members = daoManager.getMembershipDAO().findAllByField("chat.id", model.getChatId());
-            members.stream()
-                    .map(Membership::getAccount)
-                    .filter(account -> !account.getId().equals(readerId))
-                    .findFirst()
-                    .ifPresent(otherUser -> {
-                        MessageReadEventModel eventModel = new MessageReadEventModel(
-                                null,
-                                model.getChatId(),
-                                readerId,
-                                LocalDateTime.now()
-                        );
-                        try {
-                            messageReadEvent.Invoke(getServerSessionManager(), otherUser.getId().toString(), eventModel);
-                        } catch (IOException e) {
-                            System.err.println("Failed to send message read event to " + otherUser.getId() + ": " + e.getMessage());
+        // 1. Find the latest message in the chat EFFICIENTLY
+        Message lastMessage = daoManager.getMessageDAO().findOneByJpql(
+                "SELECT m FROM Message m WHERE m.chat.id = :chatId ORDER BY m.timestamp DESC",
+                query -> {
+                    query.setParameter("chatId", chat.getId());
+                    query.setMaxResults(1);
+                }
+        );
+
+        if (lastMessage == null) return; // No messages to mark as read
+
+        // 2. Find the reader's membership EFFICIENTLY
+        Membership readerMembership = daoManager.getMembershipDAO().findOneByJpql(
+                "SELECT ms FROM Membership ms WHERE ms.chat.id = :chatId AND ms.account.id = :accountId",
+                query -> {
+                    query.setParameter("chatId", chat.getId());
+                    query.setParameter("accountId", readerId);
+                }
+        );
+
+        if (readerMembership != null) {
+            // Only update and send events if there are actually new messages to mark as read.
+            if (readerMembership.getLastReadMessage() == null || !lastMessage.getId().equals(readerMembership.getLastReadMessage().getId())) {
+                readerMembership.setLastReadMessage(lastMessage);
+                daoManager.getMembershipDAO().update(readerMembership);
+
+                // 3. Notify all OTHER members that the user has read messages up to this point
+                List<Membership> otherMembers = daoManager.getMembershipDAO().findByJpql(
+                        "SELECT ms FROM Membership ms JOIN FETCH ms.account WHERE ms.chat.id = :chatId AND ms.account.id != :readerId",
+                        query -> {
+                            query.setParameter("chatId", model.getChatId());
+                            query.setParameter("readerId", readerId);
                         }
-                    });
+                );
+
+                for (Membership member : otherMembers) {
+                    MessageReadEventModel eventModel = new MessageReadEventModel(
+                            lastMessage.getId(),
+                            model.getChatId(),
+                            readerId,
+                            LocalDateTime.now()
+                    );
+                    try {
+                        messageReadEvent.Invoke(getServerSessionManager(), member.getAccount().getId().toString(), eventModel);
+                    } catch (IOException e) {
+                        System.err.println("Failed to send message read event to " + member.getAccount().getId() + ": " + e.getMessage());
+                    }
+                }
+            }
         }
     }
+
     public void sendTypingStatus(TypingNotificationInputModel model) {
         List<Membership> members = daoManager.getMembershipDAO().findAllByField("chat.id", model.getChatId());
         String senderId = getCurrentUser().getUserId();
@@ -297,5 +381,4 @@ public class MessageRpcController extends RpcControllerBase {
             }
         }
     }
-
 }

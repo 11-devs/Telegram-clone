@@ -106,4 +106,7 @@ public class RpcCaller extends RpcCallerBase {
     public void markChatAsRead(MarkChatAsReadInputModel model) throws IOException {
         callRpc("MessageRpcController", "markChatAsRead", model);
     }
+    public RpcResponse<GetChatInfoOutputModel> getChatByUsername(String username) throws IOException {
+        return callRpcAndGetResponse("ChatRpcController", "getChatByUsername", GetChatInfoOutputModel.class, username);
+    }
 }

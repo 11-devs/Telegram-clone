@@ -8,10 +8,12 @@ import Shared.Models.Contact.Contact;
 import Shared.Models.Membership.Membership;
 import Shared.Models.Membership.MembershipType;
 import Shared.Models.Message.Message;
+import Shared.Models.Message.MessageType;
 import Shared.Models.Message.TextMessage;
 import Shared.Utils.Console;
 import Shared.Utils.PasswordUtil;
 import jakarta.persistence.EntityManager;
+
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -103,7 +105,7 @@ public class DataSeeder {
             account.setBio(userData.get("bio"));
             account.setHashedPassword(PasswordUtil.hash("12345678")); // Default password for all
             account.setStatus(random.nextBoolean() ? AccountStatus.ONLINE : AccountStatus.OFFLINE);
-//            account.setEmail("email@email.com");
+            account.setEmail(userData.get("username") + "@example.com"); // Unique email
             daoManager.getAccountDAO().insert(account);
             seededAccounts.add(account);
             Console.log("Created account: " + account.getFirstName() + " " + account.getLastName());
@@ -181,6 +183,7 @@ public class DataSeeder {
         List<Account> employees = List.of(seededAccounts.get(0), seededAccounts.get(1), seededAccounts.get(4));
         createChannel("Vandelay Industries Memos", "Official company announcements.", companyAnnouncer, employees, false);
     }
+
     private void seedMessages() {
         Console.print("\n--- Seeding Messages ---", Console.Color.BLUE);
         List<String> sampleMessages = List.of(
@@ -216,14 +219,15 @@ public class DataSeeder {
                 message.setSender(sender);
                 message.setTextContent(content);
                 message.setTimestamp(timestamp);
-                message.setEdited(false); // Also good practice to set this explicitly
-                message.setType(Shared.Models.Message.MessageType.TEXT); // THE FIX
+                message.setEdited(random.nextDouble() < 0.1);
+                message.setType(MessageType.TEXT);
                 daoManager.getMessageDAO().insert(message);
 
                 timestamp = timestamp.plusMinutes(random.nextInt(60) + 1).plusSeconds(random.nextInt(60));
             }
         });
     }
+
     private void seedMessageViews() {
         Console.print("\n--- Seeding Message Views (Last Read) ---", Console.Color.BLUE);
         seededChats.values().forEach(chat -> {
@@ -241,7 +245,7 @@ public class DataSeeder {
                 } else {
                     // Otherwise, they've read a random message from the last 10 (or fewer)
                     int lastIndex = messages.size() - 1;
-                    int readIndex = Math.max(0, lastIndex - random.nextInt(10));
+                    int readIndex = Math.max(0, lastIndex - random.nextInt(Math.min(10, messages.size())));
                     member.setLastReadMessage(messages.get(readIndex));
                 }
                 daoManager.getMembershipDAO().update(member);

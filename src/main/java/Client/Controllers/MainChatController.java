@@ -18,7 +18,6 @@ import Shared.Api.Models.MessageController.GetMessageOutputModel;
 import Shared.Api.Models.MessageController.SendMessageInputModel;
 import Shared.Api.Models.MessageController.SendMessageOutputModel;
 import Shared.Events.Models.MessageDeletedEventModel;
-import Shared.Events.Models.MessageDeliveredEventModel;
 import Shared.Events.Models.MessageEditedEventModel;
 import Shared.Events.Models.MessageReadEventModel;
 import Shared.Events.Models.NewMessageEventModel;
@@ -55,6 +54,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Text;
+import javafx.scene.text.TextFlow;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -75,6 +75,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import javafx.scene.Node;
 
 import static JSocket2.Utils.FileUtil.getFileExtension;
@@ -88,6 +91,14 @@ import static Shared.Utils.FileUtil.*;
  */
 public class MainChatController implements Initializable {
 
+    private static final String BOLD_MARKER_PREFIX = "**";
+    private static final String BOLD_MARKER_SUFFIX = "**";
+    private static final String ITALIC_MARKER_PREFIX = "__";
+    private static final String ITALIC_MARKER_SUFFIX = "__";
+    private static final String UNDERLINE_MARKER_PREFIX = "++";
+    private static final String UNDERLINE_MARKER_SUFFIX = "++";
+    private static final String SPOILER_MARKER_PREFIX = "||";
+    private static final String SPOILER_MARKER_SUFFIX = "||";
     // ============ FXML INJECTED COMPONENTS ============
 
     /**
@@ -455,6 +466,7 @@ public class MainChatController implements Initializable {
         initializeData();
         setupChatList();
         setupMessageInput();
+        setupMessageInputFormatting();
         setupEventHandlers();
         setupAnimations();
         // TODO: Implement keyboard shortcut setup for enhanced navigation.
@@ -480,6 +492,8 @@ public class MainChatController implements Initializable {
             if (messagesScrollPane.getVvalue() > 0.9) {
                 scrollToBottom();
             }
+            Task<Void> markAsReadTask = chatService.markChatAsRead(UUID.fromString(currentSelectedUser.getUserId()));
+            new Thread(markAsReadTask).start();
         }
 
         // Update the corresponding chat item in the list
@@ -503,20 +517,20 @@ public class MainChatController implements Initializable {
                 });
     }
 
-    public void handleMessageDelivered(MessageDeliveredEventModel eventModel) {
-        if (currentSelectedUser != null && currentSelectedUser.getUserId().equals(eventModel.getChatId().toString())) {
-            Platform.runLater(() -> {
-                // Find the message in the UI and update its status
-                // This is a simplified approach; in a real app, messages would have unique IDs in the UI as well.
-                // For now, we assume the last outgoing message is the one being delivered.
-                updateLastOutgoingMessageStatus("delivered", eventModel.getDeliveredTimestamp());
-            });
+
+    private Label findStatusLabelInMessageNode(HBox messageNode) {
+        if (messageNode == null || messageNode.getChildren().isEmpty() || !(messageNode.getChildren().getFirst() instanceof VBox bubble)) {
+            return null;
         }
-        // Update chat list item status (e.g., change last message status icon)
-        allChatUsers.stream()
-                .filter(user -> user.getUserId().equals(eventModel.getChatId().toString()))
-                .findFirst()
-                .ifPresent(user -> user.setMessageStatus("delivered"));
+        if (bubble.getChildren().isEmpty() || !(bubble.getChildren().getLast() instanceof HBox timeContainer)) {
+            return null;
+        }
+        for (var node : timeContainer.getChildren()) {
+            if (node.getStyleClass().contains("message-status")) {
+                return (Label) node;
+            }
+        }
+        return null;
     }
 
     public void handleMessageEdited(MessageEditedEventModel eventModel) {
@@ -576,6 +590,7 @@ public class MainChatController implements Initializable {
                 .ifPresent(this::reorderAndRefreshChatList);
     }
 
+
     public void handleMessageRead(MessageReadEventModel eventModel) {
         if (currentSelectedUser != null && currentSelectedUser.getUserId().equals(eventModel.getChatId().toString())) {
             Platform.runLater(() -> {
@@ -583,27 +598,26 @@ public class MainChatController implements Initializable {
                 messagesContainer.getChildren().stream()
                         .filter(node -> node instanceof HBox && node.getStyleClass().contains("outgoing"))
                         .map(node -> (HBox) node)
-                        .flatMap(hBox -> hBox.getChildren().stream())
-                        .filter(node -> node instanceof VBox && node.getProperties().containsKey("messageTimestamp"))
-                        .map(node -> (VBox) node)
-                        .forEach(bubble -> {
+                        .filter(hBox -> hBox.getChildren().getFirst() instanceof VBox bubble && bubble.getProperties().containsKey("messageTimestamp"))
+                        .forEach(hBox -> {
+                            VBox bubble = (VBox) hBox.getChildren().getFirst();
                             LocalDateTime messageTime = (LocalDateTime) bubble.getProperties().get("messageTimestamp");
                             LocalDateTime readTime = LocalDateTime.parse(eventModel.getReadTimestamp());
                             if (!messageTime.isAfter(readTime)) {
-                                // Find the actual HBox container for the status update
-                                HBox parentHBox = (HBox) bubble.getParent();
-                                updateMessageStatus(parentHBox, "read", null);
+                                updateMessageStatus(hBox, "read", null);
                             }
                         });
             });
         }
 
-        // Clear unread count for the relevant user in the chat list
+        // This event means OUR messages have been read by the other party.
+        // We need to update the status icon in the chat list, not our unread count.
         allChatUsers.stream()
                 .filter(user -> user.getUserId().equals(eventModel.getChatId().toString()))
                 .findFirst()
                 .ifPresent(user -> {
-                    user.clearUnreadCount();
+                    // CORRECT: Update the message status to 'read' (double tick)
+                    user.setMessageStatus("read");
                     reorderAndRefreshChatList(user);
                 });
     }
@@ -784,6 +798,7 @@ public class MainChatController implements Initializable {
                             .lastMessage(chat.getLastMessage()) // Use real last message
                             .time(chat.getLastMessageTimestamp())     // Use real timestamp
                             .type(chat.getType())
+                            .notificationsNumber(String.valueOf(chat.getUnreadCount()))
                             .build();
                     userViewModels.add(uvm);
                 }
@@ -853,7 +868,93 @@ public class MainChatController implements Initializable {
         updateSendButtonState();
         disableChatControls();
     }
+    private void setupMessageInputFormatting() {
+        ContextMenu formattingMenu = new ContextMenu();
 
+        MenuItem boldItem = new MenuItem("Bold");
+        boldItem.setOnAction(e -> applyFormatting(BOLD_MARKER_PREFIX, BOLD_MARKER_SUFFIX));
+
+        MenuItem italicItem = new MenuItem("Italic");
+        italicItem.setOnAction(e -> applyFormatting(ITALIC_MARKER_PREFIX, ITALIC_MARKER_SUFFIX));
+
+        MenuItem underlineItem = new MenuItem("Underline");
+        underlineItem.setOnAction(e -> applyFormatting(UNDERLINE_MARKER_PREFIX, UNDERLINE_MARKER_SUFFIX));
+
+        MenuItem spoilerItem = new MenuItem("Spoiler");
+        spoilerItem.setOnAction(e -> applyFormatting(SPOILER_MARKER_PREFIX, SPOILER_MARKER_SUFFIX));
+
+        formattingMenu.getItems().addAll(boldItem, italicItem, underlineItem, new SeparatorMenuItem(), spoilerItem);
+
+        // Show context menu only when text is selected
+        formattingMenu.setOnShowing(e -> {
+            boolean textSelected = messageInputField.getSelectedText() != null && !messageInputField.getSelectedText().isEmpty();
+            boldItem.setDisable(!textSelected);
+            italicItem.setDisable(!textSelected);
+            underlineItem.setDisable(!textSelected);
+            spoilerItem.setDisable(!textSelected);
+        });
+
+        messageInputField.setContextMenu(formattingMenu);
+    }
+    private void applyFormatting(String prefix, String suffix) {
+        String selectedText = messageInputField.getSelectedText();
+        if (selectedText == null || selectedText.isEmpty()) return;
+
+        IndexRange selection = messageInputField.getSelection();
+        String currentText = messageInputField.getText();
+
+        // Check if the selection is already formatted
+        boolean isFormatted = selection.getStart() >= prefix.length() &&
+                selection.getEnd() <= currentText.length() - suffix.length() &&
+                currentText.substring(selection.getStart() - prefix.length(), selection.getStart()).equals(prefix) &&
+                currentText.substring(selection.getEnd(), selection.getEnd() + suffix.length()).equals(suffix);
+
+        if (isFormatted) {
+            // Un-format: remove the markup
+            int newStart = selection.getStart() - prefix.length();
+            int newEnd = selection.getEnd() + suffix.length();
+            messageInputField.replaceText(newStart, newEnd, selectedText);
+            // Reselect the text
+            messageInputField.selectRange(newStart, newStart + selectedText.length());
+        } else {
+            // Format: wrap with markup
+            String formattedText = prefix + selectedText + suffix;
+            messageInputField.replaceSelection(formattedText);
+            // Reselect the original text inside the markup
+            messageInputField.selectRange(selection.getStart() + prefix.length(), selection.getEnd() + prefix.length());
+        }
+    }
+    private Node createSpoilerNode(String content, boolean isOutgoing) {
+        // The actual text content, which will be covered initially.
+        Text revealedText = new Text(content);
+        revealedText.getStyleClass().addAll("message-text", isOutgoing ? "outgoing" : "incoming");
+
+        // The opaque overlay that hides the text.
+        Region spoilerOverlay = new Region();
+        spoilerOverlay.getStyleClass().add("spoiler-overlay");
+
+        // A label to clearly mark the content as a spoiler.
+        Label spoilerHintLabel = new Label("Spoiler");
+        spoilerHintLabel.getStyleClass().add("spoiler-hint-label");
+        spoilerHintLabel.setMouseTransparent(true); // Clicks should go through to the StackPane
+
+        // StackPane layers the text, the overlay, and the hint label.
+        StackPane stack = new StackPane(revealedText, spoilerOverlay, spoilerHintLabel);
+        stack.getStyleClass().add("spoiler-wrapper");
+
+        // When the stack is clicked, hide the overlay and the hint.
+        stack.setOnMouseClicked(e -> {
+            spoilerOverlay.setVisible(false);
+            spoilerHintLabel.setVisible(false);
+            e.consume(); // Prevent the click from triggering other actions (like double-click to reply)
+        });
+
+        // Ensure the overlay is exactly the size of the text it's covering.
+        spoilerOverlay.prefWidthProperty().bind(revealedText.layoutBoundsProperty().map(bounds -> bounds.getWidth() + 4));
+        spoilerOverlay.prefHeightProperty().bind(revealedText.layoutBoundsProperty().map(bounds -> bounds.getHeight()));
+
+        return stack;
+    }
     /**
      * Sets up event handlers for all interactive UI components.
      */
@@ -1002,10 +1103,11 @@ public class MainChatController implements Initializable {
         enableChatControls();
 
         // Clear notifications and mark chat as read
-        user.clearUnreadCount();
-        Task<Void> markAsReadTask = chatService.markChatAsRead(UUID.fromString(user.getUserId()));
-        new Thread(markAsReadTask).start();
-
+        if (user.hasUnreadMessages()) {
+            user.clearUnreadCount();
+            Task<Void> markAsReadTask = chatService.markChatAsRead(UUID.fromString(user.getUserId()));
+            new Thread(markAsReadTask).start();
+        }
 
         // Update right panel if visible
         if (isRightPanelVisible) {
@@ -1119,7 +1221,9 @@ public class MainChatController implements Initializable {
                         String senderName = msg.getOutgoing() ? null : msg.getSenderName();
 
                         if (msg.getMessageType() == MessageType.TEXT && msg.getTextContent() != null) {
-                            HBox messageNode = addMessageBubble(msg.getTextContent(), msg.getOutgoing(), formattedTime, "read", senderName);
+                            // Use the new status field from the server response
+                            String status = msg.getOutgoing() ? msg.getMessageStatus() : "received";
+                            HBox messageNode = addMessageBubble(msg.getTextContent(), msg.getOutgoing(), formattedTime, status, senderName);
                             // Store messageId and timestamp for later updates
                             ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageId", msg.getMessageId());
                             ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageTimestamp", timestamp);
@@ -1130,7 +1234,9 @@ public class MainChatController implements Initializable {
                                 if (transferInfo != null) {
                                     DocumentInfo docInfo = new DocumentInfo(transferInfo);
                                     docInfo.setSenderName(senderName);
-                                    HBox messageNode = addDocumentMessageBubble(docInfo, msg.getOutgoing(), formattedTime, "read");
+                                    // Use the new status field from the server response
+                                    String status = msg.getOutgoing() ? msg.getMessageStatus() : "received";
+                                    HBox messageNode = addDocumentMessageBubble(docInfo, msg.getOutgoing(), formattedTime, status);
                                     // Store messageId and timestamp for later updates
                                     ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageId", msg.getMessageId());
                                     ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageTimestamp", timestamp);
@@ -1189,11 +1295,11 @@ public class MainChatController implements Initializable {
             RpcResponse<SendMessageOutputModel> response = sendMessageTask.getValue();
             if (response.getStatusCode() == StatusCode.OK) {
                 System.out.println("Message sent successfully. ID: " + response.getPayload().getMessageId());
-                Platform.runLater(() -> updateLastMessageStatus("delivered")); // Simulate delivery confirmation
+                Platform.runLater(() -> updateLastMessageStatus("sent"));
                 LocalDateTime serverTimestamp = LocalDateTime.parse(response.getPayload().getTimestamp());
                 String formattedTime = serverTimestamp.format(DateTimeFormatter.ofPattern("HH:mm"));
                 Platform.runLater(() -> {
-                updateMessageStatus(messageNode, "delivered", formattedTime);
+                updateMessageStatus(messageNode, "sent", formattedTime);
                 // Store the actual messageId and timestamp from server for later event updates
                 ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageId", response.getPayload().getMessageId());
                 ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageTimestamp", serverTimestamp);
@@ -1393,10 +1499,8 @@ public class MainChatController implements Initializable {
             bubble.getChildren().add(senderLabel);
         }
 
-        // Message text
-        Label messageText = new Label(text);
-        messageText.getStyleClass().addAll("message-text", isOutgoing ? "outgoing" : "incoming");
-        messageText.setWrapText(true);
+        // MODIFIED: Use the new createFormattedTextFlow method
+        TextFlow messageTextFlow = createFormattedTextFlow(text, isOutgoing);
 
         // Time and status container
         HBox timeContainer = new HBox();
@@ -1414,7 +1518,7 @@ public class MainChatController implements Initializable {
             timeContainer.getChildren().add(statusLabel);
         }
 
-        bubble.getChildren().addAll(messageText, timeContainer);
+        bubble.getChildren().addAll(messageTextFlow, timeContainer);
         bubble.setOnContextMenuRequested(event -> {
             ContextMenu contextMenu = createMessageContextMenu(bubble);
             contextMenu.show(bubble, event.getScreenX(), event.getScreenY());
@@ -1426,7 +1530,208 @@ public class MainChatController implements Initializable {
 
         return bubble;
     }
+    public static TextFlow createFormattedTextFlowForPreview(String text) {
+        TextFlow textFlow = new TextFlow();
+        if (text == null || text.trim().isEmpty()) {
+            textFlow.getChildren().add(new Text(""));
+            return textFlow;
+        }
 
+        Pattern pattern = Pattern.compile("(\\*\\*.*?\\*\\*)|(__.*?__)|(\\+\\+.*?\\+\\+)|(\\|\\|.*?\\|\\|)|(@[\\w_]+)");
+        Matcher matcher = pattern.matcher(text);
+
+        int lastMatchEnd = 0;
+        while (matcher.find()) {
+            if (matcher.start() > lastMatchEnd) {
+                textFlow.getChildren().add(new Text(text.substring(lastMatchEnd, matcher.start())));
+            }
+
+            String match = matcher.group();
+            if (match.startsWith(BOLD_MARKER_PREFIX) && match.endsWith(BOLD_MARKER_SUFFIX)) {
+                Text formattedText = new Text(match.substring(2, match.length() - 2));
+                formattedText.getStyleClass().add("text-bold");
+                textFlow.getChildren().add(formattedText);
+            } else if (match.startsWith(ITALIC_MARKER_PREFIX) && match.endsWith(ITALIC_MARKER_SUFFIX)) {
+                Text formattedText = new Text(match.substring(2, match.length() - 2));
+                formattedText.getStyleClass().add("text-italic");
+                textFlow.getChildren().add(formattedText);
+            } else if (match.startsWith(UNDERLINE_MARKER_PREFIX) && match.endsWith(UNDERLINE_MARKER_SUFFIX)) {
+                Text formattedText = new Text(match.substring(2, match.length() - 2));
+                formattedText.setUnderline(true);
+                textFlow.getChildren().add(formattedText);
+            } else if (match.startsWith(SPOILER_MARKER_PREFIX) && match.endsWith(SPOILER_MARKER_SUFFIX)) {
+                Text spoilerText = new Text("[Spoiler]");
+                spoilerText.getStyleClass().add("text-italic");
+                textFlow.getChildren().add(spoilerText);
+            } else {
+                textFlow.getChildren().add(new Text(match));
+            }
+            lastMatchEnd = matcher.end();
+        }
+
+        if (lastMatchEnd < text.length()) {
+            textFlow.getChildren().add(new Text(text.substring(lastMatchEnd)));
+        }
+
+        if (textFlow.getChildren().isEmpty()) {
+            textFlow.getChildren().add(new Text(text));
+        }
+        return textFlow;
+    }
+    // RENAME this method from createTextFlowWithMentions to createFormattedTextFlow and UPDATE its logic
+    private TextFlow createFormattedTextFlow(String text, boolean isOutgoing) {
+        TextFlow textFlow = new TextFlow();
+        // Regex to find all formatting types: bold, italic, underline, spoiler, and mentions.
+        Pattern pattern = Pattern.compile("(\\*\\*.*?\\*\\*)|(__.*?__)|(\\+\\+.*?\\+\\+)|(\\|\\|.*?\\|\\|)|(@[\\w_]+)");
+        Matcher matcher = pattern.matcher(text);
+
+        int lastMatchEnd = 0;
+        while (matcher.find()) {
+            // Add the plain text part before the match
+            if (matcher.start() > lastMatchEnd) {
+                addPlainText(textFlow, text.substring(lastMatchEnd, matcher.start()), isOutgoing);
+            }
+
+            String match = matcher.group();
+            if (match.startsWith(BOLD_MARKER_PREFIX) && match.endsWith(BOLD_MARKER_SUFFIX)) {
+                Text formattedText = new Text(match.substring(2, match.length() - 2));
+                formattedText.getStyleClass().addAll("message-text", "text-bold", isOutgoing ? "outgoing" : "incoming");
+                textFlow.getChildren().add(formattedText);
+            } else if (match.startsWith(ITALIC_MARKER_PREFIX) && match.endsWith(ITALIC_MARKER_SUFFIX)) {
+                Text formattedText = new Text(match.substring(2, match.length() - 2));
+                formattedText.getStyleClass().addAll("message-text", "text-italic", isOutgoing ? "outgoing" : "incoming");
+                textFlow.getChildren().add(formattedText);
+            } else if (match.startsWith(UNDERLINE_MARKER_PREFIX) && match.endsWith(UNDERLINE_MARKER_SUFFIX)) {
+                Text formattedText = new Text(match.substring(2, match.length() - 2));
+                formattedText.setUnderline(true);
+                formattedText.getStyleClass().addAll("message-text", isOutgoing ? "outgoing" : "incoming");
+                textFlow.getChildren().add(formattedText);
+            } else if (match.startsWith(SPOILER_MARKER_PREFIX) && match.endsWith(SPOILER_MARKER_SUFFIX)) {
+                Node spoilerNode = createSpoilerNode(match.substring(2, match.length() - 2), isOutgoing);
+                textFlow.getChildren().add(spoilerNode);
+            } else if (match.startsWith("@")) {
+                // Existing mention logic
+                String username = match.substring(1);
+                Hyperlink mentionLink = new Hyperlink(match);
+                mentionLink.setOnAction(e -> handleMentionClick(username));
+                mentionLink.getStyleClass().addAll("mention-hyperlink", isOutgoing ? "outgoing" : "incoming");
+                textFlow.getChildren().add(mentionLink);
+            }
+
+            lastMatchEnd = matcher.end();
+        }
+
+        // Add any remaining text after the last match
+        if (lastMatchEnd < text.length()) {
+            addPlainText(textFlow, text.substring(lastMatchEnd), isOutgoing);
+        }
+
+        // If no formats were found, just add the full text as a single styled Text node.
+        if (textFlow.getChildren().isEmpty()) {
+            addPlainText(textFlow, text, isOutgoing);
+        }
+
+        return textFlow;
+    }
+    private void addPlainText(TextFlow textFlow, String content, boolean isOutgoing) {
+        Text plainText = new Text(content);
+        plainText.getStyleClass().addAll("message-text", isOutgoing ? "outgoing" : "incoming");
+        textFlow.getChildren().add(plainText);
+    }
+    private TextFlow createTextFlowWithMentions(String text, boolean isOutgoing) {
+        TextFlow textFlow = new TextFlow();
+        // Regex to find @username patterns. It matches @ followed by word characters.
+        Pattern pattern = Pattern.compile("(@[\\w_]+)");
+        Matcher matcher = pattern.matcher(text);
+
+        int lastMatchEnd = 0;
+        while (matcher.find()) {
+            // Add the plain text part before the mention
+            if (matcher.start() > lastMatchEnd) {
+                Text plainText = new Text(text.substring(lastMatchEnd, matcher.start()));
+                // Apply the original style classes to the Text node itself
+                plainText.getStyleClass().addAll("message-text", isOutgoing ? "outgoing" : "incoming");
+                textFlow.getChildren().add(plainText);
+            }
+
+            // Add the mention as a clickable hyperlink
+            String mention = matcher.group(1);
+            String username = mention.substring(1); // remove '@'
+            Hyperlink mentionLink = new Hyperlink(mention);
+            mentionLink.setOnAction(e -> handleMentionClick(username));
+            mentionLink.getStyleClass().add("mention-hyperlink");
+            mentionLink.getStyleClass().add(isOutgoing ? "outgoing" : "incoming");
+            textFlow.getChildren().add(mentionLink);
+
+            lastMatchEnd = matcher.end();
+        }
+
+        // Add any remaining text after the last mention
+        if (lastMatchEnd < text.length()) {
+            Text remainingText = new Text(text.substring(lastMatchEnd));
+            // Apply the original style classes to the Text node itself
+            remainingText.getStyleClass().addAll("message-text", isOutgoing ? "outgoing" : "incoming");
+            textFlow.getChildren().add(remainingText);
+        }
+
+        // If no mentions were found, just add the full text as a single styled Text node.
+        if (textFlow.getChildren().isEmpty()) {
+            Text fullText = new Text(text);
+            fullText.getStyleClass().addAll("message-text", isOutgoing ? "outgoing" : "incoming");
+            textFlow.getChildren().add(fullText);
+        }
+
+        return textFlow;
+    }
+    private void handleMentionClick(String username) {
+        Task<RpcResponse<GetChatInfoOutputModel>> findChatTask = chatService.findChatByUsername(username);
+
+        findChatTask.setOnSucceeded(event -> {
+            RpcResponse<GetChatInfoOutputModel> response = findChatTask.getValue();
+            if (response.getStatusCode() == StatusCode.OK && response.getPayload() != null) {
+                GetChatInfoOutputModel chatInfo = response.getPayload();
+                Platform.runLater(() -> {
+                    // Check if this user is already in the local chat list
+                    Optional<UserViewModel> existingUser = allChatUsers.stream()
+                            .filter(uvm -> uvm.getUserId().equals(chatInfo.getId().toString()))
+                            .findFirst();
+
+                    UserViewModel userToSelect;
+                    if (existingUser.isPresent()) {
+                        userToSelect = existingUser.get();
+                    } else {
+                        // If not present, create a new UserViewModel and add it to the list
+                        UserViewModel uvm = new UserViewModelBuilder()
+                                .userId(chatInfo.getId().toString())
+                                .avatarId(chatInfo.getProfilePictureId())
+                                .userName(chatInfo.getTitle())
+                                .lastMessage(chatInfo.getLastMessage())
+                                .time(chatInfo.getLastMessageTimestamp())
+                                .type(chatInfo.getType())
+                                .notificationsNumber(String.valueOf(chatInfo.getUnreadCount()))
+                                .build();
+                        allChatUsers.add(0, uvm); // Add to the top of the master list
+                        performSearch(searchField.getText()); // Re-apply current filter
+                        userToSelect = uvm;
+                    }
+
+                    // Select the user in the ListView, which will open the chat
+                    chatListView.getSelectionModel().select(userToSelect);
+                    chatListView.scrollTo(userToSelect);
+                });
+            } else {
+                Platform.runLater(() -> showTemporaryNotification("User @" + username + " not found."));
+                System.err.println("Failed to find user by username: " + response.getMessage());
+            }
+        });
+
+        findChatTask.setOnFailed(event -> {
+            findChatTask.getException().printStackTrace();
+            Platform.runLater(() -> showTemporaryNotification("Error finding user."));
+        });
+
+        new Thread(findChatTask).start();
+    }
     /**
      * Creates an ImageView for a sender's avatar with a circular clip.
      *
@@ -1986,6 +2291,34 @@ public class MainChatController implements Initializable {
      * @param event The KeyEvent triggering the action.
      */
     private void handleKeyPressed(KeyEvent event) {
+        // Formatting Shortcuts
+        if (event.isControlDown()) {
+            switch (event.getCode()) {
+                case B:
+                    applyFormatting(BOLD_MARKER_PREFIX, BOLD_MARKER_SUFFIX);
+                    event.consume();
+                    return;
+                case I:
+                    applyFormatting(ITALIC_MARKER_PREFIX, ITALIC_MARKER_SUFFIX);
+                    event.consume();
+                    return;
+                case U:
+                    applyFormatting(UNDERLINE_MARKER_PREFIX, UNDERLINE_MARKER_SUFFIX);
+                    event.consume();
+                    return;
+                case UP:
+                    editLastMessage();
+                    event.consume();
+                    return;
+            }
+        }
+        if (event.isControlDown() && event.isShiftDown() && event.getCode() == KeyCode.P) {
+            applyFormatting(SPOILER_MARKER_PREFIX, SPOILER_MARKER_SUFFIX);
+            event.consume();
+            return;
+        }
+
+        // Other shortcuts and actions
         if (event.getCode() == KeyCode.ENTER) {
             if (event.isShiftDown()) {
                 // Allow new line with Shift+Enter
@@ -1999,9 +2332,6 @@ public class MainChatController implements Initializable {
             if (replyPreviewContainer.isVisible()) {
                 closeReplyPreview();
             }
-        } else if (event.getCode() == KeyCode.UP && event.isControlDown()) {
-            // Ctrl+Up to edit last message
-            editLastMessage();
         }
     }
 

@@ -2,15 +2,12 @@ package Client;
 
 import Client.Services.UI.ChatUIService;
 import Client.Subscribers.MessageDeletedSubscriber;
-import Client.Subscribers.MessageDeliveredSubscriber;
 import Client.Subscribers.MessageEditedSubscriber;
 import Client.Subscribers.MessageReadSubscriber;
 import Client.Subscribers.NewMessageSubscriber;
 import Client.Subscribers.UserTypingSubscriber;
 import JSocket2.Core.Client.ClientApplicationBuilder;
 import JSocket2.Core.Client.ConnectionManager;
-import JSocket2.DI.ServiceCollection;
-import JSocket2.DI.ServiceProvider;
 
 public class AppConnectionManager {
 
@@ -31,7 +28,6 @@ public class AppConnectionManager {
         ClientApplicationBuilder builder = new ClientApplicationBuilder();
         builder.setEndpoint("localhost", 8586);
         builder.addEventSubscriber(NewMessageSubscriber.class);
-        builder.addEventSubscriber(MessageDeliveredSubscriber.class);
         builder.addEventSubscriber(MessageEditedSubscriber.class);
         builder.addEventSubscriber(MessageDeletedSubscriber.class);
         builder.addEventSubscriber(MessageReadSubscriber.class);

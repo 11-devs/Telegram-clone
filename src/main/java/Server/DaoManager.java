@@ -17,6 +17,10 @@ import Shared.Models.Setting.Setting;
 import jakarta.persistence.EntityManager;
 
 public class DaoManager {
+    public EntityManager getEntityManager() {
+        return entityManager;
+    }
+
     private final EntityManager entityManager;
 
     // Lazy-loaded DAOs
