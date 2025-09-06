@@ -113,7 +113,7 @@
     -fx-background-color: #17212B;
     -fx-border-color: #2C3E50;
     -fx-border-width: 1 0 0 0;
-    -fx-min-height: 50px;
+    -fx-min-height: 40px;
 }
 
 .footer-button {
@@ -378,7 +378,7 @@
     -fx-background-color: #17212B;
     -fx-border-color: #2C3E50;
     -fx-border-width: 1 0 0 0;
-    -fx-min-height: 70px;
+    -fx-min-height: 50px;
 }
 
 .message-input-area {
@@ -589,7 +589,7 @@
     -fx-text-fill: #92A3AF;
     -fx-font-size: 12px;
 }
-/* ============ JFX TOGGLE BUTTON STYLING (TELEGRAM LOOK) ============ */
+/* ============ JFX TOGGLE BUTTON STYLING ============ */
 
 .notificationsToggle {
     -jfx-toggle-color: #2A3947;
@@ -1020,50 +1020,32 @@
     -fx-opacity: 0;
 }
 
-/* ============ CONTEXT MENU STYLING ============ */
+/* ============ TELEGRAM CONTEXT MENU STYLE ============ */
 .context-menu {
-    -fx-background-color: #202B36;
-    -fx-border-color: #2C3E50;
-    -fx-border-width: 1px;
+    -fx-background-color: #212B36;
+    -fx-background-insets: 0;
     -fx-background-radius: 8px;
-    -fx-border-radius: 8px;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.16), 0, 0, 0, 0) 0 3px 6px, dropshadow(gaussian, rgba(0, 0, 0, 0.23), 0, 0, 0, 0) 0 3px 6px;
-    -fx-padding: 4;
+    -fx-border-width: 0;
+}
+
+.context-menu .menu-item > .label {
+    -fx-text-fill: #FFFFFF;
+    -fx-padding: 0 0 0 10px;
 }
 
 .context-menu .menu-item {
-    -fx-background-color: transparent;
+    -fx-background-radius: 6px;
+    -fx-padding: 8px 12px 8px 12px;
+}
+
+.context-menu .menu-item:focused > .label,
+.context-menu .menu-item:hover > .label {
     -fx-text-fill: #FFFFFF;
-    -fx-font-size: 14px;
-    -fx-font-weight: 400;
-    -fx-padding: 8 16 8 16;
-    -fx-background-radius: 8px;
-    -fx-cursor: hand;
 }
 
 .context-menu .menu-item:focused,
 .context-menu .menu-item:hover {
-    -fx-background-color: #2B5278;
-}
-
-.context-menu .separator {
-    -fx-background-color: #2C3E50;
-    -fx-pref-height: 1px;
-    -fx-margin: 4 0 4 0;
-}
-
-/* ============ TOOLTIP STYLING ============ */
-.tooltip {
-    -fx-background-color: #2C3E50;
-    -fx-text-fill: #FFFFFF;
-    -fx-font-size: 12px;
-    -fx-font-weight: 400;
-    -fx-background-radius: 8px;
-    -fx-border-radius: 8px;
-    -fx-border-color: #2C3E50;
-    -fx-border-width: 1px;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.16), 0, 0, 0, 0) 0 3px 6px, dropshadow(gaussian, rgba(0, 0, 0, 0.23), 0, 0, 0, 0) 0 3px 6px;
-    -fx-padding: 6 10 6 10;
+    -fx-background-color: #2D3B4D;
 }
 
 /* ============ CHAT LIST CELL CUSTOM STYLING ============ */
@@ -1251,6 +1233,25 @@
     -fx-background-radius: 8px;
     -fx-padding: 8 12 8 12;
     -fx-font-size: 13px;
+}
+
+/* ============ RIGHT PANEL CLOSE BUTTON ============ */
+.close-right-panel-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 50%;
+    -fx-cursor: hand;
+    -fx-padding: 8px;
+    -fx-min-width: 40px;
+    -fx-min-height: 40px;
+}
+
+.close-right-panel-button:hover {
+    -fx-background-color: #232E3C;
+}
+
+.close-right-panel-button .svg-path {
+    -fx-fill: #92A3AF;
+    -fx-stroke: #92A3AF;
 }
 
 /* ============ DARK MODE ADJUSTMENTS ============ */

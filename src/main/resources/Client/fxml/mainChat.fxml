@@ -66,7 +66,7 @@
             <ListView fx:id="chatListView" prefWidth="379.0" styleClass="chat-list" VBox.vgrow="ALWAYS" />
 
             <!-- Sidebar Footer -->
-            <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="sidebar-footer">
+            <HBox alignment="CENTER_LEFT" minHeight="440.0" prefHeight="40.0" prefWidth="379.0" spacing="12.0" styleClass="sidebar-footer">
                 <padding>
                     <Insets bottom="12.0" left="16.0" right="16.0" top="12.0" />
                 </padding>
@@ -277,9 +277,9 @@
             </StackPane>
 
             <!-- Message Input Area -->
-            <VBox prefWidth="468.0" styleClass="message-input-container">
+            <VBox alignment="BOTTOM_CENTER" minHeight="59.0" prefHeight="59.0" prefWidth="569.0" styleClass="message-input-container">
                 <!-- Reply/Forward Preview -->
-                <HBox fx:id="replyPreviewContainer" alignment="CENTER_LEFT" spacing="12.0" styleClass="reply-preview" visible="false" managed="false">
+                <HBox fx:id="replyPreviewContainer" alignment="CENTER_LEFT" managed="false" spacing="12.0" styleClass="reply-preview" visible="false">
                     <padding>
                         <Insets bottom="8.0" left="20.0" right="13.0" top="8.0" />
                     </padding>
@@ -349,6 +349,14 @@
     <!-- Right Panel -->
     <right>
         <VBox fx:id="rightPanel" maxWidth="420.0" minWidth="249.0" prefHeight="798.0" prefWidth="249.0" styleClass="right-panel">
+         <Button fx:id="closeRightPanelButton" onAction="#hideRightPanel" styleClass="close-right-panel-button">
+            <graphic>
+               <SVGPath content="M18 18L12 12M12 12L6 6M12 12L18 6M12 12L6 18" fill="#92A3AF" stroke="#92A3AF" strokeLineCap="ROUND" strokeLineJoin="ROUND" strokeWidth="2" />
+            </graphic>
+            <VBox.margin>
+               <Insets left="10.0" top="10.0" />
+            </VBox.margin>
+         </Button>
             <!-- Profile Header -->
             <VBox alignment="CENTER" spacing="16.0" styleClass="profile-header-section">
                 <padding>

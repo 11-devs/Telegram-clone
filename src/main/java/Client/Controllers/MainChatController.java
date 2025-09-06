@@ -33,6 +33,7 @@ import javafx.util.Duration;
 import com.jfoenix.controls.JFXToggleButton;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
+import javafx.scene.shape.SVGPath;
 
 import java.awt.*;
 import java.io.File;
@@ -255,6 +256,10 @@ public class MainChatController implements Initializable {
      * Handle about HBox click
      */
     @FXML private HBox MoreHBox;
+    /**
+     * Handle right panel
+     */
+    @FXML private Button closeRightPanelButton;
 
     // ============ DATA AND STATE ============
 
@@ -1739,7 +1744,7 @@ public class MainChatController implements Initializable {
 
         // Animate the dividers to their new target positions
         Timeline timeline = new Timeline(
-                new KeyFrame(Duration.millis(250),
+                new KeyFrame(Duration.millis(1),
                         new KeyValue(splitPane.getDividers().get(0).positionProperty(), targetLeftPanelPercentage, Interpolator.EASE_OUT),
                         new KeyValue(splitPane.getDividers().get(1).positionProperty(), targetSecondDividerPosition, Interpolator.EASE_OUT)
                 )
@@ -1756,6 +1761,7 @@ public class MainChatController implements Initializable {
      * Hides the right panel by animating the second divider to the edge
      * and then removing the panel from the SplitPane, allowing the chat area to expand.
      */
+    @FXML
     private void hideRightPanel() {
         if (rightPanel == null || !splitPane.getItems().contains(rightPanel)) {
             return;
@@ -1764,7 +1770,7 @@ public class MainChatController implements Initializable {
         // Animate only the second divider sliding out
         final SplitPane.Divider secondDivider = splitPane.getDividers().get(1);
         Timeline timeline = new Timeline(
-                new KeyFrame(Duration.millis(250),
+                new KeyFrame(Duration.millis(1),
                         new KeyValue(secondDivider.positionProperty(), 1.0, Interpolator.EASE_IN)
                 )
         );
@@ -2376,31 +2382,61 @@ public class MainChatController implements Initializable {
         newMenu.setAutoHide(true);
 
         VBox messageBubble = (VBox) event.getSource();
-
         boolean isOutgoing = messageBubble.getStyleClass().contains("outgoing");
 
-        MenuItem replyItem = new MenuItem("Reply");
+        MenuItem replyItem = createIconMenuItem("Reply", "/Client/images/context-menu/reply.png");
         replyItem.setOnAction(e -> showReplyPreview(messageBubble));
 
-        MenuItem forwardItem = new MenuItem("Forward");
+        MenuItem forwardItem = createIconMenuItem("Forward", "/Client/images/context-menu/forward.png");
         forwardItem.setOnAction(e -> forwardMessage());
 
-        MenuItem copyItem = new MenuItem("Copy Text");
+        MenuItem copyItem = createIconMenuItem("Copy Text", "/Client/images/context-menu/copy.png");
         copyItem.setOnAction(e -> copyMessageText(messageBubble));
 
-        MenuItem deleteItem = new MenuItem("Delete");
+        MenuItem deleteItem = createIconMenuItem("Delete", "/Client/images/context-menu/delete.png");
         deleteItem.setOnAction(e -> deleteMessage(messageBubble));
 
-        newMenu.getItems().addAll(replyItem, forwardItem, new SeparatorMenuItem(), copyItem, deleteItem);
+        newMenu.getItems().addAll(replyItem, forwardItem);
 
         if (isOutgoing) {
-            MenuItem editItem = new MenuItem("Edit");
+            MenuItem editItem = createIconMenuItem("Edit", "/Client/images/context-menu/edit.png");
             editItem.setOnAction(e -> editMessage(messageBubble));
-            newMenu.getItems().add(2, editItem);
+            newMenu.getItems().add(1, editItem);
         }
+
+        newMenu.getItems().addAll(copyItem, deleteItem);
 
         newMenu.show(messageBubble, event.getScreenX(), event.getScreenY());
         activeMessageContextMenu = newMenu;
+    }
+
+    /**
+     * Helper method to create a MenuItem with a custom Image icon.
+     *
+     * @param text     The text of the menu item.
+     * @param imageUrl The path to the icon image (relative to the resources folder).
+     * @return A configured MenuItem with an icon.
+     */
+    private MenuItem createIconMenuItem(String text, String imageUrl) {
+        ImageView icon = new ImageView();
+        try {
+            Image image = new Image(Objects.requireNonNull(getClass().getResource(imageUrl)).toExternalForm());
+            icon.setImage(image);
+        } catch (Exception e) {
+            System.err.println("Error loading icon for MenuItem: " + imageUrl);
+            // In case of error, an empty icon is created.
+        }
+
+        icon.setFitWidth(20);
+        icon.setFitHeight(20);
+        icon.setPreserveRatio(true);
+
+        icon.getStyleClass().add("context-menu-icon-image");
+
+        MenuItem menuItem = new MenuItem(text);
+        menuItem.setGraphic(icon);
+
+        return menuItem;
     }
 
     // ============ ATTACHMENT METHODS ============
