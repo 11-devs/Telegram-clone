@@ -26,6 +26,7 @@ import Shared.Models.*;
 //import Shared.Utils.SidebarUtil;
 import Shared.Models.Message.MessageType;
 import Shared.Utils.TelegramCellUtils;
+import Shared.Utils.TextUtil;
 import com.google.gson.Gson;
 import javafx.animation.*;
 import javafx.application.Platform;
@@ -478,7 +479,7 @@ public class MainChatController implements Initializable {
             String formattedTime = LocalDateTime.parse(message.getTimestamp()).format(DateTimeFormatter.ofPattern("HH:mm"));
 
             if (message.getMessageType() == MessageType.TEXT) {
-                addMessageBubble(message.getTextContent(), false, formattedTime, "received", message.getSenderName());
+                addMessageBubble(message.getTextContent(), false, formattedTime, "received", message.getSenderName(),false);
             } else if (message.getMessageType() == MessageType.MEDIA) {
                 fileDownloadService.getFileInfo(message.getFileId()).thenAcceptAsync(transferInfo -> {
                     if (transferInfo != null) {
@@ -536,23 +537,50 @@ public class MainChatController implements Initializable {
     public void handleMessageEdited(MessageEditedEventModel eventModel) {
         if (currentSelectedUser != null && currentSelectedUser.getUserId().equals(eventModel.getChatId().toString())) {
             Platform.runLater(() -> {
-                // Find the message bubble by its ID and update its text content.
-                // This requires message bubbles to be identifiable by their messageId.
-                // For this example, we'll iterate and update if the content matches (simplistic).
                 messagesContainer.getChildren().stream()
                         .filter(node -> node instanceof HBox)
                         .map(node -> (HBox) node)
                         .flatMap(hBox -> hBox.getChildren().stream())
                         .filter(node -> node instanceof VBox && node.getProperties().containsKey("messageId") && node.getProperties().get("messageId").equals(eventModel.getMessageId()))
                         .map(node -> (VBox) node)
-                        .forEach(bubble -> {
+                        .findFirst() // Use findFirst as messageId should be unique
+                        .ifPresent(bubble -> {
+                            // 1. Update the raw_text property for future actions like copy/edit
+                            String newRawText = eventModel.getNewContent();
+                            bubble.getProperties().put("raw_text", newRawText);
+
+                            // 2. Find the index of the old TextFlow
+                            int textFlowIndex = -1;
+                            for (int i = 0; i < bubble.getChildren().size(); i++) {
+                                if (bubble.getChildren().get(i) instanceof TextFlow) {
+                                    textFlowIndex = i;
+                                    break;
+                                }
+                            }
+
+                            // 3. If found, replace it with a new one
+                            if (textFlowIndex != -1) {
+                                boolean isOutgoing = bubble.getStyleClass().contains("outgoing");
+                                TextFlow newTextFlow = createFormattedTextFlow(newRawText, isOutgoing);
+                                bubble.getChildren().set(textFlowIndex, newTextFlow);
+                            }
+
+                            // 4. Find the time container and add an "edited" indicator
                             bubble.getChildren().stream()
-                                    .filter(node -> node instanceof Label && node.getStyleClass().contains("message-text"))
-                                    .map(node -> (Label) node)
-                                    .findFirst()
-                                    .ifPresent(messageTextLabel -> {
-                                        messageTextLabel.setText(eventModel.getNewContent() + " (edited)");
-                                        // Optionally add an 'edited' indicator
+                                    .filter(node -> node instanceof HBox)
+                                    .map(node -> (HBox) node)
+                                    .findFirst() // This should be the time container
+                                    .ifPresent(timeContainer -> {
+                                        // Avoid adding multiple "edited" labels
+                                        boolean alreadyEdited = timeContainer.getChildren().stream()
+                                                .anyMatch(child -> child.getStyleClass().contains("edited-indicator"));
+
+                                        if (!alreadyEdited) {
+                                            Label editedLabel = new Label("edited");
+                                            editedLabel.getStyleClass().add("edited-indicator");
+                                            // Insert before the time label
+                                            timeContainer.getChildren().add(0, editedLabel);
+                                        }
                                     });
                         });
             });
@@ -562,8 +590,8 @@ public class MainChatController implements Initializable {
                 .filter(user -> user.getUserId().equals(eventModel.getChatId().toString()))
                 .findFirst()
                 .ifPresent(user -> {
-                    // More complex logic might be needed here to check if the last message was indeed the one edited
-                    user.setLastMessage(eventModel.getNewContent() + " (edited)");
+                    // Update with the clean new content. The cell controller will format it.
+                    user.setLastMessage(eventModel.getNewContent());
                     user.setTime(eventModel.getTimestamp());
                     reorderAndRefreshChatList(user);
                 });
@@ -1223,7 +1251,7 @@ public class MainChatController implements Initializable {
                         if (msg.getMessageType() == MessageType.TEXT && msg.getTextContent() != null) {
                             // Use the new status field from the server response
                             String status = msg.getOutgoing() ? msg.getMessageStatus() : "received";
-                            HBox messageNode = addMessageBubble(msg.getTextContent(), msg.getOutgoing(), formattedTime, status, senderName);
+                            HBox messageNode = addMessageBubble(msg.getTextContent(), msg.getOutgoing(), formattedTime, status, senderName,msg.isEdited());
                             // Store messageId and timestamp for later updates
                             ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageId", msg.getMessageId());
                             ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageTimestamp", timestamp);
@@ -1273,7 +1301,7 @@ public class MainChatController implements Initializable {
         String currentTime = getCurrentTime();
 
         // Optimistically add message to UI
-        HBox messageNode = addMessageBubble(text, true, currentTime, "sending", null);
+        HBox messageNode = addMessageBubble(text, true, currentTime, "sending", null,false);
         scrollToBottom();
 
         currentSelectedUser.setLastMessage(text);
@@ -1444,7 +1472,7 @@ public class MainChatController implements Initializable {
      * @param status     The delivery status (e.g., "sent", "delivered", "read").
      * @param senderName The name of the sender (null for outgoing).
      */
-    private HBox addMessageBubble(String text, boolean isOutgoing, String time, String status, String senderName) {
+    private HBox addMessageBubble(String text, boolean isOutgoing, String time, String status, String senderName, boolean isEdited) {
         HBox messageContainer = new HBox();
         messageContainer.setSpacing(12);
         messageContainer.setPadding(new Insets(4, 0, 4, 0));
@@ -1452,7 +1480,7 @@ public class MainChatController implements Initializable {
         if (isOutgoing) {
             messageContainer.setAlignment(Pos.CENTER_RIGHT);
             messageContainer.getStyleClass().add("outgoing");
-            VBox bubble = createMessageBubble(text, time, status, true, null);
+            VBox bubble = createMessageBubble(text, time, status, true, null, isEdited);
             messageContainer.getChildren().add(bubble);
         } else {
             messageContainer.setAlignment(Pos.CENTER_LEFT);
@@ -1464,7 +1492,7 @@ public class MainChatController implements Initializable {
                 messageContainer.getChildren().add(senderAvatar);
             }
 
-            VBox bubble = createMessageBubble(text, time, status, false, senderName);
+            VBox bubble = createMessageBubble(text, time, status, false, senderName, isEdited);
             messageContainer.getChildren().add(bubble);
         }
 
@@ -1474,6 +1502,7 @@ public class MainChatController implements Initializable {
         TelegramCellUtils.animateNewMessage(messageContainer);
         return messageContainer;
     }
+
 
     /**
      * Creates a message bubble VBox with text, time, and status.
@@ -1485,12 +1514,14 @@ public class MainChatController implements Initializable {
      * @param senderName The name of the sender (null for outgoing).
      * @return The constructed VBox for the message bubble.
      */
-    private VBox createMessageBubble(String text, String time, String status, boolean isOutgoing, String senderName) {
+    private VBox createMessageBubble(String text, String time, String status, boolean isOutgoing, String senderName, boolean isEdited) {
         VBox bubble = new VBox();
         bubble.setSpacing(4);
         bubble.getStyleClass().addAll("message-bubble", isOutgoing ? "outgoing" : "incoming");
         bubble.setMaxWidth(420);
-        bubble.getProperties().put("originalText", text); // FIX: Store original text for actions
+
+        // SOLUTION: Store the original raw text. This is crucial for Edit/Copy/Reply functionality.
+        bubble.getProperties().put("raw_text", text);
 
         // Add sender name for incoming group messages
         if (!isOutgoing && senderName != null && currentSelectedUser != null &&
@@ -1517,6 +1548,14 @@ public class MainChatController implements Initializable {
             Label statusLabel = new Label(getStatusIcon(status));
             statusLabel.getStyleClass().addAll("message-status", status);
             timeContainer.getChildren().add(statusLabel);
+        }
+
+        // Add "edited" indicator if the message is edited
+        if (isEdited) {
+            Label editedLabel = new Label("edited");
+            editedLabel.getStyleClass().add("edited-indicator");
+            // Insert before the time label
+            timeContainer.getChildren().add(0, editedLabel);
         }
 
         bubble.getChildren().addAll(messageTextFlow, timeContainer);
@@ -1775,21 +1814,6 @@ public class MainChatController implements Initializable {
         }
     }
 
-    private String stripFormattingForPreview(String text) {
-        if (text == null || text.isEmpty()) {
-            return text;
-        }
-        String result = text;
-        // 1. Spoilers: ||content|| -> ██████
-        result = result.replaceAll("\\|\\|.*?\\|\\|", "██████");
-        // 2. Bold: **content** -> content
-        result = result.replaceAll("\\*\\*(.*?)\\*\\*", "$1");
-        // 3. Italic: __content__ -> content
-        result = result.replaceAll("__(.*?)__", "$1");
-        // 4. Underline: ++content++ -> content
-        result = result.replaceAll("\\+\\+(.*?)\\+\\+", "$1");
-        return result;
-    }
     /**
      * Displays a reply preview for the selected message bubble.
      *
@@ -1798,16 +1822,33 @@ public class MainChatController implements Initializable {
     private void showReplyPreview(VBox messageBubble) {
         if (replyPreviewContainer == null) return;
 
-        // FIX: Extract original message text from properties to avoid ClassCastException
-        String originalMessageText = (String) messageBubble.getProperties().getOrDefault("originalText", "");
-        String previewText = stripFormattingForPreview(originalMessageText);
+        String previewText;
+        if (messageBubble.getProperties().containsKey("raw_text")) {
+            previewText = (String) messageBubble.getProperties().get("raw_text");
+        } else {
+            Node fileNameNode = messageBubble.lookup(".document-name");
+            if (fileNameNode instanceof Label) {
+                previewText = "File: " + ((Label) fileNameNode).getText();
+            } else {
+                return;
+            }
+        }
 
-        replyToLabel.setText(currentSelectedUser != null ? currentSelectedUser.getUserName() : "User");
-        replyMessageLabel.setText(previewText.length() > 50 ?
-                previewText.substring(0, 47) + "..." : previewText);
+        // Try to find a specific sender name (for group chats).
+        Label senderLabel = (Label) messageBubble.getChildren().stream()
+                .filter(node -> node instanceof Label && node.getStyleClass().contains("sender-name"))
+                .findFirst().orElse(null);
+
+        String replyToName = (senderLabel != null)
+                ? senderLabel.getText()
+                : (currentSelectedUser != null ? currentSelectedUser.getUserName() : "User");
+
+        replyToLabel.setText("Reply to " + replyToName);
+        String strippedPreview = TextUtil.stripFormattingForPreview(previewText);
+        replyMessageLabel.setText(strippedPreview.length() > 50 ?
+                strippedPreview.substring(0, 47) + "..." : strippedPreview);
 
         replyPreviewContainer.setVisible(true);
-        replyPreviewContainer.setManaged(true);
 
         // Animate reply preview
         replyPreviewContainer.setTranslateY(-30);
@@ -2342,7 +2383,7 @@ public class MainChatController implements Initializable {
             } else {
                 // Send message with Enter
                 event.consume();
-                sendMessage();
+                handleSendAction();
             }
         } else if (event.getCode() == KeyCode.ESCAPE) {
             if (replyPreviewContainer.isVisible()) {
@@ -3277,22 +3318,19 @@ public class MainChatController implements Initializable {
      * Edits the last outgoing message by loading it into the input field.
      */
     private void editLastMessage() {
-        // Find last outgoing message and allow editing
+        // Find the last outgoing text message bubble and prompt for edit
         for (int i = messagesContainer.getChildren().size() - 1; i >= 0; i--) {
-            HBox messageContainer = (HBox) messagesContainer.getChildren().get(i);
-            if (messageContainer.getAlignment() == Pos.CENTER_RIGHT) {
-                // This is an outgoing message
-                VBox bubble = (VBox) messageContainer.getChildren().getFirst();
-                Label messageText = (Label) bubble.getChildren().getFirst();
-
-                // Put text in input field for editing
-                messageInputField.setText(messageText.getText());
-                messageInputField.selectAll();
-                messageInputField.requestFocus();
-
-                // Remove the message from display
-                messagesContainer.getChildren().remove(i);
-                break;
+            Node node = messagesContainer.getChildren().get(i);
+            // Check if it's an HBox for an outgoing message
+            if (node instanceof HBox messageContainer && messageContainer.getStyleClass().contains("outgoing")) {
+                // The bubble is the first child in an outgoing message HBox
+                if (!messageContainer.getChildren().isEmpty() && messageContainer.getChildren().getFirst() instanceof VBox bubble) {
+                    // Check if it's a text message by looking for the "raw_text" property
+                    if (bubble.getProperties().containsKey("raw_text")) {
+                        promptForEdit(bubble);
+                        break; // We found the last editable message, so we're done.
+                    }
+                }
             }
         }
     }
@@ -3357,7 +3395,7 @@ public class MainChatController implements Initializable {
     }
 
     private void promptForEdit(VBox messageBubble) {
-        // Ensure we're not already replying or editing something else
+
         if (replyPreviewContainer.isVisible()) {
             closeReplyPreview();
         }
@@ -3365,15 +3403,12 @@ public class MainChatController implements Initializable {
         UUID messageId = (UUID) messageBubble.getProperties().get("messageId");
         if (messageId == null) return;
 
-        // FIX: Retrieve original text directly from properties
-        String originalText = (String) messageBubble.getProperties().get("originalText");
-        if (originalText == null) return;
+        String rawText = (String) messageBubble.getProperties().get("raw_text");
+        if (rawText == null) return;
 
-        // Set the state for editing
         this.editingMessageBubble = messageBubble;
-        this.originalEditText = originalText;
+        this.originalEditText = rawText;
 
-        // Show the edit preview bar and populate the input field
         showEditPreview();
     }
 
@@ -3436,13 +3471,13 @@ public class MainChatController implements Initializable {
      * Copies the text of a message to the clipboard.
      */
     private void copyMessageText(VBox messageBubble) {
-        // FIX: Retrieve original text directly from properties
-        String originalText = (String) messageBubble.getProperties().get("originalText");
+        String rawText = (String) messageBubble.getProperties().get("raw_text");
 
-        if (originalText != null && !originalText.isEmpty()) {
+        if (rawText != null && !rawText.isEmpty()) {
             final javafx.scene.input.Clipboard clipboard = javafx.scene.input.Clipboard.getSystemClipboard();
             final javafx.scene.input.ClipboardContent content = new javafx.scene.input.ClipboardContent();
-            content.putString(originalText);
+            String cleanText = TextUtil.stripFormattingForCopying(rawText);
+            content.putString(cleanText);
             clipboard.setContent(content);
             showTemporaryNotification("Text copied to clipboard.");
         }
@@ -3574,35 +3609,6 @@ public class MainChatController implements Initializable {
 
 
     // ============ PUBLIC API METHODS ============
-
-    /**
-     * Adds a new message to the chat interface.
-     * TODO: Enhance with server synchronization and error handling.
-     *
-     * @param text       The text content of the message.
-     * @param isOutgoing True if the message is from the current user, false otherwise.
-     * @param senderName The name of the sender (null for outgoing messages).
-     */
-    public void addNewMessage(String text, boolean isOutgoing, String senderName) {
-        Platform.runLater(() -> {
-            // Add the message bubble to the UI
-            addMessageBubble(text, isOutgoing, getCurrentTime(), isOutgoing ? "sent" : "received", senderName);
-
-            if (!isOutgoing) {
-                // Increment unread count for incoming messages
-                unreadScrollCount++;
-                updateScrollToBottomVisibility();
-            }
-
-            // Auto-scroll if near the bottom
-            if (messagesScrollPane.getVvalue() > 0.9) {
-                scrollToBottom();
-            }
-            // TODO: Synchronize with server to ensure message persistence.
-            // TODO (UI): Add animation or visual cue for new messages.
-        });
-    }
-
     /**
      * Updates the online status of a user in the chat list and UI.
      * TODO: Implement server-driven status updates.
@@ -3739,9 +3745,8 @@ public class MainChatController implements Initializable {
         UUID messageId = (UUID) messageBubble.getProperties().get("messageId");
         boolean isOutgoing = messageBubble.getStyleClass().contains("outgoing");
 
-        // Determine if it's a text or document bubble to enable/disable "Copy Text"
-        boolean isTextMessage = messageBubble.getChildren().stream()
-                .anyMatch(node -> node instanceof Label && ((Label) node).getStyleClass().contains("message-text"));
+        // Determine if it's a text message by checking for the stored raw text property
+        boolean isTextMessage = messageBubble.getProperties().containsKey("raw_text");
 
         MenuItem replyItem = new MenuItem("Reply");
         replyItem.setOnAction(e -> showReplyPreview(messageBubble));

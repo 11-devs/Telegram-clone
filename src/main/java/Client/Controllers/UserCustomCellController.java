@@ -2,6 +2,7 @@ package Client.Controllers;
 
 import Shared.Models.UserViewModel;
 import Shared.Models.UserType;
+import Shared.Utils.TextUtil;
 import javafx.beans.value.ChangeListener;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
@@ -134,7 +135,7 @@ public class UserCustomCellController {
 
     private String formatDraftText(String lastMessage) {
         if (lastMessage != null && !lastMessage.isEmpty()) {
-            String strippedMessage = stripFormattingForPreview(lastMessage);
+            String strippedMessage = TextUtil.stripFormattingForPreview(lastMessage);
             return "Draft: " + (strippedMessage.length() > 35 ? strippedMessage.substring(0, 32) + "..." : strippedMessage);
         } else {
             return "Draft: No draft";
@@ -143,7 +144,7 @@ public class UserCustomCellController {
 
     private String formatLastMessageText(String lastMessage) {
         if (lastMessage != null && !lastMessage.isEmpty()) {
-            String strippedMessage = stripFormattingForPreview(lastMessage);
+            String strippedMessage = TextUtil.stripFormattingForPreview(lastMessage);
             return strippedMessage.length() > 35 ? strippedMessage.substring(0, 32) + "..." : strippedMessage;
         } else {
             return "No messages yet";
