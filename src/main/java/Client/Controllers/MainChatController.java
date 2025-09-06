@@ -1168,7 +1168,7 @@ public class MainChatController implements Initializable {
         VBox bubble = new VBox();
         bubble.setSpacing(8);
         bubble.getStyleClass().addAll("message-bubble", "document-bubble", isOutgoing ? "outgoing" : "incoming");
-        bubble.setMaxWidth(350);
+        bubble.setMaxWidth(250);
         bubble.setPadding(new Insets(12));
 
         // Document content container
@@ -1200,7 +1200,7 @@ public class MainChatController implements Initializable {
         Label fileName = new Label(docInfo.getFileName());
         fileName.getStyleClass().addAll("document-name", isOutgoing ? "outgoing" : "incoming");
         fileName.setWrapText(true);
-        fileName.setMaxWidth(200);
+        fileName.setMaxWidth(100);
 
         // File size and type
         Label fileDetails = new Label(formatFileSize(docInfo.getFileSize()) + " • " +
@@ -1217,7 +1217,7 @@ public class MainChatController implements Initializable {
         // Open button
         Button openButton = new Button("Open");
         openButton.getStyleClass().addAll("document-action-button", isOutgoing ? "outgoing" : "incoming");
-        openButton.setPrefWidth(100);
+        openButton.setPrefWidth(120);
         openButton.setOnAction(e -> openDocument(docInfo));
 
         // Download/Save button (for received files)
@@ -1257,6 +1257,8 @@ public class MainChatController implements Initializable {
 
         // Add click handler for message options
         bubble.setOnMouseClicked(this::handleMessageClick);
+
+        bubble.setUserData(docInfo);
 
         return bubble;
     }
@@ -2368,8 +2370,8 @@ public class MainChatController implements Initializable {
     }
 
     /**
-     * Shows a context menu for a message with appropriate actions
-     * based on whether the message is incoming or outgoing.
+     * Shows a context menu for a message with actions relevant to its type (text vs. document)
+     * and sender (incoming vs. outgoing).
      *
      * @param event The MouseEvent triggering the menu.
      */
@@ -2383,6 +2385,7 @@ public class MainChatController implements Initializable {
 
         VBox messageBubble = (VBox) event.getSource();
         boolean isOutgoing = messageBubble.getStyleClass().contains("outgoing");
+        boolean isDocument = messageBubble.getStyleClass().contains("document-bubble");
 
         MenuItem replyItem = createIconMenuItem("Reply", "/Client/images/context-menu/reply.png");
         replyItem.setOnAction(e -> showReplyPreview(messageBubble));
@@ -2390,21 +2393,32 @@ public class MainChatController implements Initializable {
         MenuItem forwardItem = createIconMenuItem("Forward", "/Client/images/context-menu/forward.png");
         forwardItem.setOnAction(e -> forwardMessage());
 
-        MenuItem copyItem = createIconMenuItem("Copy Text", "/Client/images/context-menu/copy.png");
-        copyItem.setOnAction(e -> copyMessageText(messageBubble));
-
-        MenuItem deleteItem = createIconMenuItem("Delete", "/Client/images/context-menu/delete.png");
-        deleteItem.setOnAction(e -> deleteMessage(messageBubble));
-
         newMenu.getItems().addAll(replyItem, forwardItem);
 
-        if (isOutgoing) {
+        if (isOutgoing && !isDocument) {
             MenuItem editItem = createIconMenuItem("Edit", "/Client/images/context-menu/edit.png");
             editItem.setOnAction(e -> editMessage(messageBubble));
             newMenu.getItems().add(1, editItem);
         }
 
-        newMenu.getItems().addAll(copyItem, deleteItem);
+        if (isDocument) {
+            MenuItem downloadItem = createIconMenuItem("Download", "/Client/images/context-menu/download.png");
+            downloadItem.setOnAction(e -> {
+                Object userData = messageBubble.getUserData();
+                if (userData instanceof DocumentInfo) {
+                    saveDocument((DocumentInfo) userData);
+                }
+            });
+            newMenu.getItems().add(downloadItem);
+        } else {
+            MenuItem copyItem = createIconMenuItem("Copy Text", "/Client/images/context-menu/copy.png");
+            copyItem.setOnAction(e -> copyMessageText(messageBubble));
+            newMenu.getItems().add(copyItem);
+        }
+
+        MenuItem deleteItem = createIconMenuItem("Delete", "/Client/images/context-menu/delete.png");
+        deleteItem.setOnAction(e -> deleteMessage(messageBubble));
+        newMenu.getItems().add(deleteItem);
 
         newMenu.show(messageBubble, event.getScreenX(), event.getScreenY());
         activeMessageContextMenu = newMenu;
