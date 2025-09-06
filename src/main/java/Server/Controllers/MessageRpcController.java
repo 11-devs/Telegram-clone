@@ -64,19 +64,28 @@ public class MessageRpcController extends RpcControllerBase {
         boolean isOutgoing = Objects.equals(output.getSenderId().toString(), getCurrentUser().getUserId());
         output.setOutgoing(isOutgoing);
 
-        // Determine message status for outgoing messages
         if (isOutgoing) {
             List<Membership> otherMembers = daoManager.getMembershipDAO().findByJpql(
-                    "SELECT m FROM Membership m LEFT JOIN FETCH m.lastReadMessage WHERE m.chat.id = :chatId AND m.account.id != :senderId",
+                    "SELECT m FROM Membership m WHERE m.chat.id = :chatId AND m.account.id != :senderId",
                     q -> {
                         q.setParameter("chatId", message.getChat().getId());
                         q.setParameter("senderId", message.getSender().getId());
                     }
             );
 
-            boolean isReadByAll = !otherMembers.isEmpty() && otherMembers.stream().allMatch(m ->
-                    m.getLastReadMessage() != null && !m.getLastReadMessage().getTimestamp().isBefore(message.getTimestamp())
-            );
+            // SOFT-DELETE FIX: This is the robust fix. We check read status via a safe DB query
+            // that avoids touching the potentially broken `lastReadMessage` proxy in memory.
+            boolean isReadByAll = !otherMembers.isEmpty() && otherMembers.stream().allMatch(m -> {
+                long count = daoManager.getMembershipDAO().countByJpql(
+                        "SELECT COUNT(mem) FROM Membership mem JOIN mem.lastReadMessage msg " +
+                                "WHERE mem.id = :membershipId AND msg.isDeleted = false AND msg.timestamp >= :messageTimestamp",
+                        q -> {
+                            q.setParameter("membershipId", m.getId());
+                            q.setParameter("messageTimestamp", message.getTimestamp());
+                        }
+                );
+                return count > 0;
+            });
 
             if (isReadByAll) {
                 output.setMessageStatus("read");
@@ -84,14 +93,9 @@ public class MessageRpcController extends RpcControllerBase {
                 output.setMessageStatus("delivered");
             }
         } else {
-            output.setMessageStatus("none"); // Status is not relevant for incoming messages.
+            output.setMessageStatus("none");
         }
 
-        // ============================ THE DEFINITIVE FIX ============================
-        // The 'message' object from the list is a proxy of the base class.
-        // A direct cast will fail. We must use EntityManager.find() to get the
-        // correctly-typed subclass instance. This is efficient as the data is already
-        // in the L1 cache from the previous query.
         switch (message.getType()) {
             case TEXT:
                 TextMessage textMessage = daoManager.getEntityManager().find(TextMessage.class, message.getId());
@@ -110,8 +114,6 @@ public class MessageRpcController extends RpcControllerBase {
                 }
                 break;
         }
-        // ===========================================================================
-
         return output;
     }
 
@@ -125,7 +127,6 @@ public class MessageRpcController extends RpcControllerBase {
     }
 
     public RpcResponse<List<GetMessageOutputModel>> getMessagesByChat(GetMessageByChatInputModel model) {
-        // This query correctly and efficiently fetches all the necessary data.
         List<Message> messages = daoManager.getMessageDAO().findByJpql(
                 "SELECT m FROM Message m JOIN FETCH m.sender s LEFT JOIN FETCH TREAT(m AS MediaMessage).media WHERE m.chat.id = :chatId",
                 query -> query.setParameter("chatId", model.getChatId())
@@ -135,7 +136,6 @@ public class MessageRpcController extends RpcControllerBase {
             return Ok(List.of());
         }
 
-        // The mapMessageToOutputModel method now safely handles the proxy objects from the list.
         List<GetMessageOutputModel> outputList = messages.stream()
                 .map(this::mapMessageToOutputModel)
                 .collect(Collectors.toList());
@@ -280,26 +280,59 @@ public class MessageRpcController extends RpcControllerBase {
         return Ok();
     }
 
-    public RpcResponse<Object> deleteMessage(DeleteMessageInputModel model) {
-        Message message = daoManager.getMessageDAO().findById(model.getMessageId());
-        if (message == null) {
+    public RpcResponse<Object> deleteMessage(DeleteMessageInputModel input) {
+        UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
+        Message messageToDelete = daoManager.getMessageDAO().findById(input.getMessageId());
+
+        if (messageToDelete == null || messageToDelete.isDeleted()) {
             return NotFound();
         }
-        if (!message.getSender().getId().toString().equals(getCurrentUser().getUserId())) {
+        if (!messageToDelete.getSender().getId().equals(currentUserId)) {
             return Forbidden("You can only delete your own messages.");
         }
 
-        daoManager.getMessageDAO().delete(message);
+        Chat chat = messageToDelete.getChat();
 
-        List<Membership> members = daoManager.getMembershipDAO().findAllByField("chat.id", message.getChat().getId());
-        MessageDeletedEventModel eventModel = new MessageDeletedEventModel(
-                message.getId(),
-                message.getChat().getId(),
-                message.getSender().getId()
-        );
+        Message currentLastMessage = daoManager.getMessageDAO().findOneByJpql(
+                "SELECT m FROM Message m WHERE m.chat.id = :chatId AND m.isDeleted = false ORDER BY m.timestamp DESC",
+                query -> {
+                    query.setParameter("chatId", chat.getId());
+                    query.setMaxResults(1);
+                });
+
+        boolean wasLastMessage = currentLastMessage != null && currentLastMessage.getId().equals(messageToDelete.getId());
+
+        messageToDelete.setIsDeleted(true);
+        daoManager.getMessageDAO().update(messageToDelete);
+
+        MessageDeletedEventModel eventModel = new MessageDeletedEventModel();
+        eventModel.setMessageId(messageToDelete.getId());
+        eventModel.setChatId(chat.getId());
+        eventModel.setLastMessageDeleted(wasLastMessage);
+
+        if (wasLastMessage) {
+            Message newLastMessage = daoManager.getMessageDAO().findOneByJpql(
+                    "SELECT m FROM Message m WHERE m.chat.id = :chatId AND m.isDeleted = false ORDER BY m.timestamp DESC",
+                    query -> {
+                        query.setParameter("chatId", chat.getId());
+                        query.setMaxResults(1);
+                    });
+
+            if (newLastMessage != null) {
+                if (newLastMessage instanceof TextMessage) {
+                    eventModel.setNewLastMessageContent(((TextMessage) newLastMessage).getTextContent());
+                } else {
+                    eventModel.setNewLastMessageContent("Media");
+                }
+                eventModel.setNewLastMessageTimestamp(newLastMessage.getTimestamp().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+            } else {
+                eventModel.setNewLastMessageContent("");
+                eventModel.setNewLastMessageTimestamp(null);
+            }
+        }
+        List<Membership> members = daoManager.getMembershipDAO().findAllByField("chat.id", messageToDelete.getChat().getId());
         for (Membership member : members) {
             try {
-                if(member.getAccount().getId().toString().equals(message.getSender().getId().toString())) continue;
                 messageDeletedEvent.Invoke(getServerSessionManager(), member.getAccount().getId().toString(), eventModel);
             } catch (IOException e) {
                 System.err.println("Failed to send message deleted event to " + member.getAccount().getId() + ": " + e.getMessage());
@@ -313,7 +346,6 @@ public class MessageRpcController extends RpcControllerBase {
         Chat chat = daoManager.getChatDAO().findById(model.getChatId());
         if (chat == null) return;
 
-        // 1. Find the latest message in the chat EFFICIENTLY
         Message lastMessage = daoManager.getMessageDAO().findOneByJpql(
                 "SELECT m FROM Message m WHERE m.chat.id = :chatId ORDER BY m.timestamp DESC",
                 query -> {
@@ -322,9 +354,8 @@ public class MessageRpcController extends RpcControllerBase {
                 }
         );
 
-        if (lastMessage == null) return; // No messages to mark as read
+        if (lastMessage == null) return;
 
-        // 2. Find the reader's membership EFFICIENTLY
         Membership readerMembership = daoManager.getMembershipDAO().findOneByJpql(
                 "SELECT ms FROM Membership ms WHERE ms.chat.id = :chatId AND ms.account.id = :accountId",
                 query -> {
@@ -334,12 +365,10 @@ public class MessageRpcController extends RpcControllerBase {
         );
 
         if (readerMembership != null) {
-            // Only update and send events if there are actually new messages to mark as read.
             if (readerMembership.getLastReadMessage() == null || !lastMessage.getId().equals(readerMembership.getLastReadMessage().getId())) {
                 readerMembership.setLastReadMessage(lastMessage);
                 daoManager.getMembershipDAO().update(readerMembership);
 
-                // 3. Notify all OTHER members that the user has read messages up to this point
                 List<Membership> otherMembers = daoManager.getMembershipDAO().findByJpql(
                         "SELECT ms FROM Membership ms JOIN FETCH ms.account WHERE ms.chat.id = :chatId AND ms.account.id != :readerId",
                         query -> {
