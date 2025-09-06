@@ -5,12 +5,16 @@ import Shared.Models.BaseEntity;
 import Shared.Models.Chat.Chat;
 import Shared.Models.Message.Message;
 import jakarta.persistence.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "memberships",
         uniqueConstraints = @UniqueConstraint(columnNames = {"account_id", "chat_id"})) // Recommended for data integrity
+@SQLDelete(sql = "UPDATE memberships SET is_deleted = true WHERE id = ? and version = ?")
+@Where(clause = "is_deleted = false")
 public class Membership extends BaseEntity {
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)

@@ -50,7 +50,9 @@ public class ClientMessageProcessor implements IMessageProcessor {
     }
 
     private void handleEvent(Message message) {
-        var metadata = gson.fromJson(new String(message.getMetadata(), StandardCharsets.UTF_8), EventMetadata.class);
+        var metadatajson = new String(message.getMetadata(), StandardCharsets.UTF_8);
+        System.out.println(metadatajson);
+        var metadata = gson.fromJson(metadatajson, EventMetadata.class);
         var payloadJson = new String(message.getPayload(), StandardCharsets.UTF_8);
         eventBroker.publish(metadata, payloadJson);
     }

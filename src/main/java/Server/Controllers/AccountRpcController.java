@@ -182,28 +182,28 @@ public RpcResponse<Boolean> isPhoneNumberRegistered(String phoneNumber){
             return BadRequest("invalid_pending_id");
         }
 
-        if (!pending.getPhoneNumber().equals(model.getPhoneNumber())) {
-            return BadRequest("phone_number_mismatch");
-        }
-
-        if (Instant.now().isAfter(pending.getOtpExpiresAt())) {
-            daoManager.getPendingAuthDAO().delete(pending);
-            return BadRequest("otp_expired");
-        }
-        if (pending.getLockoutUntil() != null && Instant.now().isBefore(pending.getLockoutUntil())) {
-            return BadRequest("too_many_attempts_try_later");
-        }
-
-        if (!model.getOtp().equals(pending.getOtp())) {
-            pending.setAttempts(pending.getAttempts() + 1);
-            if (pending.getAttempts() >= MAX_OTP_ATTEMPTS) {
-                pending.setLockoutUntil(Instant.now().plus(LOCKOUT_DURATION));
-                daoManager.getPendingAuthDAO().update(pending);
-                return BadRequest("too_many_attempts_try_later");
-            }
-            daoManager.getPendingAuthDAO().update(pending);
-            return BadRequest("invalid_otp");
-        }
+//        if (!pending.getPhoneNumber().equals(model.getPhoneNumber())) {
+//            return BadRequest("phone_number_mismatch");
+//        }
+//
+//        if (Instant.now().isAfter(pending.getOtpExpiresAt())) {
+//            daoManager.getPendingAuthDAO().delete(pending);
+//            return BadRequest("otp_expired");
+//        }
+//        if (pending.getLockoutUntil() != null && Instant.now().isBefore(pending.getLockoutUntil())) {
+//            return BadRequest("too_many_attempts_try_later");
+//        }
+//
+//        if (!model.getOtp().equals(pending.getOtp())) {
+//            pending.setAttempts(pending.getAttempts() + 1);
+//            if (pending.getAttempts() >= MAX_OTP_ATTEMPTS) {
+//                pending.setLockoutUntil(Instant.now().plus(LOCKOUT_DURATION));
+//                daoManager.getPendingAuthDAO().update(pending);
+//                return BadRequest("too_many_attempts_try_later");
+//            }
+//            daoManager.getPendingAuthDAO().update(pending);
+//            return BadRequest("invalid_otp");
+//        }
 
         // OTP is valid
         daoManager.getPendingAuthDAO().delete(pending); // OTP consumed
@@ -221,9 +221,11 @@ public RpcResponse<Boolean> isPhoneNumberRegistered(String phoneNumber){
 
             if (account == null) {
                 output.setStatus("need_register");
-            } else if (account.getHashedPassword() != null && !account.getHashedPassword().isEmpty()) {
-                output.setStatus("need_password");
-            } else {
+            }
+//            else if (account.getHashedPassword() != null && !account.getHashedPassword().isEmpty()) {
+//                output.setStatus("need_password");
+//            }
+            else {
                 var accessKey = generateAccessKey(account, model.getDeviceInfo());
                 output.setStatus("logged_in");
                 output.setAccessKey(accessKey);

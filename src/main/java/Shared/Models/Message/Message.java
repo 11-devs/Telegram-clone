@@ -4,11 +4,16 @@ import Shared.Models.Account.Account;
 import Shared.Models.BaseEntity;
 import Shared.Models.Chat.Chat;
 import jakarta.persistence.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
+
 import java.time.LocalDateTime;
 
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
 @Table(name = "messages")
+@SQLDelete(sql = "UPDATE messages SET is_deleted = true WHERE id = ? and version = ?")
+@Where(clause = "is_deleted = false")
 public abstract class Message extends BaseEntity {
     @ManyToOne(optional = false)
     @JoinColumn(name = "sender_id")

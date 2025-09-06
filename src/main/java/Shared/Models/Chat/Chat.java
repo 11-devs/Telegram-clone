@@ -2,10 +2,14 @@ package Shared.Models.Chat;
 
 import Shared.Models.BaseEntity;
 import jakarta.persistence.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 @Entity
 @Table(name = "chats")
 @Inheritance(strategy = InheritanceType.JOINED)
+@SQLDelete(sql = "UPDATE chats SET is_deleted = true WHERE id = ? and version = ?")
+@Where(clause = "is_deleted = false")
 public abstract class Chat extends BaseEntity {
 
     @Enumerated(EnumType.STRING)

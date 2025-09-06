@@ -578,42 +578,7 @@ public class MainChatController implements Initializable {
                         .findFirst() // Use findFirst as messageId should be unique
                         .ifPresent(bubble -> {
                             // 1. Update the raw_text property for future actions like copy/edit
-                            String newRawText = eventModel.getNewContent();
-                            bubble.getProperties().put("raw_text", newRawText);
-
-                            // 2. Find the index of the old TextFlow
-                            int textFlowIndex = -1;
-                            for (int i = 0; i < bubble.getChildren().size(); i++) {
-                                if (bubble.getChildren().get(i) instanceof TextFlow) {
-                                    textFlowIndex = i;
-                                    break;
-                                }
-                            }
-
-                            // 3. If found, replace it with a new one
-                            if (textFlowIndex != -1) {
-                                boolean isOutgoing = bubble.getStyleClass().contains("outgoing");
-                                TextFlow newTextFlow = createFormattedTextFlow(newRawText, isOutgoing);
-                                bubble.getChildren().set(textFlowIndex, newTextFlow);
-                            }
-
-                            // 4. Find the time container and add an "edited" indicator
-                            bubble.getChildren().stream()
-                                    .filter(node -> node instanceof HBox)
-                                    .map(node -> (HBox) node)
-                                    .findFirst() // This should be the time container
-                                    .ifPresent(timeContainer -> {
-                                        // Avoid adding multiple "edited" labels
-                                        boolean alreadyEdited = timeContainer.getChildren().stream()
-                                                .anyMatch(child -> child.getStyleClass().contains("edited-indicator"));
-
-                                        if (!alreadyEdited) {
-                                            Label editedLabel = new Label("edited");
-                                            editedLabel.getStyleClass().add("edited-indicator");
-                                            // Insert before the time label
-                                            timeContainer.getChildren().add(0, editedLabel);
-                                        }
-                                    });
+                            updateMessage(bubble,eventModel.getNewContent());
                         });
             });
         }
@@ -1461,6 +1426,10 @@ public class MainChatController implements Initializable {
         bubble.getStyleClass().addAll("message-bubble", isOutgoing ? "outgoing" : "incoming");
         bubble.setMaxWidth(420);
 
+        // BUG FIX: Store the raw text for actions like edit/copy
+        bubble.getProperties().put("raw_text", text);
+
+
         // Add sender name for incoming group messages
         if (!isOutgoing && senderName != null && currentSelectedUser != null &&
                 (currentSelectedUser.getType() == UserType.GROUP || currentSelectedUser.getType() == UserType.SUPERGROUP)) {
@@ -1469,15 +1438,21 @@ public class MainChatController implements Initializable {
             bubble.getChildren().add(senderLabel);
         }
 
-        // Message text
-        Label messageText = new Label(text);
-        messageText.getStyleClass().addAll("message-text", isOutgoing ? "outgoing" : "incoming");
-        messageText.setWrapText(true);
+        // BUG FIX: Use the createFormattedTextFlow method instead of a simple Label.
+        TextFlow messageTextFlow = createFormattedTextFlow(text, isOutgoing);
+        messageTextFlow.getStyleClass().add("message-text-flow"); // Add a style class for lookup
 
         // Time and status container
         HBox timeContainer = new HBox();
         timeContainer.setSpacing(4);
         timeContainer.setAlignment(Pos.CENTER_RIGHT);
+
+        // Add "edited" label if necessary
+        if (isEdited) {
+            Label editedLabel = new Label("edited");
+            editedLabel.getStyleClass().addAll("message-time", "edited-label", isOutgoing ? "outgoing" : "incoming");
+            timeContainer.getChildren().add(editedLabel);
+        }
 
         Label timeLabel = new Label(time);
         timeLabel.getStyleClass().addAll("message-time", isOutgoing ? "outgoing" : "incoming");
@@ -1490,7 +1465,7 @@ public class MainChatController implements Initializable {
             timeContainer.getChildren().add(statusLabel);
         }
 
-        bubble.getChildren().addAll(messageText, timeContainer);
+        bubble.getChildren().addAll(messageTextFlow, timeContainer);
 
         // Add click handler for message options
         bubble.setOnMouseClicked(this::handleMessageClick);
@@ -2353,6 +2328,8 @@ public class MainChatController implements Initializable {
 
         if (isEditing && editingMessageBubble != null) {
             updateMessage(editingMessageBubble, text);
+            UUID messageId = (UUID) editingMessageBubble.getProperties().get("messageId");
+            editMessage(messageId,text);
             closeReplyPreview();
         } else {
             String messageText = text;
@@ -2464,38 +2441,51 @@ public class MainChatController implements Initializable {
      * @param newText  The new text for the message.
      */
     private void updateMessage(VBox bubble, String newText) {
-        Label messageTextLabel = (Label) bubble.getChildren().stream()
-                .filter(node -> node instanceof Label && node.getStyleClass().contains("message-text"))
-                .findFirst().orElse(null);
+        if (bubble == null) return;
 
+        boolean isOutgoing = bubble.getStyleClass().contains("outgoing");
+
+        // 1. Find and replace the TextFlow content
+        Optional<Node> oldTextFlowOpt = bubble.getChildren().stream()
+                .filter(node -> node.getStyleClass().contains("message-text-flow"))
+                .findFirst();
+
+        if (oldTextFlowOpt.isPresent()) {
+            int index = bubble.getChildren().indexOf(oldTextFlowOpt.get());
+            bubble.getChildren().remove(index);
+
+            TextFlow newTextFlow = createFormattedTextFlow(newText, isOutgoing);
+            newTextFlow.getStyleClass().add("message-text-flow");
+            bubble.getChildren().add(index, newTextFlow);
+        }
+
+        // 2. Update the raw_text property
+        bubble.getProperties().put("raw_text", newText);
+
+        // 3. Find time container and add "edited" label if it doesn't exist
         HBox timeContainer = (HBox) bubble.getChildren().stream()
                 .filter(node -> node instanceof HBox)
                 .findFirst().orElse(null);
 
-        if (messageTextLabel == null || timeContainer == null) return;
+        if (timeContainer == null) return;
 
-        messageTextLabel.setText(newText);
+        boolean hasEditedLabel = timeContainer.getChildren().stream()
+                .anyMatch(node -> node.getStyleClass().contains("edited-label"));
 
-        Label editedLabel = (Label) timeContainer.getChildren().stream()
-                .filter(node -> node instanceof Label && "edited-label".equals(node.getId()))
-                .findFirst().orElse(null);
-
-        if (editedLabel == null) {
-            editedLabel = new Label("edited");
-            editedLabel.setId("edited-label");
-            editedLabel.getStyleClass().add("message-time");
-            timeContainer.getChildren().add(timeContainer.getChildren().size() - 2, editedLabel);
+        if (!hasEditedLabel) {
+            Label editedLabel = new Label("edited");
+            editedLabel.getStyleClass().addAll("message-time", "edited-label", isOutgoing ? "outgoing" : "incoming");
+            // Insert before the time label
+            timeContainer.getChildren().add(0, editedLabel);
         }
 
-        Label timeLabel = (Label) timeContainer.getChildren().stream()
-                .filter(node -> node.getStyleClass().contains("message-time") && !"edited-label".equals(node.getId()))
-                .findFirst().orElse(null);
+        // 4. Update the timestamp
+        Optional<Label> timeLabelOpt = timeContainer.getChildren().stream()
+                .filter(node -> node instanceof Label && !node.getStyleClass().contains("edited-label") && !node.getStyleClass().contains("message-status"))
+                .map(node -> (Label) node)
+                .findFirst();
 
-        if (timeLabel != null) {
-            timeLabel.setText(getCurrentTime());
-        }
-
-        // TODO: Server
+        timeLabelOpt.ifPresent(label -> label.setText(getCurrentTime()));
     }
 
     /**
@@ -3608,6 +3598,7 @@ public class MainChatController implements Initializable {
         // TODO: Implement message forwarding (Server: Send message to new chat, UI: Update UI).
     }
 
+
     /**
      * Puts the UI into editing mode. It resets any prior reply state and configures
      * the preview panel for an edit action.
@@ -3616,7 +3607,7 @@ public class MainChatController implements Initializable {
      */
     private void editMessage(VBox messageBubble) {
         if (messageBubble == null) return;
-
+        editingMessageBubble = messageBubble;
         // 1. Reset data state WITHOUT hiding the panel
         resetReplyEditState();
 
@@ -3674,22 +3665,9 @@ public class MainChatController implements Initializable {
      */
     private void deleteMessage(VBox messageBubble) {
         if (messageBubble == null) return;
-
-        // Remove the HBox that contains the VBox message bubble
-        if (messageBubble.getParent() instanceof HBox) {
-            ((HBox) messageBubble.getParent()).getChildren().remove(messageBubble); // remove bubble from HBox
-            messagesContainer.getChildren().remove(messageBubble.getParent()); // remove HBox from messagesContainer
-        } else {
-            messagesContainer.getChildren().remove(messageBubble); // Fallback: remove VBox directly
-        }
-
-        // TODO: (Server) Send delete request to the server
-        System.out.println("Message deleted from UI. (Implement server deletion)");
-
-        // Check if the chat is now empty
-        if (messagesContainer.getChildren().isEmpty()) {
-            showEmptyChatState();
-            // TODO: Update currentSelectedUser.lastMessage accordingly
+        UUID messageId = (UUID) messageBubble.getProperties().get("messageId");
+        if (messageId != null) {
+            confirmAndDeleteMessage(messageId);
         }
     }
 
