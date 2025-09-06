@@ -405,7 +405,6 @@ public class MainChatController implements Initializable {
     private Timer typingTimer;
     private TimerTask typingStopTask;
     private boolean isCurrentlyTyping = false;
-    private VBox editingMessageBubble;
     private String originalEditText;
     /**
      * Initializes the controller after the FXML file is loaded.
@@ -1324,94 +1323,6 @@ public class MainChatController implements Initializable {
         new Thread(getMessagesTask).start();
     }
 
-    private void sendMessage() {
-        String text = messageInputField.getText().trim();
-        if (text.isEmpty() || currentSelectedUser == null) return;
-
-        String currentTime = getCurrentTime();
-
-        // Optimistically add message to UI
-        HBox messageNode = addMessageBubble(text, true, currentTime, "sending", null,false);
-        scrollToBottom();
-
-        currentSelectedUser.setLastMessage(text);
-        currentSelectedUser.setTime(currentTime);
-        refreshChatList();
-
-        messageInputField.clear();
-        updateSendButtonState();
-
-        // Send message to the server in a background task
-        SendMessageInputModel input = new SendMessageInputModel();
-        input.setChatId(UUID.fromString(currentSelectedUser.getUserId())); // This is the chat ID
-        input.setTextContent(text);
-        input.setMessageType(MessageType.TEXT);
-
-        Task<RpcResponse<SendMessageOutputModel>> sendMessageTask = chatService.sendMessage(input);
-
-        sendMessageTask.setOnSucceeded(event -> {
-            RpcResponse<SendMessageOutputModel> response = sendMessageTask.getValue();
-            if (response.getStatusCode() == StatusCode.OK) {
-                System.out.println("Message sent successfully. ID: " + response.getPayload().getMessageId());
-                Platform.runLater(() -> updateLastMessageStatus("sent"));
-                LocalDateTime serverTimestamp = LocalDateTime.parse(response.getPayload().getTimestamp());
-                String formattedTime = serverTimestamp.format(DateTimeFormatter.ofPattern("HH:mm"));
-                Platform.runLater(() -> {
-                updateMessageStatus(messageNode, "sent", formattedTime);
-                // Store the actual messageId and timestamp from server for later event updates
-                ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageId", response.getPayload().getMessageId());
-                ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageTimestamp", serverTimestamp);
-                currentSelectedUser.setLastMessage(text);
-                currentSelectedUser.setTime(formattedTime);
-                reorderAndRefreshChatList(currentSelectedUser);
-            });
-            } else {
-                System.err.println("Failed to send message: " + response.getMessage());
-                Platform.runLater(() -> showTemporaryNotification("Failed to send message."));
-                System.err.println("Failed to send message: " + response.getMessage());
-                Platform.runLater(() -> {
-                updateMessageStatus(messageNode, "failed", null);
-                showTemporaryNotification("Failed to send message.");});
-            }
-        });
-
-        sendMessageTask.setOnFailed(event -> {
-            sendMessageTask.getException().printStackTrace();
-            Platform.runLater(() -> {
-                updateMessageStatus(messageNode, "failed", null);
-                showTemporaryNotification("Error sending message.");
-                });
-        });
-
-        new Thread(sendMessageTask).start();
-        Platform.runLater(() -> messageInputField.requestFocus());
-    }
-
-    private void processDocumentAttachment(File file) {
-        try {
-            DocumentInfo docInfo = new DocumentInfo(
-                    file.getName(),
-                    file.length(),
-                    getFileExtension(file),
-                    file.getAbsolutePath()
-            );
-
-            // TODO: A more robust path management is needed
-            String documentsDir = "Client/documents/";
-            ensureDataDirectoryExists(documentsDir);
-            Path targetPath = Paths.get(documentsDir + System.currentTimeMillis() + "_" + file.getName());
-            Files.copy(file.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-            docInfo.setStoredPath(targetPath.toString());
-
-            // Upload the file and then send the message
-            uploadFileAndSendMessage(file, docInfo);
-
-        } catch (Exception e) {
-            System.err.println("Error processing document: " + e.getMessage());
-            showTemporaryNotification("Upload Error\nFailed to process the selected document.");
-        }
-    }
-
     private void uploadFileAndSendMessage(File file, DocumentInfo docInfo) {
         IProgressListener listener = (transferred, total) -> {
             double progress = (total > 0) ? ((double) transferred / total) * 100 : 0;
@@ -1502,14 +1413,14 @@ public class MainChatController implements Initializable {
      * @param status     The delivery status (e.g., "sent", "delivered", "read").
      * @param senderName The name of the sender (null for outgoing).
      */
-    private void addMessageBubble(String text, boolean isOutgoing, String time, String status, String senderName) {
+    private HBox addMessageBubble(String text, boolean isOutgoing, String time, String status, String senderName, boolean isEdited) {
         HBox messageContainer = new HBox();
         messageContainer.setSpacing(12);
         messageContainer.setPadding(new Insets(4, 0, 4, 0));
 
         if (isOutgoing) {
             messageContainer.setAlignment(Pos.CENTER_RIGHT);
-            VBox bubble = createMessageBubble(text, time, status, true, null);
+            VBox bubble = createMessageBubble(text, time, status, true, null, isEdited);
             messageContainer.getChildren().add(bubble);
         } else {
             messageContainer.setAlignment(Pos.CENTER_LEFT);
@@ -1521,7 +1432,7 @@ public class MainChatController implements Initializable {
                 messageContainer.getChildren().add(senderAvatar);
             }
 
-            VBox bubble = createMessageBubble(text, time, status, false, senderName);
+            VBox bubble = createMessageBubble(text, time, status, false, senderName, isEdited);
             messageContainer.getChildren().add(bubble);
         }
 
@@ -1529,6 +1440,8 @@ public class MainChatController implements Initializable {
 
         // Animate new message if it's being added in real-time
         TelegramCellUtils.animateNewMessage(messageContainer);
+
+        return messageContainer;
     }
 
 
@@ -1542,7 +1455,7 @@ public class MainChatController implements Initializable {
      * @param senderName The name of the sender (null for outgoing).
      * @return The constructed VBox for the message bubble.
      */
-    private VBox createMessageBubble(String text, String time, String status, boolean isOutgoing, String senderName) {
+    private VBox createMessageBubble(String text, String time, String status, boolean isOutgoing, String senderName, boolean isEdited) {
         VBox bubble = new VBox();
         bubble.setSpacing(4);
         bubble.getStyleClass().addAll("message-bubble", isOutgoing ? "outgoing" : "incoming");
@@ -2029,7 +1942,7 @@ public class MainChatController implements Initializable {
     /**
      * Creates a document message bubble with file info and controls
      */
-    private void addDocumentMessageBubble(DocumentInfo docInfo, boolean isOutgoing,
+    private HBox addDocumentMessageBubble(DocumentInfo docInfo, boolean isOutgoing,
                                           String time, String status) {
         HBox messageContainer = new HBox();
         messageContainer.setSpacing(12);
@@ -2058,6 +1971,8 @@ public class MainChatController implements Initializable {
         TelegramCellUtils.animateNewMessage(messageContainer);
 
         Platform.runLater(this::scrollToBottom);
+
+        return messageContainer;
     }
 
     /**
@@ -2446,8 +2361,48 @@ public class MainChatController implements Initializable {
                 closeReplyPreview();
             }
 
-            addMessageBubble(messageText, true, getCurrentTime(), "sent", null);
+            HBox messageNode = addMessageBubble(messageText, true, getCurrentTime(), "sent", null, false);
+            // Send message to the server in a background task
+            SendMessageInputModel input = new SendMessageInputModel();
+            input.setChatId(UUID.fromString(currentSelectedUser.getUserId())); // This is the chat ID
+            input.setTextContent(text);
+            input.setMessageType(MessageType.TEXT);
+            Task<RpcResponse<SendMessageOutputModel>> sendMessageTask = chatService.sendMessage(input);
+            sendMessageTask.setOnSucceeded(event -> {
+                RpcResponse<SendMessageOutputModel> response = sendMessageTask.getValue();
+                if (response.getStatusCode() == StatusCode.OK) {
+                    System.out.println("Message sent successfully. ID: " + response.getPayload().getMessageId());
+                    Platform.runLater(() -> updateLastMessageStatus("sent"));
+                    LocalDateTime serverTimestamp = LocalDateTime.parse(response.getPayload().getTimestamp());
+                    String formattedTime = serverTimestamp.format(DateTimeFormatter.ofPattern("HH:mm"));
+                    Platform.runLater(() -> {
+                        updateMessageStatus(messageNode, "sent", formattedTime);
+                        // Store the actual messageId and timestamp from server for later event updates
+                        ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageId", response.getPayload().getMessageId());
+                        ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageTimestamp", serverTimestamp);
+                        currentSelectedUser.setLastMessage(text);
+                        currentSelectedUser.setTime(formattedTime);
+                        reorderAndRefreshChatList(currentSelectedUser);
+                    });
+                } else {
+                    System.err.println("Failed to send message: " + response.getMessage());
+                    Platform.runLater(() -> showTemporaryNotification("Failed to send message."));
+                    System.err.println("Failed to send message: " + response.getMessage());
+                    Platform.runLater(() -> {
+                        updateMessageStatus(messageNode, "failed", null);
+                        showTemporaryNotification("Failed to send message.");});
+                }
+            });
 
+            sendMessageTask.setOnFailed(event -> {
+                sendMessageTask.getException().printStackTrace();
+                Platform.runLater(() -> {
+                    updateMessageStatus(messageNode, "failed", null);
+                    showTemporaryNotification("Error sending message.");
+                });
+            });
+
+            new Thread(sendMessageTask).start();
             // Update chat list for new message
             currentSelectedUser.setLastMessage(text);
             currentSelectedUser.setTime(getCurrentTime());
@@ -2458,6 +2413,9 @@ public class MainChatController implements Initializable {
 
         messageInputField.clear();
         updateSendButtonState();
+
+
+
         Platform.runLater(() -> messageInputField.requestFocus());
     }
 
@@ -3517,7 +3475,7 @@ public class MainChatController implements Initializable {
         this.editingMessageBubble = messageBubble;
         this.originalEditText = rawText;
 
-        showEditPreview();
+        //showEditPreview();
     }
 
 
@@ -3735,31 +3693,6 @@ public class MainChatController implements Initializable {
         }
     }
 
-    /**
-     * Copies the text of a message to the system clipboard.
-     *
-     * @param messageBubble The VBox of the message from which to copy the text.
-     */
-    private void copyMessageText(VBox messageBubble) {
-        if (messageBubble == null) return;
-
-        Label messageTextLabel = (Label) messageBubble.getChildren().stream()
-                .filter(node -> node instanceof Label && node.getStyleClass().contains("message-text"))
-                .findFirst()
-                .orElse(null);
-
-        if (messageTextLabel != null) {
-            final Clipboard clipboard = Clipboard.getSystemClipboard();
-            final ClipboardContent content = new ClipboardContent();
-            content.putString(messageTextLabel.getText());
-            clipboard.setContent(content);
-            showTemporaryNotification("Message text copied to clipboard!");
-            System.out.println("Text copied: " + messageTextLabel.getText());
-        } else {
-            System.err.println("Could not find message text label in the bubble to copy.");
-        }
-    }
-
     // ============ UTILITY METHODS ============
 
     /**
@@ -3799,19 +3732,6 @@ public class MainChatController implements Initializable {
     private void showTemporaryNotification(String message) {
         Stage parentStage = (Stage) mainChatContainer.getScene().getWindow();
         showNotificationDialog(parentStage, message);
-    }
-
-    /**
-     * Sends the typing status to the server.
-     * TODO (Server): Implement server-side communication to update other users' interfaces.
-     *
-     * @param isTyping True if the user is typing, false otherwise.
-     */
-    private void sendTypingStatus(boolean isTyping) {
-        // In a real implementation, this would send typing status to server
-        System.out.println("Typing status: " + isTyping);
-        // TODO (Server): Establish a WebSocket or REST call to send typing status to the server.
-        // TODO (UI): Update local UI to reflect typing state if needed (e.g., show indicator).
     }
 
     // ============ PUBLIC API METHODS ============

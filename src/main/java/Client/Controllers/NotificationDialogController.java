@@ -51,14 +51,7 @@ public class NotificationDialogController {
             });
         }
     }
-    public void setData(Object data) {
-        if (data instanceof String) {
-            setMessage((String) data);
-        } else if (data != null) {
-            // Fallback for non-string data
-            setMessage(data.toString());
-        }
-    }
+
     @FXML
     private void handleOk() {
         if (dialogStage != null) {
