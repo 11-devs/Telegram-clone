@@ -128,13 +128,33 @@ public class ChatRpcController extends RpcControllerBase {
                         });
                     }
                     output.setUnreadCount((int) unreadCount);
+                    output.setMuted(membership.isMuted());
                     return output;
                 })
                 .collect(Collectors.toList());
 
         return Ok(chatInfoList);
     }
+    public RpcResponse<Object> toggleChatMute(ToggleChatMuteInputModel model) {
+        UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
 
+        Membership membership = daoManager.getMembershipDAO().findOneByJpql(
+                "SELECT m FROM Membership m WHERE m.chat.id = :chatId AND m.account.id = :accountId",
+                query -> {
+                    query.setParameter("chatId", model.getChatId());
+                    query.setParameter("accountId", currentUserId);
+                }
+        );
+
+        if (membership == null) {
+            return NotFound();
+        }
+
+        membership.setMuted(model.isMuted());
+        daoManager.getMembershipDAO().update(membership);
+
+        return Ok();
+    }
     public RpcResponse<Object> getChatByUsername(String username) {
         UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
         Account targetUser = daoManager.getAccountDAO().findByField("username", username.toLowerCase());

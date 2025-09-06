@@ -8,6 +8,15 @@ public class GetChatInfoOutputModel {
     private String title;
     private String profilePictureId;
     private int unreadCount;
+    private boolean isMuted;
+
+    public boolean isMuted() {
+        return isMuted;
+    }
+
+    public void setMuted(boolean muted) {
+        isMuted = muted;
+    }
     public int getUnreadCount() {
         return unreadCount;
     }
