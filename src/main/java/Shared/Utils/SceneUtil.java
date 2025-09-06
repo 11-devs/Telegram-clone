@@ -29,6 +29,26 @@ public class SceneUtil {
         }
     }
 
+    public static <T> void changeScene(Node node, String fxmlPath, Consumer<T> dataUpdater) {
+        try {
+            FXMLLoader loader = new FXMLLoader(SceneUtil.class.getResource(fxmlPath));
+            Parent root = loader.load();
+            T controller = loader.getController();
+
+            if (dataUpdater != null) {
+                dataUpdater.accept(controller);
+            }
+
+            Stage stage = (Stage) node.getScene().getWindow();
+            Scene scene = new Scene(root);
+            stage.setScene(scene);
+            stage.show();
+        } catch (IOException e) {
+            System.err.println("Error loading scene: " + fxmlPath);
+            throw new RuntimeException("Error loading scene: " + fxmlPath, e);
+        }
+    }
+
     public static void changeSceneWithSameSize(Node node, String fxmlPath) {
         try {
             FXMLLoader loader = new FXMLLoader(SceneUtil.class.getResource(fxmlPath));

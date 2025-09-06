@@ -257,9 +257,9 @@
                     </VBox>
 
                     <!-- Scroll to Bottom Button -->
-                    <StackPane fx:id="scrollToBottomContainer" alignment="BOTTOM_RIGHT" prefWidth="330.0" styleClass="scroll-to-bottom-container" visible="false" StackPane.alignment="BOTTOM_RIGHT">
+                    <StackPane fx:id="scrollToBottomContainer" alignment="BOTTOM_RIGHT" maxHeight="40.0" maxWidth="40.0" minHeight="40.0" minWidth="40.0" prefHeight="40.0" prefWidth="40.0" styleClass="scroll-to-bottom-container" visible="false" StackPane.alignment="BOTTOM_RIGHT">
                         <StackPane.margin>
-                            <Insets bottom="80.0" right="24.0" />
+                            <Insets bottom="10.0" right="10.0" />
                         </StackPane.margin>
                         <children>
                             <Button fx:id="scrollToBottomButton" styleClass="scroll-to-bottom-button">

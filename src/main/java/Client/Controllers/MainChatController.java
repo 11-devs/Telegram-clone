@@ -406,13 +406,7 @@ public class MainChatController implements Initializable {
     private TimerTask typingStopTask;
     private boolean isCurrentlyTyping = false;
     private String originalEditText;
-    /**
-     * Initializes the controller after the FXML file is loaded.
-     * Sets up the UI components, data, event handlers, and initial state.
-     *
-     * @param location  The location used to resolve relative paths for the root object, or null if unknown.
-     * @param resources The resources used to localize the root object, or null if not localized.
-     */
+
     private ConnectionManager connectionManager;
     private RpcCaller rpcCaller;
     private ChatService chatService;
@@ -469,18 +463,6 @@ public class MainChatController implements Initializable {
         public String getSenderName() { return senderName; }
         public void setSenderName(String senderName) { this.senderName = senderName; }
         //</editor-fold>
-    }
-    private static class MessageDto {
-        UUID messageId;
-        UUID senderId;
-        String senderName;
-        UUID chatId;
-        String timestamp;
-        boolean isEdited;
-        boolean isOutgoing;
-        MessageType messageType;
-        String textContent;
-        UUID mediaId;
     }
 
 
@@ -1441,6 +1423,8 @@ public class MainChatController implements Initializable {
         // Animate new message if it's being added in real-time
         TelegramCellUtils.animateNewMessage(messageContainer);
 
+        Platform.runLater(() -> Platform.runLater(this::scrollToBottom));
+
         return messageContainer;
     }
 
@@ -1498,6 +1482,7 @@ public class MainChatController implements Initializable {
 
         return bubble;
     }
+
     public static TextFlow createFormattedTextFlowForPreview(String text) {
         TextFlow textFlow = new TextFlow();
         if (text == null || text.trim().isEmpty()) {
@@ -2417,6 +2402,8 @@ public class MainChatController implements Initializable {
 
 
         Platform.runLater(() -> messageInputField.requestFocus());
+
+        Platform.runLater(() -> Platform.runLater(this::scrollToBottom));
     }
 
     /**

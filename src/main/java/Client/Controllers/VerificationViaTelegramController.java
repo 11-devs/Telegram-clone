@@ -28,6 +28,7 @@ import javafx.util.Duration;
 
 import java.io.IOException;
 
+import static Shared.Utils.SceneUtil.changeScene;
 import static Shared.Utils.SceneUtil.changeSceneWithSameSize;
 
 public class VerificationViaTelegramController {
@@ -247,13 +248,13 @@ public class VerificationViaTelegramController {
                 var resultCode = AccessKeyManager.LoginWithAccessKey(payload.getAccessKey(), connectionManager.getClient());
                 if (resultCode == StatusCode.OK) {
                     System.out.println("Successful login");
-                    changeSceneWithSameSize(root, "/Client/fxml/mainChat.fxml", (MainChatController controller) -> {
+                    changeScene(root, "/Client/fxml/mainChat.fxml", (MainChatController controller) -> {
 
                     });
                 }
                 break;
             case "password_reset_required":
-                changeSceneWithSameSize(root, "/Client/fxml/resetPassword.fxml", (ResetPasswordController controller) -> {
+                changeScene(root, "/Client/fxml/resetPassword.fxml", (ResetPasswordController controller) -> {
                     controller.setPhoneNumber(payload.getPhoneNumber());
                     controller.setPendingId(payload.getPendingId());
                 });

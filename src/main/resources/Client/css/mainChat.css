@@ -652,37 +652,49 @@
 }
 
 /* ============ MESSAGE BUBBLES ============ */
+
 .message-bubble {
     -fx-background-radius: 14px;
     -fx-border-radius: 14px;
-    -fx-padding: 8 12 8 12;
+    -fx-padding: 8px 12px;
     -fx-max-width: 420px;
-    -fx-border-color: #182533;
-    -fx-border-width: 0;
 }
 
 .message-bubble.outgoing {
     -fx-background-color: #2B5278;
-    -fx-border-color: transparent;
 }
 
 .message-bubble.incoming {
     -fx-background-color: #182533;
-    -fx-border-color: transparent;
 }
 
+.message-text {
+    -fx-font-size: 14px;
+    -fx-font-weight: 400;
+    -fx-line-spacing: 2px;
+}
+
+.message-text.outgoing,
+.message-text.incoming {
+    -fx-text-fill: #FFFFFF;
+}
+
+
 .message-bubble.outgoing.last-in-group {
-    -fx-background-radius: 18 18 4 18;
-    -fx-border-radius: 18 18 4 18;
+    -fx-background-radius: 18px 18px 4px 18px;
+    -fx-border-radius: 18px 18px 4px 18px;
 }
 
 .message-bubble.incoming.last-in-group {
-    -fx-background-radius: 18 18 18 4;
-    -fx-border-radius: 18 18 18 4;
+    -fx-background-radius: 18px 18px 18px 4px;
+    -fx-border-radius: 18px 18px 18px 4px;
 }
+
 .edited-indicator {
-    -fx-text-fill : white
+    -fx-text-fill: white;
+    -fx-opacity: 0.7;
 }
+
 .message-time {
     -fx-font-size: 11px;
     -fx-font-weight: 400;
@@ -714,6 +726,7 @@
 
 .message-status.read {
     -fx-text-fill: #4CAF50;
+    -fx-opacity: 1.0;
 }
 
 /* ============ DOCUMENT MESSAGE BUBBLE STYLES ============ */
