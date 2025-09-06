@@ -8,6 +8,8 @@ import Shared.Api.Models.AccountController.*;
 import Shared.Models.Account.Account;
 import Shared.Models.Chat.PrivateChat;
 import Shared.Models.Chat.SavedMessages;
+import Shared.Models.Media.Media;
+import Shared.Models.Message.MediaMessage;
 import Shared.Models.PendingAuth.PendingAuth;
 import Shared.Models.Session.Session;
 import Shared.Utils.PasswordUtil;
@@ -435,7 +437,11 @@ public RpcResponse<Boolean> isPhoneNumberRegistered(String phoneNumber){
         output.setUsername(account.getUsername());
         output.setBio(account.getBio());
         output.setPhoneNumber(account.getPhoneNumber());
-        output.setProfilePictureId(account.getProfilePictureId());
+        Media media = daoManager.getEntityManager().find(Media.class, UUID.fromString(account.getProfilePictureId()));
+            if (media != null) {
+                output.setProfilePictureMediaId(media.getId().toString());
+                output.setProfilePictureFileId(media.getFileId());
+            }
         output.setStatus(account.getStatus());
 
         return Ok(output);

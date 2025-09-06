@@ -8,7 +8,8 @@ public class GetAccountInfoOutputModel {
     private String username;
     private String bio;
     private String phoneNumber;
-    private String profilePictureId;
+    private String profilePictureMediaId;
+    private String profilePictureFileId;
     private AccountStatus status;
 
     public String getFirstName() { return firstName; }
@@ -26,8 +27,10 @@ public class GetAccountInfoOutputModel {
     public String getPhoneNumber() { return phoneNumber; }
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
 
-    public String getProfilePictureId() { return profilePictureId; }
-    public void setProfilePictureId(String profilePictureId) { this.profilePictureId = profilePictureId; }
+    public String getProfilePictureMediaId() { return profilePictureMediaId; }
+    public void setProfilePictureMediaId(String profilePictureMediaId) { this.profilePictureMediaId = profilePictureMediaId; }
+    public String getProfilePictureFileId() { return profilePictureFileId; }
+    public void setProfilePictureFileId(String profilePictureFileId) { this.profilePictureFileId = profilePictureFileId; }
 
     public AccountStatus getStatus() { return status; }
     public void setStatus(AccountStatus status) { this.status = status; }

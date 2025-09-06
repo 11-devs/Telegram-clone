@@ -2,6 +2,7 @@ package Client.Controllers;
 
 import Client.AppConnectionManager;
 import Client.RpcCaller;
+import Client.Services.FileDownloadService;
 import JSocket2.Core.Client.ConnectionManager;
 import JSocket2.Protocol.Rpc.RpcResponse;
 import JSocket2.Protocol.StatusCode;
@@ -50,6 +51,7 @@ public class SettingsController {
     private Label settingsTitleLabel;
 
     private Stage dialogStage;
+    private FileDownloadService fileDownloadService;
     private Object parentController;
     private Object currentSubController;
     private ConnectionManager connectionManager;
@@ -68,6 +70,7 @@ public class SettingsController {
     private void initialize() {
         connectionManager = AppConnectionManager.getInstance().getConnectionManager();
         rpcCaller = AppConnectionManager.getInstance().getRpcCaller();
+        fileDownloadService = FileDownloadService.getInstance();
         loadInitialUserData();
 
         try {
@@ -83,7 +86,31 @@ public class SettingsController {
         settingsContentPane.setManaged(false);
         settingsContentPane.getChildren().clear();
     }
+    private void loadProfilePicture(String pictureId) {
+        // Set default first.
+        try {
+            Image defaultImage = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Client/images/11Devs-white.png")));
+            profilePictureImage.setImage(defaultImage);
+        } catch (Exception e) {
+            System.err.println("Could not load default profile picture: " + e.getMessage());
+        }
 
+        if (pictureId != null && !pictureId.isEmpty()) {
+            fileDownloadService.getFile(pictureId).thenAccept(file -> {
+                Platform.runLater(() -> {
+                    try {
+                        Image avatar = new Image(file.toURI().toString());
+                        profilePictureImage.setImage(avatar);
+                    } catch (Exception e) {
+                        System.err.println("Failed to load downloaded profile avatar: " + e.getMessage());
+                    }
+                });
+            }).exceptionally(e -> {
+                System.err.println("Failed to download profile avatar " + pictureId + ": " + e.getMessage());
+                return null;
+            });
+        }
+    }
     private void loadInitialUserData() {
         Task<RpcResponse<GetAccountInfoOutputModel>> getAccountInfoTask = new Task<>() {
             @Override
@@ -195,6 +222,7 @@ public class SettingsController {
         if (model.getPhoneNumber() != null && !model.getPhoneNumber().trim().isEmpty()) {
             phoneNumberLabel.setText(model.getPhoneNumber());
         }
+        loadProfilePicture(model.getProfilePictureFileId());
     }
     public void updateUsernameOnHeader(String username){
         if (username != null && !username.trim().isEmpty()) {

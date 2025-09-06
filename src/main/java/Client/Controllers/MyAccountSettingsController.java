@@ -1,6 +1,7 @@
 package Client.Controllers;
 import Client.AppConnectionManager;
 import Client.RpcCaller;
+import Client.Services.FileDownloadService;
 import Client.Tasks.UploadTask;
 import JSocket2.Core.Client.ConnectionManager;
 import JSocket2.Protocol.Rpc.RpcResponse;
@@ -64,7 +65,7 @@ public class MyAccountSettingsController {
     private String originalLastName;
     private String originalUsername;
     private String originalBio;
-
+    private FileDownloadService fileDownloadService;
     private ConnectionManager connectionManager;
     private RpcCaller rpcCaller;
 
@@ -84,6 +85,7 @@ public class MyAccountSettingsController {
     private void initialize() {
         connectionManager = AppConnectionManager.getInstance().getConnectionManager();
         rpcCaller = AppConnectionManager.getInstance().getRpcCaller();
+        fileDownloadService = FileDownloadService.getInstance();
         setupClickableFields();
 
         bioTextArea.textProperty().addListener((obs, oldVal, newVal) -> {
@@ -99,15 +101,33 @@ public class MyAccountSettingsController {
         phoneValueLabel.setText(data.getPhoneNumber());
         updateUIFields();
 
-        // TODO: Load profile picture from data.getProfilePictureId()
+        loadProfilePicture(data.getProfilePictureFileId());
+    }
+    private void loadProfilePicture(String pictureId) {
+        // Set default first.
         try {
-            Image profileImage = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Client/images/11Devs-white.png")));
-            profilePictureImage.setImage(profileImage);
+            Image defaultImage = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Client/images/11Devs-white.png")));
+            profilePictureImage.setImage(defaultImage);
         } catch (Exception e) {
             System.err.println("Could not load default profile picture: " + e.getMessage());
         }
-    }
 
+        if (pictureId != null && !pictureId.isEmpty()) {
+            fileDownloadService.getFile(pictureId).thenAccept(file -> {
+                Platform.runLater(() -> {
+                    try {
+                        Image avatar = new Image(file.toURI().toString());
+                        profilePictureImage.setImage(avatar);
+                    } catch (Exception e) {
+                        System.err.println("Failed to load downloaded profile avatar: " + e.getMessage());
+                    }
+                });
+            }).exceptionally(e -> {
+                System.err.println("Failed to download profile avatar " + pictureId + ": " + e.getMessage());
+                return null;
+            });
+        }
+    }
     private void updateUIFields() {
         userNameField.setText(originalFirstName + " " + originalLastName);
         nameValueField.setText(originalFirstName + " " + originalLastName);
