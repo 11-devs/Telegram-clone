@@ -1470,7 +1470,7 @@ public class MainChatController implements Initializable {
         }
 
         TextFlow messageTextFlow = createFormattedTextFlow(text, isOutgoing);
-        messageTextFlow.setMouseTransparent(true);
+        // BUGFIX: Removed messageTextFlow.setMouseTransparent(true); to allow clicks on spoilers and mentions.
 
         HBox timeContainer = new HBox();
         timeContainer.setSpacing(4);
@@ -1959,6 +1959,13 @@ public class MainChatController implements Initializable {
                     messageInput.setChatId(UUID.fromString(currentSelectedUser.getUserId()));
                     messageInput.setMessageType(MessageType.MEDIA);
                     messageInput.setMediaId(mediaId);
+
+                    // BUGFIX: Add reply information if present when attaching a file
+                    if (activeReplyInfo != null) {
+                        messageInput.setRepliedToMessageId(activeReplyInfo.messageId);
+                    }
+                    // BUGFIX: Close reply preview after sending the attachment
+                    closeReplyPreview();
 
                     Task<RpcResponse<SendMessageOutputModel>> sendMessageTask = chatService.sendMessage(messageInput);
                     sendMessageTask.setOnSucceeded(event -> {
@@ -4042,20 +4049,50 @@ public class MainChatController implements Initializable {
      * @param recipientChatIds A list of chat IDs to forward the message to.
      */
     public void executeForwardMessage(UUID messageId, List<UUID> recipientChatIds) {
-//        Task<Void> forwardTask = chatService.forwardMessage(messageId, recipientChatIds); // TODO
-//
-//        forwardTask.setOnSucceeded(event -> {
-//            Platform.runLater(() -> showTemporaryNotification("Message forwarded successfully!\n"));
-//        });
-//
-//        forwardTask.setOnFailed(event -> {
-//            forwardTask.getException().printStackTrace();
-//            Platform.runLater(() -> showTemporaryNotification("Failed to forward message.\n"));
-//        });
-//
-//        new Thread(forwardTask).start();
-    }
+        if (messageId == null || recipientChatIds == null || recipientChatIds.isEmpty()) {
+            return;
+        }
 
+        Task<RpcResponse<Object>> forwardTask = chatService.forwardMessage(messageId, recipientChatIds);
+
+        forwardTask.setOnSucceeded(event -> {
+            Platform.runLater(() -> {
+                RpcResponse<Object> response = forwardTask.getValue();
+                if (response.getStatusCode() == StatusCode.OK) {
+                    showTemporaryNotification("Message forwarded successfully!\n");
+
+                    // Optimistically update the UI for the chats the message was forwarded to.
+                    String newTimestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+                    String lastMessagePreview = "Forwarded message"; // Use a generic placeholder
+
+                    UserViewModel lastUpdatedUser = null;
+
+                    List<UserViewModel> selectedUsers = allChatUsers.stream()
+                            .filter(u -> recipientChatIds.contains(UUID.fromString(u.getUserId())))
+                            .collect(Collectors.toList());
+
+                    for (UserViewModel user : selectedUsers) {
+                        user.setLastMessage(lastMessagePreview);
+                        user.setTime(newTimestamp);
+                        lastUpdatedUser = user;
+                    }
+
+                    if (lastUpdatedUser != null) {
+                        reorderAndRefreshChatList(lastUpdatedUser);
+                    }
+                } else {
+                    showTemporaryNotification("Failed to forward message: " + response.getMessage() + "\n");
+                }
+            });
+        });
+
+        forwardTask.setOnFailed(event -> {
+            forwardTask.getException().printStackTrace();
+            Platform.runLater(() -> showTemporaryNotification("Error forwarding message.\n"));
+        });
+
+        new Thread(forwardTask).start();
+    }
 
     /**
      * Puts the UI into editing mode. It resets any prior reply state and configures
