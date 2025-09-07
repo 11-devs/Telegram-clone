@@ -136,40 +136,28 @@
     -fx-opacity: 1.0;
 }
 
-/* ============ NIGHT MODE TOGGLE ============ */
-.menu-item-toggle {
+/* ============ NIGHT MODE TOGGLE (Revised) ============ */
+
+.menu-item-toggle-button {
     -fx-background-color: transparent;
+    -fx-border-color: transparent;
     -fx-cursor: hand;
     -fx-min-height: 48px;
     -fx-pref-height: 48px;
+    -fx-padding: 20px;
     -fx-background-radius: 0;
+    -fx-alignment: center-left;
 }
 
-.menu-item-toggle:hover {
+.menu-item-toggle-button:hover {
     -fx-background-color: #1E2832;
 }
 
-.toggle-button {
-    -fx-background-color: rgba(146, 163, 175, 0.3);
-    -fx-background-radius: 20px;
-    -fx-min-width: 52px;
-    -fx-pref-width: 52px;
-    -fx-min-height: 28px;
-    -fx-pref-height: 28px;
-    -fx-cursor: hand;
-    -fx-border-color: transparent;
-}
-
-.toggle-button:hover {
-    -fx-background-color: rgba(146, 163, 175, 0.4);
-}
-
-.toggle-button-on {
-    -fx-background-color: #4FC3F7;
-}
-
-.toggle-button-on:hover {
-    -fx-background-color: #29B6F6;
+.sidebar-toggle-button {
+    -jfx-toggle-color: #2A3947;
+    -jfx-toggle-line-color: #5288C1;
+    -jfx-untoggle-line-color: #999999;
+    -jfx-disable-visual-focus: true;
 }
 
 /* ============ SIDEBAR FOOTER ============ */

@@ -14,6 +14,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import com.jfoenix.controls.JFXToggleButton;
 
 import java.awt.Desktop;
 import java.io.IOException;
@@ -43,8 +44,10 @@ public class SidebarMenuController implements Initializable {
     @FXML private Button savedMessagesButton;
     @FXML private Button settingsButton;
 
+    @FXML private Button nightModeButton;
+
     // Toggle Elements
-    @FXML private Button nightModeToggleButton;
+    @FXML private JFXToggleButton nightModeToggleButton;
 
     // Footer Elements
     @FXML private Label appNameLabel;
@@ -58,6 +61,8 @@ public class SidebarMenuController implements Initializable {
     private Stage primaryStage;
 
     private Object parentController;
+
+    private Runnable closeHandler;
 
     // Constructor to inject primaryStage
     public void setPrimaryStage(Stage primaryStage) {
@@ -75,7 +80,6 @@ public class SidebarMenuController implements Initializable {
         setupNightModeToggle();
         setupFooter();
         applyTheme();
-        setupAnimations();
         detectPlatform();
     }
 
@@ -123,13 +127,19 @@ public class SidebarMenuController implements Initializable {
         settingsButton.setOnAction(event -> handleSettings());
     }
 
-    /**
-     * Setup night mode toggle
-     */
     private void setupNightModeToggle() {
-        // Initialize toggle button state
-        updateNightModeToggleAppearance();
-        nightModeToggleButton.setOnAction(event -> handleNightModeToggle());
+        nightModeToggleButton.setSelected(isNightModeEnabled);
+
+        nightModeButton.setOnAction(event -> {
+            isNightModeEnabled = !isNightModeEnabled;
+
+            nightModeToggleButton.setSelected(isNightModeEnabled);
+
+            applyTheme();
+
+            System.out.println("Night Mode: " + (isNightModeEnabled ? "Enabled" : "Disabled"));
+            // TODO: Apply theme globally
+        });
     }
 
     /**
@@ -156,18 +166,6 @@ public class SidebarMenuController implements Initializable {
     }
 
     /**
-     * Setup animations for the sidebar
-     */
-    private void setupAnimations() {
-        // Slide in animation for the entire sidebar
-        TranslateTransition slideIn = new TranslateTransition(Duration.millis(150), sidebarMenuContainer);
-        slideIn.setFromX(-sidebarMenuContainer.getPrefWidth());
-        slideIn.setToX(0);
-        slideIn.setInterpolator(Interpolator.EASE_BOTH);
-        slideIn.play();
-    }
-
-    /**
      * Detect platform and apply platform-specific styling
      */
     private void detectPlatform() {
@@ -181,19 +179,6 @@ public class SidebarMenuController implements Initializable {
         }
     }
 
-    /**
-     * Update night mode toggle appearance
-     */
-    private void updateNightModeToggleAppearance() {
-        if (isNightModeEnabled) {
-            nightModeToggleButton.getStyleClass().removeAll("toggle-button");
-            nightModeToggleButton.getStyleClass().addAll("toggle-button", "toggle-button-on");
-        } else {
-            nightModeToggleButton.getStyleClass().removeAll("toggle-button-on");
-            nightModeToggleButton.getStyleClass().addAll("toggle-button", "toggle-button-off");
-        }
-    }
-
     // ============ EVENT HANDLERS ============
 
     /**
@@ -202,8 +187,8 @@ public class SidebarMenuController implements Initializable {
     @FXML
     private void handleProfileDropdown() {
         System.out.println("Profile dropdown clicked");
+        close();
         // TODO: Show profile dropdown menu
-        toggleSidebar(false); // Close sidebar
     }
 
     /**
@@ -213,10 +198,10 @@ public class SidebarMenuController implements Initializable {
     private void handleMyProfile() {
         System.out.println("My Profile clicked");
         // Navigate to profile view as a dialog
-        toggleSidebar(false); // Close sidebar
+        close();
         Stage parentStage = primaryStage != null ? primaryStage : (Stage) sidebarMenuContainer.getScene().getWindow();
         try {
-            Stage dialogStage = applyDialogAnimation(parentStage, this, "/Client/fxml/profileSection.fxml", "My Profile");
+            Stage dialogStage = applyDialogAnimation(parentStage, this);
             dialogStage.setResizable(false); // Prevent resizing
             dialogStage.sizeToScene(); // Use default size from FXML
 
@@ -239,8 +224,8 @@ public class SidebarMenuController implements Initializable {
     @FXML
     private void handleNewGroup() {
         System.out.println("New Group clicked");
+        close();
         // TODO: Show create group dialog
-        toggleSidebar(false); // Close sidebar
     }
 
     /**
@@ -249,8 +234,8 @@ public class SidebarMenuController implements Initializable {
     @FXML
     private void handleNewChannel() {
         System.out.println("New Channel clicked");
+        close();
         // TODO: Show create channel dialog
-        toggleSidebar(false); // Close sidebar
     }
 
     /**
@@ -259,8 +244,8 @@ public class SidebarMenuController implements Initializable {
     @FXML
     private void handleContacts() {
         System.out.println("Contacts clicked");
+        close();
         // TODO: Navigate to contacts view
-        toggleSidebar(false); // Close sidebar
     }
 
     /**
@@ -269,7 +254,7 @@ public class SidebarMenuController implements Initializable {
     @FXML
     private void handleCalls() {
         System.out.println("Calls clicked");
-        toggleSidebar(false); // Close sidebar
+        close();
         if (primaryStage != null) {
             DialogUtil.showNotificationDialog(primaryStage, "Will be developed in future versions.\n");
         } else {
@@ -283,23 +268,8 @@ public class SidebarMenuController implements Initializable {
     @FXML
     private void handleSettings() {
         System.out.println("Settings clicked");
-        toggleSidebar(false);
-        Stage parentStage = primaryStage != null ? primaryStage : (Stage) sidebarMenuContainer.getScene().getWindow();
-        try {
-            Stage dialogStage = applyDialogAnimation(parentStage, this, "/Client/fxml/settings.fxml", "Settings");
-            dialogStage.setResizable(false);
-            dialogStage.sizeToScene();
-
-            Platform.runLater(() -> {
-                double centerX = parentStage.getX() + (parentStage.getWidth() - dialogStage.getWidth()) / 2;
-                double centerY = parentStage.getY() + (parentStage.getHeight() - dialogStage.getHeight()) / 2;
-                dialogStage.setX(centerX);
-                dialogStage.setY(centerY);
-            });
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.err.println("Error loading settings dialog: " + e.getMessage());
-        }
+        close();
+        // TODO: Navigate to settings view
     }
 
     /**
@@ -308,27 +278,8 @@ public class SidebarMenuController implements Initializable {
     @FXML
     private void handleSavedMessages() {
         System.out.println("Saved Messages clicked");
+        close();
         // TODO: Navigate to saved messages view
-        toggleSidebar(false); // Close sidebar
-    }
-
-    /**
-     * Handle night mode toggle
-     */
-    @FXML
-    private void handleNightModeToggle() {
-        isNightModeEnabled = !isNightModeEnabled; // Toggle the state
-        updateNightModeToggleAppearance();
-        applyTheme();
-
-        // Animate theme change
-        FadeTransition themeTransition = new FadeTransition(Duration.millis(300), sidebarMenuContainer);
-        themeTransition.setFromValue(0.8);
-        themeTransition.setToValue(1.0);
-        themeTransition.play();
-
-        System.out.println("Night Mode: " + (isNightModeEnabled ? "Enabled" : "Disabled"));
-        // TODO: Apply theme globally
     }
 
     /**
@@ -347,9 +298,18 @@ public class SidebarMenuController implements Initializable {
     // ============ UTILITY METHODS ============
 
     /**
+     * Closes the sidebar stage.
+     */
+    public void close() {
+        if (closeHandler != null) {
+            closeHandler.run();
+        }
+    }
+
+    /**
      * Apply animation for dialog display and hide
      */
-    private Stage applyDialogAnimation(Stage parentStage, Object controller, String fxmlPath, String title) throws IOException {
+    private Stage applyDialogAnimation(Stage parentStage, Object controller) throws IOException {
         // Apply dim effect to parent stage with animation
         ColorAdjust dimEffect = new ColorAdjust();
         parentStage.getScene().getRoot().setEffect(dimEffect);
@@ -361,7 +321,7 @@ public class SidebarMenuController implements Initializable {
         fadeIn.play();
 
         // Create and show dialog
-        Stage dialogStage = SceneUtil.createDialog(fxmlPath, parentStage, controller, null, title);
+        Stage dialogStage = SceneUtil.createDialog("/Client/fxml/profileSection.fxml", parentStage, controller, null, "My Profile");
 
         // Show and wait until dialog is closed
         dialogStage.showAndWait();
@@ -369,7 +329,7 @@ public class SidebarMenuController implements Initializable {
         // Reverse dim effect when dialog is closed
         Timeline fadeOut = new Timeline(
                 new KeyFrame(Duration.ZERO, new javafx.animation.KeyValue(dimEffect.brightnessProperty(), -0.3, Interpolator.EASE_BOTH)),
-                new KeyFrame(Duration.millis(300), new javafx.animation.KeyValue(dimEffect.brightnessProperty(), 0))
+                new KeyFrame(Duration.millis(150), new javafx.animation.KeyValue(dimEffect.brightnessProperty(), 0))
         );
         fadeOut.setOnFinished(e -> parentStage.getScene().getRoot().setEffect(null));
         fadeOut.play();
@@ -389,66 +349,13 @@ public class SidebarMenuController implements Initializable {
         });
     }
 
-    /**
-     * Show/hide the sidebar with animation
-     */
-    public void toggleSidebar(boolean show) {
-        Platform.runLater(() -> {
-            double width = sidebarMenuContainer.getWidth();
-            System.out.println("Sidebar width: " + width + ", Show: " + show);
-            if (width <= 0) {
-                System.out.println("Warning: Sidebar width is zero or negative, forcing width to 300");
-                sidebarMenuContainer.setPrefWidth(300);
-                width = 300;
-            }
-
-            TranslateTransition slideTransition = new TranslateTransition(Duration.millis(150), sidebarMenuContainer);
-            slideTransition.setInterpolator(Interpolator.EASE_BOTH);
-
-            if (show) {
-                slideTransition.setFromX(-width);
-                slideTransition.setToX(0);
-            } else {
-                slideTransition.setFromX(0);
-                slideTransition.setToX(-width);
-            }
-
-            slideTransition.play();
-            slideTransition.setOnFinished(e -> System.out.println("Animation finished, X: " + sidebarMenuContainer.getTranslateX()));
-        });
+    public void setCloseHandler(Runnable closeHandler) {
+        this.closeHandler = closeHandler;
     }
-
-    /**
-     * Set sidebar to compact mode
-     */
-    public void setCompactMode(boolean compact) {
-        if (compact) {
-            sidebarMenuContainer.getStyleClass().add("compact");
-        } else {
-            sidebarMenuContainer.getStyleClass().removeAll("compact");
-        }
-    }
-
     /**
      * Get current theme mode
      */
     public boolean isNightModeEnabled() {
         return isNightModeEnabled;
-    }
-
-    /**
-     * Set theme mode programmatically
-     */
-    public void setNightMode(boolean enabled) {
-        isNightModeEnabled = enabled;
-        updateNightModeToggleAppearance();
-        applyTheme();
-    }
-
-    /**
-     * Get sidebar container for external manipulation
-     */
-    public VBox getSidebarContainer() {
-        return sidebarMenuContainer;
     }
 }
