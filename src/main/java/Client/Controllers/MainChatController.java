@@ -400,6 +400,7 @@ public class MainChatController implements Initializable {
      * Initial X position of the right sidebar.
      */
     private double rightInitialX;
+    private ReplyInfo activeReplyInfo = null;
 
     @FXML private StackPane messageInputWrapper;
     @FXML private VBox messageInputContainer;
@@ -1266,6 +1267,7 @@ public class MainChatController implements Initializable {
                 // Step 2: Create the Media DB entry via RPC.
                 CreateMediaInputModel createMediaInput = new CreateMediaInputModel(
                         UUID.fromString(fileId),
+                        file.getName(),
                         file.length(),
                         getFileExtension(file)
                 );
@@ -3748,8 +3750,6 @@ public class MainChatController implements Initializable {
             copyItem.setOnAction(e -> copyMessageText(messageBubble));
             newMenu.getItems().add(copyItem);
         }
-
-        MenuItem deleteItem = createIconMenuItem("Delete", "/Client/images/context-menu/delete.png");
         deleteItem.setOnAction(e -> deleteMessage(messageBubble));
         if (isOutgoing || isChannelAdmin) {
             newMenu.getItems().add(deleteItem);
@@ -3917,91 +3917,6 @@ public class MainChatController implements Initializable {
         }
     }
 
-    /**
-     * Forwards a message
-     */
-    private void forwardMessage(VBox messageBubble) {
-        UUID messageId = (UUID) messageBubble.getProperties().get("messageId");
-        if (messageId == null) {
-            showTemporaryNotification("Cannot forward this message.");
-            return;
-        }
-
-        // Determine the content for the last message preview
-        final String messageContent;
-        if (messageBubble.getStyleClass().contains("document-bubble")) {
-            DocumentInfo docInfo = (DocumentInfo) messageBubble.getUserData();
-            messageContent = docInfo != null ? docInfo.getFileName() : "Media";
-        } else {
-            messageContent = (String) messageBubble.getProperties().get("raw_text");
-            if (messageContent == null) {
-                showTemporaryNotification("Cannot forward this message.");
-                return;
-            }
-        }
-
-        Dialog<List<UserViewModel>> dialog = new Dialog<>();
-        dialog.setTitle("Forward Message");
-        dialog.setHeaderText("Select chats to forward this message to.");
-        dialog.initOwner(mainChatContainer.getScene().getWindow());
-
-        ListView<UserViewModel> listView = new ListView<>();
-        listView.setItems(allChatUsers);
-        listView.setCellFactory(param -> new UserCustomCell());
-        listView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-        listView.setPrefHeight(400);
-
-        dialog.getDialogPane().setContent(listView);
-
-        ButtonType forwardButtonType = new ButtonType("Forward", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(forwardButtonType, ButtonType.CANCEL);
-
-        dialog.setResultConverter(dialogButton -> {
-            if (dialogButton == forwardButtonType) {
-                return listView.getSelectionModel().getSelectedItems();
-            }
-            return null;
-        });
-
-        Optional<List<UserViewModel>> result = dialog.showAndWait();
-
-        result.ifPresent(selectedUsers -> {
-            if (!selectedUsers.isEmpty()) {
-                List<UUID> targetChatIds = selectedUsers.stream()
-                        .map(u -> UUID.fromString(u.getUserId()))
-                        .collect(Collectors.toList());
-
-                Task<RpcResponse<Object>> forwardTask = chatService.forwardMessage(messageId, targetChatIds);
-                forwardTask.setOnSucceeded(e ->
-                        Platform.runLater(() -> {
-                            RpcResponse<Object> response = forwardTask.getValue();
-                    showTemporaryNotification("Message forwarded.");
-
-                    // Update the last message for each chat we forwarded to.
-                    String newTimestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-                    String lastMessagePreview = "You: " + TextUtil.stripFormattingForCopying(messageContent);
-
-
-                    UserViewModel lastUpdatedUser = null;
-                    for (UserViewModel user : selectedUsers) {
-                        user.setLastMessage(lastMessagePreview);
-                        user.setTime(newTimestamp);
-                        lastUpdatedUser = user;
-                    }
-
-                    if (lastUpdatedUser != null) {
-                        reorderAndRefreshChatList(lastUpdatedUser);
-                    }
-                }));
-
-                forwardTask.setOnFailed(e -> {
-                    forwardTask.getException().printStackTrace();
-                    Platform.runLater(() -> showTemporaryNotification("Failed to forward message."));
-                });
-                new Thread(forwardTask).start();
-            }
-        });
-}
     protected void sendTypingStatus(boolean isTyping) {
         if (currentSelectedUser == null) return;
         Task<Void> typingTask = chatService.sendTypingStatus(UUID.fromString(currentSelectedUser.getUserId()), isTyping);
@@ -4073,6 +3988,45 @@ public class MainChatController implements Initializable {
             );
 
             dialogStage.show();
+//            Optional<List<UserViewModel>> result = dialog.showAndWait();
+//
+//            result.ifPresent(selectedUsers -> {
+//                if (!selectedUsers.isEmpty()) {
+//                    List<UUID> targetChatIds = selectedUsers.stream()
+//                            .map(u -> UUID.fromString(u.getUserId()))
+//                            .collect(Collectors.toList());
+//
+//                    Task<RpcResponse<Object>> forwardTask = chatService.forwardMessage(messageId, targetChatIds);
+//                    forwardTask.setOnSucceeded(e ->
+//                            Platform.runLater(() -> {
+//                                RpcResponse<Object> response = forwardTask.getValue();
+//                                showTemporaryNotification("Message forwarded.");
+//
+//                                // Update the last message for each chat we forwarded to.
+//                                String newTimestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+//                                String lastMessagePreview = "You: " + TextUtil.stripFormattingForCopying(messageContent);
+//
+//
+//                                UserViewModel lastUpdatedUser = null;
+//                                for (UserViewModel user : selectedUsers) {
+//                                    user.setLastMessage(lastMessagePreview);
+//                                    user.setTime(newTimestamp);
+//                                    lastUpdatedUser = user;
+//                                }
+//
+//                                if (lastUpdatedUser != null) {
+//                                    reorderAndRefreshChatList(lastUpdatedUser);
+//                                }
+//                            }));
+//
+//                    forwardTask.setOnFailed(e -> {
+//                        forwardTask.getException().printStackTrace();
+//                        Platform.runLater(() -> showTemporaryNotification("Failed to forward message."));
+//                    });
+//                    new Thread(forwardTask).start();
+//                }
+//            });
+
 
         } catch (IOException e) {
             e.printStackTrace();

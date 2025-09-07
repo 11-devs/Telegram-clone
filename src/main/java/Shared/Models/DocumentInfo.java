@@ -1,5 +1,9 @@
 package Shared.Models;
+import Client.Services.FileDownloadService;
 import JSocket2.Protocol.Transfer.TransferInfo;
+import Shared.Api.Models.MessageController.GetMessageOutputModel;
+import Shared.Events.Models.NewMessageEventModel;
+
 import java.io.File;
 
 public class DocumentInfo {
@@ -28,6 +32,20 @@ public class DocumentInfo {
         this.fileExtension = transferInfo.getFileExtension();
         this.storedPath = new File(transferInfo.getDestinationPath(), this.fileName).getPath();
         this.isUploaded = true;
+    }
+    public DocumentInfo(GetMessageOutputModel msg) {
+        this.fileId = msg.getFileId();
+        this.fileName = msg.getFileName() + "." + msg.getFileExtension();
+        this.fileSize = msg.getFileSize();
+        this.fileExtension = msg.getFileExtension();
+        this.storedPath = new File(FileDownloadService.getInstance().getDocumentCacheDir().toFile(), this.fileName).getPath();
+    }
+    public DocumentInfo(NewMessageEventModel msg) {
+        this.fileId = msg.getFileId();
+        this.fileName = msg.getFileName() + "." + msg.getFileExtension();
+        this.fileSize = msg.getFileSize();
+        this.fileExtension = msg.getFileExtension();
+        this.storedPath = new File(FileDownloadService.getInstance().getDocumentCacheDir().toFile(), this.fileName).getPath();
     }
 
     // Getters and setters
