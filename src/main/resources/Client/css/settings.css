@@ -7,8 +7,8 @@
     -fx-padding: 0;
     -fx-pref-width: 400px;
     -fx-max-width: 400px;
-    -fx-background-radius: 10px; /* Added rounded corners */
-    -fx-border-radius: 10px; /* Added rounded corners for potential border effects */
+    -fx-background-radius: 5px; /* Added rounded corners */
+    -fx-border-radius: 5px; /* Added rounded corners for potential border effects */
 }
 
 /* Title Bar */
@@ -159,6 +159,52 @@
 
 .menu-item-button:hover .menu-item-text {
     -fx-font-weight: 500; /* Subtle bold on hover */
+}
+/* ============ TELEGRAM CONTEXT MENU STYLE (Revised) ============ */
+
+.context-menu {
+    -fx-background-color: #17212B;
+    -fx-background-insets: 0;
+    -fx-background-radius: 8px;
+    -fx-border-width: 0;
+    -fx-pref-width: 150px;
+}
+
+.context-menu .menu-item {
+    -fx-background-radius: 6px;
+    -fx-padding: 8px 12px;
+}
+
+.context-menu .menu-item > .label {
+    -fx-text-fill: #FFFFFF;
+    -fx-padding: 0 0 0 10px;
+}
+
+.context-menu .menu-item:hover,
+.context-menu .menu-item:focused {
+    -fx-background-color: #232E3C;
+}
+
+.context-menu .menu-item:hover > .label,
+.context-menu .menu-item:focused > .label {
+    -fx-text-fill: #FFFFFF;
+}
+
+/*
+  ==========  Log Out ==========
+*/
+.context-menu .logout-menu-item > .label {
+    -fx-text-fill: #E63842 !important;
+}
+
+.context-menu .logout-menu-item:hover,
+.context-menu .logout-menu-item:focused {
+    -fx-background-color: rgba(230, 56, 66, 0.15) !important;
+}
+
+.context-menu .logout-menu-item:hover > .label,
+.context-menu .logout-menu-item:focused > .label {
+    -fx-text-fill: #E63842 !important;
 }
 
 /* Scrollbar styling (similar to mainChat.css) */

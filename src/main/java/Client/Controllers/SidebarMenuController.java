@@ -269,7 +269,7 @@ public class SidebarMenuController implements Initializable {
     private void handleSettings() {
         System.out.println("Settings clicked");
         close();
-        // TODO: Navigate to settings view
+        //openSettings();
     }
 
     /**
