@@ -84,13 +84,9 @@ public class SidebarMenuController implements Initializable {
         detectPlatform();
     }
 
-    /**
-     * Setup user profile section
-     */
     private void setupUserProfile() {
         userNameLabel.setText(currentUserName);
 
-        // Load user avatar (placeholder)
         try {
             Image avatarImage = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Client/images/11Devs-white.png")));
             userAvatarImage.setImage(avatarImage);
@@ -98,33 +94,22 @@ public class SidebarMenuController implements Initializable {
             System.out.println("Could not load user avatar image");
         }
 
-        // Setup profile dropdown
         profileDropdownButton.setOnAction(event -> handleProfileDropdown());
     }
 
-    /**
-     * Setup menu item buttons
-     */
     private void setupMenuItems() {
-        // My Profile
         myProfileButton.setOnAction(event -> handleMyProfile());
 
-        // New Group
         newGroupButton.setOnAction(event -> handleNewGroup());
 
-        // New Channel
         newChannelButton.setOnAction(event -> handleNewChannel());
 
-        // Contacts
         contactsButton.setOnAction(event -> handleContacts());
 
-        // Calls
         callsButton.setOnAction(event -> handleCalls());
 
-        // Saved Messages
         savedMessagesButton.setOnAction(event -> handleSavedMessages());
 
-        // Settings
         settingsButton.setOnAction(event -> handleSettings());
     }
 
@@ -139,36 +124,22 @@ public class SidebarMenuController implements Initializable {
             applyTheme();
 
             System.out.println("Night Mode: " + (isNightModeEnabled ? "Enabled" : "Disabled"));
-            // TODO: Apply theme globally
         });
     }
 
-    /**
-     * Setup footer section
-     */
     private void setupFooter() {
-        // Make version label clickable
         versionLabel.setOnMouseClicked(event -> handleAbout());
     }
 
-    /**
-     * Apply current theme to the sidebar
-     */
     private void applyTheme() {
         sidebarMenuContainer.getStyleClass().clear();
         sidebarMenuContainer.getStyleClass().add("sidebar-menu-container");
 
-        // Theme is managed manually via CSS
         if (isNightModeEnabled) {
-            // No additional class needed as CSS uses fixed dark theme for now
         } else {
-            // We should add a light theme implementation
         }
     }
 
-    /**
-     * Detect platform and apply platform-specific styling
-     */
     private void detectPlatform() {
         String os = System.getProperty("os.name").toLowerCase();
         if (os.contains("win")) {
@@ -180,94 +151,159 @@ public class SidebarMenuController implements Initializable {
         }
     }
 
-    // ============ EVENT HANDLERS ============
-
-    /**
-     * Handle profile dropdown button click
-     */
     @FXML
     private void handleProfileDropdown() {
         System.out.println("Profile dropdown clicked");
         close();
-        // TODO: Show profile dropdown menu
     }
 
-    /**
-     * Handle my profile button click
-     */
     @FXML
     private void handleMyProfile() {
         System.out.println("My Profile clicked");
-        // Navigate to profile view as a dialog
         close();
-        Stage parentStage = primaryStage != null ? primaryStage : (Stage) sidebarMenuContainer.getScene().getWindow();
+        Stage currentPrimaryStage = primaryStage != null ? primaryStage : (Stage) sidebarMenuContainer.getScene().getWindow();
         try {
-            Stage dialogStage = applyDialogAnimation(parentStage, this);
-            dialogStage.setResizable(false); // Prevent resizing
-            dialogStage.sizeToScene(); // Use default size from FXML
+            Stage dialogStage = applyDialogAnimation(currentPrimaryStage, this);
+            dialogStage.setResizable(false);
+            dialogStage.sizeToScene();
 
-            // Center the dialog stage
             Platform.runLater(() -> {
-                double centerX = parentStage.getX() + (parentStage.getWidth() - dialogStage.getWidth()) / 2;
-                double centerY = parentStage.getY() + (parentStage.getHeight() - dialogStage.getHeight()) / 2;
+                double centerX = currentPrimaryStage.getX() + (currentPrimaryStage.getWidth() - dialogStage.getWidth()) / 2;
+                double centerY = currentPrimaryStage.getY() + (currentPrimaryStage.getHeight() - dialogStage.getHeight()) / 2;
                 dialogStage.setX(centerX);
                 dialogStage.setY(centerY);
             });
         } catch (IOException e) {
             e.printStackTrace();
             System.err.println("Error loading profile dialog: " + e.getMessage());
+            AlertUtil.showError("Could not open profile settings.");
         }
     }
 
-    /**
-     * Handle new group button click
-     */
     @FXML
     private void handleNewGroup() {
         System.out.println("New Group clicked");
         close();
-        // TODO: Show create group dialog
+        Stage currentPrimaryStage = primaryStage != null ? primaryStage : (Stage) sidebarMenuContainer.getScene().getWindow();
+
+        if (currentPrimaryStage == null) {
+            System.err.println("Could not find a parent stage to open the new group dialog.");
+            return;
+        }
+
+        try {
+            ColorAdjust dimEffect = new ColorAdjust();
+            if (currentPrimaryStage.getScene() != null && currentPrimaryStage.getScene().getRoot() != null) {
+                currentPrimaryStage.getScene().getRoot().setEffect(dimEffect);
+            }
+
+            Timeline fadeIn = new Timeline(
+                    new KeyFrame(Duration.ZERO, new KeyValue(dimEffect.brightnessProperty(), 0)),
+                    new KeyFrame(Duration.millis(300), new KeyValue(dimEffect.brightnessProperty(), -0.3, Interpolator.EASE_BOTH))
+            );
+            fadeIn.play();
+
+            Stage newGroupDialog = SceneUtil.createDialog(
+                    "/Client/fxml/createGroupDialog.fxml",
+                    currentPrimaryStage,
+                    this,
+                    null,
+                    "New Group"
+            );
+
+            newGroupDialog.showAndWait();
+
+            Timeline fadeOut = new Timeline(
+                    new KeyFrame(Duration.ZERO, new KeyValue(dimEffect.brightnessProperty(), -0.3, Interpolator.EASE_BOTH)),
+                    new KeyFrame(Duration.millis(150), new KeyValue(dimEffect.brightnessProperty(), 0))
+            );
+            if (currentPrimaryStage.getScene() != null && currentPrimaryStage.getScene().getRoot() != null) {
+                fadeOut.setOnFinished(e -> currentPrimaryStage.getScene().getRoot().setEffect(null));
+            }
+            fadeOut.play();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Error loading new group dialog: " + e.getMessage());
+            AlertUtil.showError("Could not open the new group creation window.");
+        }
     }
 
-    /**
-     * Handle new channel button click
-     */
     @FXML
     private void handleNewChannel() {
         System.out.println("New Channel clicked");
         close();
-        // TODO: Show create channel dialog
+        Stage currentPrimaryStage = primaryStage != null ? primaryStage : (Stage) sidebarMenuContainer.getScene().getWindow();
+
+        if (currentPrimaryStage == null) {
+            System.err.println("Could not find a parent stage to open the new channel dialog.");
+            return;
+        }
+
+        try {
+            ColorAdjust dimEffect = new ColorAdjust();
+            if (currentPrimaryStage.getScene() != null && currentPrimaryStage.getScene().getRoot() != null) {
+                currentPrimaryStage.getScene().getRoot().setEffect(dimEffect);
+            }
+
+            Timeline fadeIn = new Timeline(
+                    new KeyFrame(Duration.ZERO, new KeyValue(dimEffect.brightnessProperty(), 0)),
+                    new KeyFrame(Duration.millis(300), new KeyValue(dimEffect.brightnessProperty(), -0.3, Interpolator.EASE_BOTH))
+            );
+            fadeIn.play();
+
+            Stage newChannelDialog = SceneUtil.createDialog(
+                    "/Client/fxml/createChannelDialog.fxml",
+                    currentPrimaryStage,
+                    this,
+                    null,
+                    "New Channel"
+            );
+
+            newChannelDialog.showAndWait();
+
+            Timeline fadeOut = new Timeline(
+                    new KeyFrame(Duration.ZERO, new KeyValue(dimEffect.brightnessProperty(), -0.3, Interpolator.EASE_BOTH)),
+                    new KeyFrame(Duration.millis(150), new KeyValue(dimEffect.brightnessProperty(), 0))
+            );
+            if (currentPrimaryStage.getScene() != null && currentPrimaryStage.getScene().getRoot() != null) {
+                fadeOut.setOnFinished(e -> currentPrimaryStage.getScene().getRoot().setEffect(null));
+            }
+            fadeOut.play();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Error loading new channel dialog: " + e.getMessage());
+            AlertUtil.showError("Could not open the new channel creation window.");
+        }
     }
 
-    /**
-     * Handle contacts button click
-     */
     @FXML
     private void handleContacts() {
         System.out.println("Contacts clicked");
         close();
-        Stage parentStage = primaryStage != null ? primaryStage : (Stage) sidebarMenuContainer.getScene().getWindow();
+        Stage currentPrimaryStage = primaryStage != null ? primaryStage : (Stage) sidebarMenuContainer.getScene().getWindow();
 
-        if (parentStage == null) {
+        if (currentPrimaryStage == null) {
             System.err.println("Could not find a parent stage to open the contacts dialog.");
             return;
         }
 
         try {
             ColorAdjust dimEffect = new ColorAdjust();
-            if (parentStage.getScene() != null && parentStage.getScene().getRoot() != null) {
-                parentStage.getScene().getRoot().setEffect(dimEffect);
+            if (currentPrimaryStage.getScene() != null && currentPrimaryStage.getScene().getRoot() != null) {
+                currentPrimaryStage.getScene().getRoot().setEffect(dimEffect);
             }
 
             Timeline fadeIn = new Timeline(
-                    new KeyFrame(Duration.ZERO, new javafx.animation.KeyValue(dimEffect.brightnessProperty(), 0)),
-                    new KeyFrame(Duration.millis(300), new javafx.animation.KeyValue(dimEffect.brightnessProperty(), -0.3, Interpolator.EASE_BOTH))
+                    new KeyFrame(Duration.ZERO, new KeyValue(dimEffect.brightnessProperty(), 0)),
+                    new KeyFrame(Duration.millis(300), new KeyValue(dimEffect.brightnessProperty(), -0.3, Interpolator.EASE_BOTH))
             );
             fadeIn.play();
 
             Stage contactsDialog = SceneUtil.createDialog(
                     "/Client/fxml/contactsSection.fxml",
-                    parentStage,
+                    currentPrimaryStage,
                     this,
                     null,
                     "Contacts"
@@ -276,11 +312,11 @@ public class SidebarMenuController implements Initializable {
             contactsDialog.showAndWait();
 
             Timeline fadeOut = new Timeline(
-                    new KeyFrame(Duration.ZERO, new javafx.animation.KeyValue(dimEffect.brightnessProperty(), -0.3, Interpolator.EASE_BOTH)),
-                    new KeyFrame(Duration.millis(150), new javafx.animation.KeyValue(dimEffect.brightnessProperty(), 0))
+                    new KeyFrame(Duration.ZERO, new KeyValue(dimEffect.brightnessProperty(), -0.3, Interpolator.EASE_BOTH)),
+                    new KeyFrame(Duration.millis(150), new KeyValue(dimEffect.brightnessProperty(), 0))
             );
-            if (parentStage.getScene() != null && parentStage.getScene().getRoot() != null) {
-                fadeOut.setOnFinished(e -> parentStage.getScene().getRoot().setEffect(null));
+            if (currentPrimaryStage.getScene() != null && currentPrimaryStage.getScene().getRoot() != null) {
+                fadeOut.setOnFinished(e -> currentPrimaryStage.getScene().getRoot().setEffect(null));
             }
             fadeOut.play();
 
@@ -291,9 +327,6 @@ public class SidebarMenuController implements Initializable {
         }
     }
 
-    /**
-     * Handle calls button click
-     */
     @FXML
     private void handleCalls() {
         System.out.println("Calls clicked");
@@ -305,29 +338,18 @@ public class SidebarMenuController implements Initializable {
         }
     }
 
-    /**
-     * Handle settings button click
-     */
     @FXML
     private void handleSettings() {
         System.out.println("Settings clicked");
         close();
-        // TODO: Navigate to settings view
     }
 
-    /**
-     * Handle saved messages button click
-     */
     @FXML
     private void handleSavedMessages() {
         System.out.println("Saved Messages clicked");
         close();
-        // TODO: Navigate to saved messages view
     }
 
-    /**
-     * Handle about/version label click
-     */
     @FXML
     private void handleAbout() {
         System.out.println("About clicked");
@@ -338,41 +360,29 @@ public class SidebarMenuController implements Initializable {
         }
     }
 
-    // ============ UTILITY METHODS ============
-
-    /**
-     * Closes the sidebar stage.
-     */
     public void close() {
         if (closeHandler != null) {
             closeHandler.run();
         }
     }
 
-    /**
-     * Apply animation for dialog display and hide
-     */
     private Stage applyDialogAnimation(Stage parentStage, Object controller) throws IOException {
-        // Apply dim effect to parent stage with animation
         ColorAdjust dimEffect = new ColorAdjust();
         parentStage.getScene().getRoot().setEffect(dimEffect);
 
         Timeline fadeIn = new Timeline(
-                new KeyFrame(Duration.ZERO, new javafx.animation.KeyValue(dimEffect.brightnessProperty(), 0)),
-                new KeyFrame(Duration.millis(300), new javafx.animation.KeyValue(dimEffect.brightnessProperty(), -0.3, Interpolator.EASE_BOTH))
+                new KeyFrame(Duration.ZERO, new KeyValue(dimEffect.brightnessProperty(), 0)),
+                new KeyFrame(Duration.millis(300), new KeyValue(dimEffect.brightnessProperty(), -0.3, Interpolator.EASE_BOTH))
         );
         fadeIn.play();
 
-        // Create and show dialog
         Stage dialogStage = SceneUtil.createDialog("/Client/fxml/profileSection.fxml", parentStage, controller, null, "My Profile");
 
-        // Show and wait until dialog is closed
         dialogStage.showAndWait();
 
-        // Reverse dim effect when dialog is closed
         Timeline fadeOut = new Timeline(
-                new KeyFrame(Duration.ZERO, new javafx.animation.KeyValue(dimEffect.brightnessProperty(), -0.3, Interpolator.EASE_BOTH)),
-                new KeyFrame(Duration.millis(150), new javafx.animation.KeyValue(dimEffect.brightnessProperty(), 0))
+                new KeyFrame(Duration.ZERO, new KeyValue(dimEffect.brightnessProperty(), -0.3, Interpolator.EASE_BOTH)),
+                new KeyFrame(Duration.millis(150), new KeyValue(dimEffect.brightnessProperty(), 0))
         );
         fadeOut.setOnFinished(e -> parentStage.getScene().getRoot().setEffect(null));
         fadeOut.play();
@@ -380,9 +390,6 @@ public class SidebarMenuController implements Initializable {
         return dialogStage;
     }
 
-    /**
-     * Update user profile information
-     */
     public void updateUserProfile(String name, Image avatar) {
         Platform.runLater(() -> {
             userNameLabel.setText(name);
@@ -395,9 +402,7 @@ public class SidebarMenuController implements Initializable {
     public void setCloseHandler(Runnable closeHandler) {
         this.closeHandler = closeHandler;
     }
-    /**
-     * Get current theme mode
-     */
+
     public boolean isNightModeEnabled() {
         return isNightModeEnabled;
     }
