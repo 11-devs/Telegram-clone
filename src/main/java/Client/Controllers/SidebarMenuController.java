@@ -3,6 +3,7 @@ package Client.Controllers;
 import JSocket2.Protocol.Rpc.RpcResponse;
 import JSocket2.Protocol.StatusCode;
 import Shared.Api.Models.ChatController.GetChatInfoOutputModel;
+import Shared.Models.UserType;
 import Shared.Models.UserViewModel;
 import Shared.Models.UserViewModelBuilder;
 import Shared.Utils.AlertUtil;
@@ -174,23 +175,55 @@ public class SidebarMenuController implements Initializable {
     private void handleMyProfile() {
         System.out.println("My Profile clicked");
         close();
-        Stage currentPrimaryStage = primaryStage != null ? primaryStage : (Stage) sidebarMenuContainer.getScene().getWindow();
-        try {
-            Stage dialogStage = applyDialogAnimation(currentPrimaryStage, this);
-            dialogStage.setResizable(false);
-            dialogStage.sizeToScene();
 
-            Platform.runLater(() -> {
-                double centerX = currentPrimaryStage.getX() + (currentPrimaryStage.getWidth() - dialogStage.getWidth()) / 2;
-                double centerY = currentPrimaryStage.getY() + (currentPrimaryStage.getHeight() - dialogStage.getHeight()) / 2;
-                dialogStage.setX(centerX);
-                dialogStage.setY(centerY);
-            });
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.err.println("Error loading profile dialog: " + e.getMessage());
-            AlertUtil.showError("Could not open profile settings.");
+        if (!(parentController instanceof MainChatController mainChatController)) {
+            AlertUtil.showError("Cannot open profile. Internal controller error.");
+            return;
         }
+
+        // Start a task to get account info
+        var getAccountInfoTask = mainChatController.getChatService().getAccountInfo();
+
+        getAccountInfoTask.setOnSucceeded(workerStateEvent -> {
+            var response = getAccountInfoTask.getValue();
+            if (response.getStatusCode() == StatusCode.OK && response.getPayload() != null) {
+                var accountInfo = response.getPayload();
+                // This is important for the "Edit Profile" button logic
+                mainChatController.setCurrentUserId(accountInfo.getId().toString());
+
+                UserViewModel myProfileViewModel = new UserViewModelBuilder()
+                        .userId(accountInfo.getId().toString())
+                        .userName(accountInfo.getFirstName() + " " + accountInfo.getLastName())
+                        .bio(accountInfo.getBio())
+                        .phoneNumber(accountInfo.getPhoneNumber())
+                        .avatarId(accountInfo.getProfilePictureFileId())
+                        .isOnline(true)
+                        .type(UserType.USER.toString())
+                        .build();
+
+                // Open the dialog on the JavaFX thread
+                Platform.runLater(() -> {
+                    try {
+                        Stage currentPrimaryStage = primaryStage != null ? primaryStage : (Stage) sidebarMenuContainer.getScene().getWindow();
+                        applyDialogAnimation(currentPrimaryStage, mainChatController, myProfileViewModel);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        AlertUtil.showError("Could not open profile settings.");
+                    }
+                });
+            } else {
+                Platform.runLater(() -> AlertUtil.showError("Failed to load profile: " + response.getMessage()));
+            }
+        });
+
+        getAccountInfoTask.setOnFailed(workerStateEvent -> {
+            Platform.runLater(() -> {
+                getAccountInfoTask.getException().printStackTrace();
+                AlertUtil.showError("Error fetching profile information.");
+            });
+        });
+
+        new Thread(getAccountInfoTask).start();
     }
 
     @FXML
@@ -365,7 +398,7 @@ public class SidebarMenuController implements Initializable {
         System.out.println("Calls clicked");
         close();
         if (primaryStage != null) {
-            DialogUtil.showNotificationDialog(primaryStage, "Will be developed in future versions.\\n");
+            DialogUtil.showNotificationDialog(primaryStage, "Will be developed in future versions.\\\\n");
         } else {
             System.out.println("primaryStage is null!");
         }
@@ -381,7 +414,7 @@ public class SidebarMenuController implements Initializable {
     private void handleSavedMessages() {
         System.out.println("Saved Messages clicked");
         if(parentController instanceof MainChatController mainChatController){
-          var getChatsTask =  mainChatController.getChatService().getSavedMessage();
+            var getChatsTask =  mainChatController.getChatService().getSavedMessage();
             getChatsTask.setOnSucceeded(event -> {
                 var response = getChatsTask.getValue();
                 if (response.getStatusCode() == StatusCode.OK && response.getPayload() != null) {
@@ -439,6 +472,10 @@ public class SidebarMenuController implements Initializable {
     }
 
     private Stage applyDialogAnimation(Stage parentStage, Object controller) throws IOException {
+        return applyDialogAnimation(parentStage, controller, null);
+    }
+
+    private Stage applyDialogAnimation(Stage parentStage, Object controller, Object data) throws IOException {
         ColorAdjust dimEffect = new ColorAdjust();
         parentStage.getScene().getRoot().setEffect(dimEffect);
 
@@ -448,7 +485,7 @@ public class SidebarMenuController implements Initializable {
         );
         fadeIn.play();
 
-        Stage dialogStage = SceneUtil.createDialog("/Client/fxml/profileSection.fxml", parentStage, controller, null, "My Profile");
+        Stage dialogStage = SceneUtil.createDialog("/Client/fxml/profileSection.fxml", parentStage, controller, data, "My Profile");
 
         dialogStage.showAndWait();
 
