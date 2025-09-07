@@ -3,19 +3,28 @@ package Client.Controllers;
 import Client.Services.ChatService;
 import Client.Services.FileDownloadService;
 import Shared.Models.UserViewModel;
+import Shared.Utils.AlertUtil;
+import Shared.Utils.SceneUtil;
 import Shared.Utils.TextUtil;
+import javafx.animation.Interpolator;
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.effect.ColorAdjust;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
+import java.io.IOException;
 import java.util.Objects;
 
 public class ProfileSectionController {
@@ -231,7 +240,61 @@ public class ProfileSectionController {
 
     @FXML
     private void handleEditProfile() {
-        // TODO: Implement logic to open an "Edit Profile" dialog
         System.out.println("Edit Profile clicked");
+
+        Stage primaryStage = (Stage) dialogStage.getOwner();
+        if (primaryStage == null) {
+            System.err.println("Could not find a parent stage to open the settings dialog.");
+            AlertUtil.showError("Could not open settings.");
+            return;
+        }
+
+        // Close the current profile dialog.
+        handleClose();
+
+        // Use Platform.runLater to open the new dialog after the current one has closed.
+        Platform.runLater(() -> {
+            try {
+                // Apply dimming effect
+                ColorAdjust dimEffect = new ColorAdjust();
+                if (primaryStage.getScene() != null && primaryStage.getScene().getRoot() != null) {
+                    primaryStage.getScene().getRoot().setEffect(dimEffect);
+                }
+
+                Timeline fadeIn = new Timeline(
+                        new KeyFrame(Duration.ZERO, new KeyValue(dimEffect.brightnessProperty(), 0)),
+                        new KeyFrame(Duration.millis(300), new KeyValue(dimEffect.brightnessProperty(), -0.3, Interpolator.EASE_BOTH))
+                );
+                fadeIn.play();
+
+                // Create and show settings dialog
+                Stage settingsDialog = SceneUtil.createDialog(
+                        "/Client/fxml/settings.fxml",
+                        primaryStage,
+                        this.parentController,
+                        null,
+                        "Settings"
+                );
+                settingsDialog.showAndWait();
+
+                // Remove dimming effect
+                Timeline fadeOut = new Timeline(
+                        new KeyFrame(Duration.ZERO, new KeyValue(dimEffect.brightnessProperty(), -0.3, Interpolator.EASE_BOTH)),
+                        new KeyFrame(Duration.millis(150), new KeyValue(dimEffect.brightnessProperty(), 0))
+                );
+                if (primaryStage.getScene() != null && primaryStage.getScene().getRoot() != null) {
+                    fadeOut.setOnFinished(e -> primaryStage.getScene().getRoot().setEffect(null));
+                }
+                fadeOut.play();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+                AlertUtil.showError("Could not open the settings window.");
+                // Ensure dim effect is removed on error
+                if (primaryStage.getScene() != null && primaryStage.getScene().getRoot() != null) {
+                    primaryStage.getScene().getRoot().setEffect(null);
+                }
+            }
+        });
     }
 }

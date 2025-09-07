@@ -406,6 +406,53 @@ public class SidebarMenuController implements Initializable {
     private void handleSettings() {
         System.out.println("Settings clicked");
         close();
+        Stage currentPrimaryStage = primaryStage != null ? primaryStage : (Stage) sidebarMenuContainer.getScene().getWindow();
+
+        if (currentPrimaryStage == null) {
+            System.err.println("Could not find a parent stage to open the settings dialog.");
+            return;
+        }
+
+        try {
+            ColorAdjust dimEffect = new ColorAdjust();
+            if (currentPrimaryStage.getScene() != null && currentPrimaryStage.getScene().getRoot() != null) {
+                currentPrimaryStage.getScene().getRoot().setEffect(dimEffect);
+            }
+
+            Timeline fadeIn = new Timeline(
+                    new KeyFrame(Duration.ZERO, new KeyValue(dimEffect.brightnessProperty(), 0)),
+                    new KeyFrame(Duration.millis(300), new KeyValue(dimEffect.brightnessProperty(), -0.3, Interpolator.EASE_BOTH))
+            );
+            fadeIn.play();
+
+            Stage settingsDialog = SceneUtil.createDialog(
+                    "/Client/fxml/settings.fxml",
+                    currentPrimaryStage,
+                    this.parentController, // This should be MainChatController
+                    null,
+                    "Settings"
+            );
+
+            settingsDialog.showAndWait();
+
+            Timeline fadeOut = new Timeline(
+                    new KeyFrame(Duration.ZERO, new KeyValue(dimEffect.brightnessProperty(), -0.3, Interpolator.EASE_BOTH)),
+                    new KeyFrame(Duration.millis(150), new KeyValue(dimEffect.brightnessProperty(), 0))
+            );
+            if (currentPrimaryStage.getScene() != null && currentPrimaryStage.getScene().getRoot() != null) {
+                fadeOut.setOnFinished(e -> currentPrimaryStage.getScene().getRoot().setEffect(null));
+            }
+            fadeOut.play();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Error loading settings dialog: " + e.getMessage());
+            AlertUtil.showError("Could not open the settings window.");
+            // Clean up on error
+            if (currentPrimaryStage.getScene() != null && currentPrimaryStage.getScene().getRoot() != null) {
+                currentPrimaryStage.getScene().getRoot().setEffect(null);
+            }
+        }
     }
 
     @FXML

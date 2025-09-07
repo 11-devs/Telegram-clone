@@ -396,6 +396,15 @@ public RpcResponse<Boolean> isPhoneNumberRegistered(String phoneNumber){
         if (account == null) {
             return NotFound();
         }
+
+        // Check for username uniqueness
+        if (username != null && !username.trim().isEmpty()) {
+            Account existingAccount = daoManager.getAccountDAO().findByField("username", username);
+            if (existingAccount != null && !existingAccount.getId().equals(currentUserId)) {
+                return BadRequest("username_taken");
+            }
+        }
+
         account.setUsername(username);
         daoManager.getAccountDAO().update(account);
         return Ok();
