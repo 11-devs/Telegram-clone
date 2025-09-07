@@ -78,6 +78,9 @@ public class SidebarMenuController implements Initializable {
     public void setParentController(Object parentController) {
         this.parentController = parentController;
     }
+    public Object getParentController() {
+        return parentController;
+    }
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {

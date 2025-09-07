@@ -20,6 +20,7 @@ import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
@@ -33,7 +34,7 @@ public class ContactsSectionController {
     @FXML private ListView<ContactInfo> contactsListView;
 
     private Stage dialogStage;
-    private Object parentController; // Can be SidebarMenuController or another controller
+    private SidebarMenuController parentController; // Can be SidebarMenuController or another controller
     private ChatService chatService;
     private ObservableList<ContactInfo> allContacts = FXCollections.observableArrayList();
     private FilteredList<ContactInfo> filteredContacts;
@@ -43,7 +44,9 @@ public class ContactsSectionController {
     }
 
     public void setParentController(Object parentController) {
-        this.parentController = parentController;
+        if (parentController instanceof SidebarMenuController) {
+            this.parentController = (SidebarMenuController) parentController;
+        }
     }
 
     public void setData(Object data) {}
@@ -60,6 +63,8 @@ public class ContactsSectionController {
         contactsListView.setCellFactory(listView -> new ContactCell());
 
         searchContactsField.textProperty().addListener((obs, oldVal, newVal) -> searchContacts(newVal));
+
+        contactsListView.setOnMouseClicked(this::handleContactClick);
 
         loadContacts();
     }
@@ -92,6 +97,19 @@ public class ContactsSectionController {
             String fullName = (contact.getFirstName() + " " + contact.getLastName()).toLowerCase();
             return fullName.contains(lowerCaseFilter) || (contact.getUsername() != null && contact.getUsername().toLowerCase().contains(lowerCaseFilter));
         });
+    }
+
+    private void handleContactClick(MouseEvent event) {
+        ContactInfo selectedContact = contactsListView.getSelectionModel().getSelectedItem();
+        if (selectedContact != null && parentController != null) {
+            Object mainControllerObj = parentController.getParentController();
+            if (mainControllerObj instanceof MainChatController mainChatController) {
+                mainChatController.openChatWithContact(selectedContact);
+                if (dialogStage != null) {
+                    dialogStage.close();
+                }
+            }
+        }
     }
 
     @FXML

@@ -14,12 +14,14 @@ import JSocket2.Protocol.Transfer.FileInfoModel;
 import JSocket2.Protocol.Transfer.IProgressListener;
 import JSocket2.Protocol.Transfer.TransferInfo;
 import Shared.Api.Models.ChatController.GetChatInfoOutputModel;
+import Shared.Api.Models.ContactController.ContactInfo;
 import Shared.Api.Models.MediaController.CreateMediaInputModel;
 import Shared.Api.Models.MessageController.GetMessageOutputModel;
 import Shared.Api.Models.MessageController.SendMessageInputModel;
 import Shared.Api.Models.MessageController.SendMessageOutputModel;
 import Shared.Events.Models.*;
 import Shared.Models.*;
+import Shared.Models.Account.AccountStatus;
 import Shared.Utils.SceneUtil;
 import Shared.Utils.SidebarUtil;
 import Shared.Models.Message.MessageType;
@@ -2697,12 +2699,12 @@ public ChatService getChatService() {
         editTask.setOnSucceeded(event -> {
             RpcResponse<Object> response = editTask.getValue();
             if (response.getStatusCode() != StatusCode.OK) {
-                Platform.runLater(() -> showTemporaryNotification("Failed to edit message: " + response.getMessage()));
+                Platform.runLater(() -> showTemporaryNotification("Failed to edit message: " + response.getMessage() + "\n"));
             }
         });
         editTask.setOnFailed(event -> {
             editTask.getException().printStackTrace();
-            Platform.runLater(() -> showTemporaryNotification("Error editing message."));
+            Platform.runLater(() -> showTemporaryNotification("Error editing message.\n"));
         });
         new Thread(editTask).start();
     }
@@ -3632,7 +3634,7 @@ public ChatService getChatService() {
         mutedIcon.setVisible(newMuteState);
         updateNotificationToggle(isEnabled);
         String message = (newMuteState ? "Muted" : "Unmuted") + " " + currentSelectedUser.getUserName();
-        showTemporaryNotification(message);
+        showTemporaryNotification(message + "\n");
         // --- End of optimistic update ---
 
         Task<RpcResponse<Object>> muteTask = chatService.toggleChatMute(UUID.fromString(currentSelectedUser.getUserId()), newMuteState);
@@ -3646,7 +3648,7 @@ public ChatService getChatService() {
                     notificationStatusLabel.setText(!isCurrentlyMuted ? "Enabled" : "Disabled");
                     mutedIcon.setVisible(isCurrentlyMuted);
                     updateNotificationToggle(!isCurrentlyMuted);
-                    showTemporaryNotification("Failed to update notification settings.");
+                    showTemporaryNotification("Failed to update notification settings.\n");
                 });
                 System.err.println("Failed to toggle mute status: " + response.getMessage());
             }
@@ -3659,7 +3661,7 @@ public ChatService getChatService() {
                 notificationStatusLabel.setText(!isCurrentlyMuted ? "Enabled" : "Disabled");
                 mutedIcon.setVisible(isCurrentlyMuted);
                 updateNotificationToggle(!isCurrentlyMuted);
-                showTemporaryNotification("Error updating notification settings.");
+                showTemporaryNotification("Error updating notification settings.\n");
             });
             muteTask.getException().printStackTrace();
         });
@@ -3708,7 +3710,7 @@ public ChatService getChatService() {
         currentSelectedUser.setPinned(newPinState);
 
         String message = (newPinState ? "Pinned" : "Unpinned") + " " + currentSelectedUser.getUserName();
-        showTemporaryNotification(message + "n");
+        showTemporaryNotification(message + "\n");
 
         refreshChatList();
     }
@@ -4024,7 +4026,7 @@ public ChatService getChatService() {
             content.putString(rawText);
             clipboard.setContent(content);
 
-            showTemporaryNotification("Text copied to clipboard.");
+            showTemporaryNotification("Text copied to clipboard.\n");
             System.out.println("Text copied: " + rawText);
         } else {
             System.err.println("Could not find raw text on the message bubble to copy.");
@@ -4452,5 +4454,39 @@ public ChatService getChatService() {
                         });
                     }
                 });
+    }
+    public void openChatWithContact(ContactInfo contactInfo) {
+        if (contactInfo == null) return;
+
+        Platform.runLater(() -> {
+            // Find if this user is already in the local chat list
+            Optional<UserViewModel> existingUser = allChatUsers.stream()
+                    .filter(uvm -> uvm.getUserId().equals(contactInfo.getUserId().toString()))
+                    .findFirst();
+
+            UserViewModel userToSelect;
+            if (existingUser.isPresent()) {
+                userToSelect = existingUser.get();
+            } else {
+                // If not present, create a new UserViewModel and add it to the list
+                UserViewModel uvm = new UserViewModelBuilder()
+                        .userId(contactInfo.getUserId().toString())
+                        .avatarId(contactInfo.getProfilePictureId())
+                        .userName(contactInfo.getFirstName() + " " + contactInfo.getLastName())
+                        .lastMessage("") // Will be fetched upon selection
+                        .time(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
+                        .type(UserType.USER.toString())
+                        .notificationsNumber("0")
+                        .isOnline(contactInfo.getStatus() == AccountStatus.ONLINE)
+                        .build();
+                allChatUsers.add(0, uvm); // Add to the top of the master list
+                performSearch(searchField.getText()); // Re-apply current filter
+                userToSelect = uvm;
+            }
+
+            // Select the user in the ListView, which will trigger the listener to open the chat
+            chatListView.getSelectionModel().select(userToSelect);
+            chatListView.scrollTo(userToSelect);
+        });
     }
 }
