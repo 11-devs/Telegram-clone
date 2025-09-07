@@ -5,7 +5,8 @@ public enum UserType {
     GROUP,
     SUPERGROUP,
     CHANNEL,
-    ADMIN;
+    ADMIN,
+    SAVED_MESSAGES;
 
     public static UserType fromString(String type) {
         try {
