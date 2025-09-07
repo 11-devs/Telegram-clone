@@ -220,6 +220,7 @@
 .header-avatar {
     -fx-smooth: true;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.12), 0, 0, 0, 0) 0 1px 3px, dropshadow(gaussian, rgba(0, 0, 0, 0.24), 0, 0, 0, 0) 0 1px 2px;
+    -fx-cursor: hand;
 }
 
 .online-indicator {
