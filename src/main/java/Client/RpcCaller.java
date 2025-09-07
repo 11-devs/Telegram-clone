@@ -158,8 +158,8 @@ public class RpcCaller extends RpcCallerBase {
 
     // Add these methods inside the RpcCaller class
 
-    public RpcResponse<GetContactsOutputModel> getContacts(GetContactsInputModel model) throws IOException {
-        return callRpcAndGetResponse("ContactRpcController", "getContacts", GetContactsOutputModel.class, model);
+    public RpcResponse<GetContactsOutputModel> getContacts() throws IOException {
+        return callRpcAndGetResponse("ContactRpcController", "getContacts", GetContactsOutputModel.class);
     }
 
     public RpcResponse<AddContactOutputModel> addContact(AddContactInputModel model) throws IOException {

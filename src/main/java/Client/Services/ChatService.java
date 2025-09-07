@@ -1,3 +1,4 @@
+// Path: main/java/Client/Services/ChatService.java
 package Client.Services;
 
 import Client.RpcCaller;
@@ -213,7 +214,8 @@ public class ChatService {
             @Override
             protected RpcResponse<AddContactOutputModel> call() throws Exception {
                 AddContactInputModel input = new AddContactInputModel();
-                input.setSavedName(firstName + " " + lastName + ";" + phoneNumber);
+                input.setPhoneNumber(phoneNumber);
+                input.setSavedName(firstName + " " + lastName);
                 return rpcCaller.addContact(input);
             }
         };

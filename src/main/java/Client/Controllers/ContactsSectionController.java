@@ -3,7 +3,6 @@ package Client.Controllers;
 import Client.AppConnectionManager;
 import Client.RpcCaller;
 import Client.Services.ChatService;
-import Client.Services.ContactService;
 import JSocket2.Protocol.Rpc.RpcResponse;
 import JSocket2.Protocol.StatusCode;
 import Shared.Api.Models.AccountController.GetAccountInfoOutputModel;
@@ -11,6 +10,7 @@ import Shared.Api.Models.ContactController.AddContactOutputModel;
 import Shared.Api.Models.ContactController.ContactInfo;
 import Shared.Api.Models.ContactController.GetContactsOutputModel;
 import Shared.Utils.AlertUtil;
+import Shared.Utils.DialogUtil;
 import Shared.Utils.SceneUtil;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -50,20 +50,10 @@ public class ContactsSectionController {
 
     @FXML
     private void initialize() {
-        GetAccountInfoOutputModel currentUser = AppConnectionManager.getInstance().getCurrentUserInfo();
-        if (currentUser == null) {
-            Platform.runLater(() -> {
-                AlertUtil.showError("Could not identify the current user. Please try again.");
-                if (dialogStage != null) {
-                    dialogStage.close();
-                }
-            });
-            return;
-        }
+
 
         RpcCaller rpcCaller = AppConnectionManager.getInstance().getRpcCaller();
         chatService = new ChatService(rpcCaller);
-        contactService = new ContactService(rpcCaller);
 
         filteredContacts = new FilteredList<>(allContacts, p -> true);
         contactsListView.setItems(filteredContacts);
@@ -128,7 +118,8 @@ public class ContactsSectionController {
             RpcResponse<AddContactOutputModel> response = addTask.getValue();
             if (response.getStatusCode() == StatusCode.OK) {
                 Platform.runLater(() -> {
-                    AlertUtil.showSuccess("ContactViewModel added successfully!");
+//                    AlertUtil.showSuccess("ContactViewModel added successfully!");
+//                    DialogUtil.showNotificationDialog();
                     loadContacts(); // Refresh the list
                 });
             } else {

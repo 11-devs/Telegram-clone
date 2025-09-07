@@ -1,5 +1,6 @@
 package Client.Controllers;
 
+import Shared.Utils.DialogUtil;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.fxml.FXML;

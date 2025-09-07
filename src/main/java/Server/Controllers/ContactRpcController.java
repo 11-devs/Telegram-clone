@@ -65,7 +65,6 @@ public class ContactRpcController extends RpcControllerBase {
     public RpcResponse<Object> getContacts() {
         UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
         List<Contact> contacts = daoManager.getContactDAO().findAllByField("owner.id", currentUserId);
-
         List<ContactInfo> contactInfos = contacts.stream()
                 .map(contact -> {
                     Account contactUser = contact.getContact();

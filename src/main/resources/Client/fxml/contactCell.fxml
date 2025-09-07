@@ -14,9 +14,6 @@
 <?import javafx.scene.shape.SVGPath?>
 
 <GridPane fx:id="root" alignment="CENTER_LEFT" prefHeight="60.0" prefWidth="380.0" styleClass="contact-cell" stylesheets="@../css/contactCell.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.Controllers.ContactCellController">
-    <fx:define>
-        <Circle fx:id="avatarClip" centerX="20" centerY="20" radius="20" />
-    </fx:define>
     <columnConstraints>
         <ColumnConstraints hgrow="NEVER" minWidth="50.0" prefWidth="60.0" />
         <ColumnConstraints hgrow="ALWAYS" minWidth="10.0" />
@@ -35,6 +32,10 @@
                     <image>
                         <Image url="@../images/11Devs-black.png" /> <!-- Using existing placeholder image -->
                     </image>
+                    <clip>
+                        <!-- Directly define the circle clip here -->
+                        <Circle centerX="20" centerY="20" radius="20" />
+                    </clip>
                 </ImageView>
                 <!-- Type Logo (for bot/channel/group) -->
                 <SVGPath fx:id="typeLogo" styleClass="type-logo" visible="false" StackPane.alignment="BOTTOM_RIGHT">
