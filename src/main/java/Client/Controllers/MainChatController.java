@@ -4026,4 +4026,26 @@ public class MainChatController implements Initializable {
             return "last seen a long time ago";
         }
     }
+    public void handleChatInfoChanged(ChatInfoChangedEventModel eventModel) {
+        allChatUsers.stream()
+                .filter(user -> user.getUserId().equals(eventModel.getChatId().toString()))
+                .findFirst()
+                .ifPresent(user -> {
+                    if (eventModel.getNewTitle() != null) {
+                        user.setUserName(eventModel.getNewTitle());
+                    }
+                    if (eventModel.getNewProfilePictureId() != null) {
+                        user.setAvatarId(eventModel.getNewProfilePictureId());
+                    }
+
+                    if (currentSelectedUser != null && currentSelectedUser.getUserId().equals(user.getUserId())) {
+                        Platform.runLater(() -> {
+                            updateChatHeader(user);
+                            if (isRightPanelVisible) {
+                                updateRightPanel(user);
+                            }
+                        });
+                    }
+                });
+    }
 }
