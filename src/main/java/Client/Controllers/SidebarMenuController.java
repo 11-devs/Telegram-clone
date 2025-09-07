@@ -1,5 +1,10 @@
 package Client.Controllers;
 
+import JSocket2.Protocol.Rpc.RpcResponse;
+import JSocket2.Protocol.StatusCode;
+import Shared.Api.Models.ChatController.GetChatInfoOutputModel;
+import Shared.Models.UserViewModel;
+import Shared.Models.UserViewModelBuilder;
 import Shared.Utils.AlertUtil;
 import Shared.Utils.DialogUtil;
 import Shared.Utils.SceneUtil;
@@ -26,8 +31,8 @@ import java.awt.Desktop;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
-import java.util.Objects;
-import java.util.ResourceBundle;
+import java.time.LocalDateTime;
+import java.util.*;
 
 /**
  * Controller class for the Telegram-style sidebar menu
@@ -77,6 +82,9 @@ public class SidebarMenuController implements Initializable {
 
     public void setParentController(Object parentController) {
         this.parentController = parentController;
+    }
+    public Object getParentController() {
+        return parentController;
     }
 
     @Override
@@ -372,6 +380,45 @@ public class SidebarMenuController implements Initializable {
     @FXML
     private void handleSavedMessages() {
         System.out.println("Saved Messages clicked");
+        if(parentController instanceof MainChatController mainChatController){
+          var getChatsTask =  mainChatController.getChatService().getSavedMessage();
+            getChatsTask.setOnSucceeded(event -> {
+                var response = getChatsTask.getValue();
+                if (response.getStatusCode() == StatusCode.OK && response.getPayload() != null) {
+                    Optional<UserViewModel> existingUser = mainChatController.getAllChatUsers().stream()
+                            .filter(uvm -> uvm.getUserId().equals(response.getPayload().getId().toString()))
+                            .findFirst();
+
+                    UserViewModel userToSelect;
+                    if (existingUser.isPresent()) {
+                        userToSelect = existingUser.get();
+                    } else {
+                        // If not present, create a new UserViewModel and add it to the list
+                        UserViewModel uvm = new UserViewModelBuilder()
+                                .userId(response.getPayload().getId().toString())
+                                .avatarId(response.getPayload().getProfilePictureId())
+                                .userName(response.getPayload().getTitle())
+                                .lastMessage(response.getPayload().getLastMessage())
+                                .time(response.getPayload().getLastMessageTimestamp())
+                                .type(response.getPayload().getType())
+                                .notificationsNumber(String.valueOf(response.getPayload().getUnreadCount()))
+                                .build();
+                        mainChatController.getAllChatUsers().add(0, uvm); // Add to the top of the master list
+
+                        userToSelect = uvm;
+                    }
+
+                    // Select the user in the ListView, which will open the chat
+                    mainChatController.getChatListView().getSelectionModel().select(userToSelect);
+                    mainChatController.getChatListView().scrollTo(userToSelect);
+                } else {
+                    System.err.println("Failed to load chats: " + response.getMessage());
+                }
+            });
+
+            getChatsTask.setOnFailed(event -> getChatsTask.getException().printStackTrace());
+            new Thread(getChatsTask).start();
+        }
         close();
     }
 

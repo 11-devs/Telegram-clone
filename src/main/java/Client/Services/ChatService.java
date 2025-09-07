@@ -64,6 +64,14 @@ public class ChatService {
         };
     }
 
+    public Task<RpcResponse<GetChatInfoOutputModel>> getSavedMessage() {
+        return new Task<>() {
+            @Override
+            protected RpcResponse<GetChatInfoOutputModel> call() throws Exception {
+                return rpcCaller.getSavedMessage();
+            }
+        };
+    }
     /**
      * @return A Task that, when run, sends the message and returns the server's response.
      */

@@ -272,49 +272,58 @@ public class ChatRpcController extends RpcControllerBase {
         return Ok();
     }
     public RpcResponse<Object> getChatByUsername(String username) {
+        Chat chat = null;
         UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
         Account targetUser = daoManager.getAccountDAO().findByField("username", username.toLowerCase());
         if (targetUser == null) {
             return NotFound();
         }
-        if (targetUser.getId().equals(currentUserId)) {
-            return BadRequest("Cannot open a chat with yourself this way.");
-        }
+        if (targetUser.getId().equals(currentUserId)){
 
-        String jpql = "SELECT pc FROM PrivateChat pc WHERE " +
-                "(pc.user1.id = :user1Id AND pc.user2.id = :user2Id) OR " +
-                "(pc.user1.id = :user2Id AND pc.user2.id = :user1Id)";
-        PrivateChat privateChat = daoManager.getPrivateChatDAO().findOneByJpql(jpql, query -> {
-            query.setParameter("user1Id", currentUserId);
-            query.setParameter("user2Id", targetUser.getId());
-        });
+            String jpql = "SELECT pc FROM SavedMessages pc WHERE " +
+                    "(pc.owner.id = :ownerId)";
+            chat = daoManager.getSavedMessagesDAO().findOneByJpql(jpql, query -> {
+                query.setParameter("ownerId", currentUserId);
+            });
 
-        if (privateChat == null) {
-            Account currentUser = daoManager.getAccountDAO().findById(currentUserId);
-            if (currentUser == null) {
-                return BadRequest("Could not find current user account.");
+        }else {
+            String jpql = "SELECT pc FROM PrivateChat pc WHERE " +
+                    "(pc.user1.id = :user1Id AND pc.user2.id = :user2Id) OR " +
+                    "(pc.user1.id = :user2Id AND pc.user2.id = :user1Id)";
+            PrivateChat privateChat = daoManager.getPrivateChatDAO().findOneByJpql(jpql, query -> {
+                query.setParameter("user1Id", currentUserId);
+                query.setParameter("user2Id", targetUser.getId());
+            });
+
+            if (privateChat == null) {
+                Account currentUser = daoManager.getAccountDAO().findById(currentUserId);
+                if (currentUser == null) {
+                    return BadRequest("Could not find current user account.");
+                }
+                privateChat = new PrivateChat(currentUser, targetUser);
+                daoManager.getPrivateChatDAO().insert(privateChat);
+
+                Membership currentUserMembership = new Membership();
+                currentUserMembership.setAccount(currentUser);
+                currentUserMembership.setChat(privateChat);
+                currentUserMembership.setType(MembershipType.MEMBER);
+                currentUserMembership.setJoinDate(LocalDateTime.now());
+                daoManager.getMembershipDAO().insert(currentUserMembership);
+
+                Membership targetUserMembership = new Membership();
+                targetUserMembership.setAccount(targetUser);
+                targetUserMembership.setChat(privateChat);
+                targetUserMembership.setType(MembershipType.MEMBER);
+                targetUserMembership.setJoinDate(LocalDateTime.now());
+                daoManager.getMembershipDAO().insert(targetUserMembership);
             }
-            privateChat = new PrivateChat(currentUser, targetUser);
-            daoManager.getPrivateChatDAO().insert(privateChat);
-
-            Membership currentUserMembership = new Membership();
-            currentUserMembership.setAccount(currentUser);
-            currentUserMembership.setChat(privateChat);
-            currentUserMembership.setType(MembershipType.MEMBER);
-            currentUserMembership.setJoinDate(LocalDateTime.now());
-            daoManager.getMembershipDAO().insert(currentUserMembership);
-
-            Membership targetUserMembership = new Membership();
-            targetUserMembership.setAccount(targetUser);
-            targetUserMembership.setChat(privateChat);
-            targetUserMembership.setType(MembershipType.MEMBER);
-            targetUserMembership.setJoinDate(LocalDateTime.now());
-            daoManager.getMembershipDAO().insert(targetUserMembership);
+            chat = privateChat;
+            System.out.println("chat! :" + chat.getId());
         }
 
         GetChatInfoOutputModel output = new GetChatInfoOutputModel();
-        output.setId(privateChat.getId());
-        output.setType(privateChat.getType().toString());
+        output.setId(chat.getId());
+        output.setType(chat.getType().toString());
 
         String otherUserName = targetUser.getFirstName() + (targetUser.getLastName() != null ? " " + targetUser.getLastName() : "");
         output.setTitle(otherUserName.trim());
@@ -326,7 +335,26 @@ public class ChatRpcController extends RpcControllerBase {
     }
 
     // Add this method inside Server.Controllers.ChatRpcController
-
+    public RpcResponse<Object> getSavedMessage(){
+        UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
+        var account = daoManager.getAccountDAO().findById(currentUserId);
+            String jpql = "SELECT pc FROM SavedMessages pc WHERE " +
+                    "(pc.owner.id = :ownerId)";
+           SavedMessages chat = daoManager.getSavedMessagesDAO().findOneByJpql(jpql, query -> {
+                query.setParameter("ownerId", currentUserId);
+            });
+           if(chat == null){
+               var savedMessage = new SavedMessages(account);
+               daoManager.getSavedMessagesDAO().insert(savedMessage);
+           }
+        GetChatInfoOutputModel output = new GetChatInfoOutputModel();
+        output.setId(chat.getId());
+        output.setType(String.valueOf(ChatType.SAVED_MESSAGES));
+        output.setTitle("Saved Message");
+        output.setLastMessage("");
+        output.setUnreadCount(0);
+        return Ok(output);
+    }
     public RpcResponse<List<GetChatInfoOutputModel>> searchPublic(String query) {
         UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
         String searchQuery = "%" + query.toLowerCase() + "%";
