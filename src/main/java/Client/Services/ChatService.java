@@ -127,4 +127,13 @@ public class ChatService {
             }
         };
     }
+
+    public Task<RpcResponse<GetChatInfoOutputModel[]>> searchPublic(String query) {
+        return new Task<>() {
+            @Override
+            protected RpcResponse<GetChatInfoOutputModel[]> call() throws Exception {
+                return rpcCaller.searchPublic(query);
+            }
+        };
+    }
 }

@@ -224,4 +224,44 @@ public class ChatRpcController extends RpcControllerBase {
 
         return Ok(output);
     }
+
+    // Add this method inside Server.Controllers.ChatRpcController
+
+    public RpcResponse<List<GetChatInfoOutputModel>> searchPublic(String query) {
+        UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
+        String searchQuery = "%" + query.toLowerCase() + "%";
+
+        // Find accounts by username or full name, excluding the current user
+        String jpql = "SELECT a FROM Account a WHERE a.id != :currentUserId AND (LOWER(a.username) LIKE :query OR LOWER(CONCAT(a.firstName, ' ', a.lastName)) LIKE :query)";
+        List<Account> foundAccounts = daoManager.getAccountDAO().findByJpql(jpql, q -> {
+            q.setParameter("currentUserId", currentUserId);
+            q.setParameter("query", searchQuery);
+            q.setMaxResults(10); // Limit results for performance
+        });
+
+        List<GetChatInfoOutputModel> results = foundAccounts.stream()
+                .map(account -> {
+                    GetChatInfoOutputModel output = new GetChatInfoOutputModel();
+                    output.setId(account.getId());
+                    output.setType(ChatType.PRIVATE.toString());
+                    output.setTitle(account.getFirstName() + " " + account.getLastName());
+
+                    if(account.getProfilePictureId() != null && !account.getProfilePictureId().trim().isEmpty()) {
+                        Media media = daoManager.getEntityManager().find(Media.class, UUID.fromString(account.getProfilePictureId()));
+                        if (media != null) {
+                            output.setProfilePictureId(media.getFileId());
+                        }
+                    }
+
+                    output.setLastMessage("@" + account.getUsername()); // Use the last message to show the username
+                    output.setOnline(getServerSessionManager().isUserOnline(account.getId().toString()));
+                    if (account.getLastSeen() != null) {
+                        output.setLastSeen(account.getLastSeen().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+                    }
+                    return output;
+                })
+                .collect(Collectors.toList());
+
+        return Ok(results);
+    }
 }

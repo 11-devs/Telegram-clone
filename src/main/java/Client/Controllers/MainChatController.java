@@ -84,6 +84,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
 import javafx.beans.Observable;
 import javafx.scene.Node;
 
@@ -872,8 +874,6 @@ public class MainChatController implements Initializable {
         getChatsTask.setOnFailed(event -> getChatsTask.getException().printStackTrace());
         new Thread(getChatsTask).start();
     }
-
-
     /**
      * Sets up the chat list with a custom cell factory and selection listener.
      */
@@ -884,6 +884,19 @@ public class MainChatController implements Initializable {
         // Handle chat selection
         chatListView.getSelectionModel().selectedItemProperty().addListener((obs, oldUser, newUser) -> {
             if (newUser != null && newUser != currentSelectedUser) {
+                // If the selected user is not in the main chat list, it's a new contact from search.
+                // We need to add them to the main list before selecting.
+                Optional<UserViewModel> existingUser = allChatUsers.stream()
+                        .filter(u -> u.getUserId().equals(newUser.getUserId()))
+                        .findFirst();
+
+                if (existingUser.isEmpty()) {
+                    // It's a new chat from a public search result.
+                    // Add it to the top of the master list.
+                    allChatUsers.add(0, newUser);
+                }
+
+                // Now, select the chat.
                 selectChat(newUser);
             }
         });
@@ -2305,6 +2318,10 @@ public class MainChatController implements Initializable {
      *
      * @param searchText The text to search for.
      */
+
+
+    // In main/java/Client/Controllers/MainChatController.java
+
     private void performSearch(String searchText) {
         if (searchText == null || searchText.trim().isEmpty()) {
             filteredChatUsers.setAll(allChatUsers);
@@ -2312,20 +2329,23 @@ public class MainChatController implements Initializable {
             return;
         }
 
-        ObservableList<UserViewModel> searchResults = FXCollections.observableArrayList();
         String lowerCaseSearch = searchText.toLowerCase().trim();
 
-        for (UserViewModel user : allChatUsers) {
-            boolean nameMatches = user.getUserName().toLowerCase().contains(lowerCaseSearch);
-            boolean messageMatches = user.getLastMessage() != null && user.getLastMessage().toLowerCase().contains(lowerCaseSearch);
+        // Perform local search first
+        ObservableList<UserViewModel> localResults = allChatUsers.stream()
+                .filter(user -> {
+                    boolean nameMatches = user.getUserName().toLowerCase().contains(lowerCaseSearch);
+                    boolean messageMatches = user.getLastMessage() != null && user.getLastMessage().toLowerCase().contains(lowerCaseSearch);
+                    return nameMatches || messageMatches;
+                })
+                .collect(FXCollections::observableArrayList, (list, item) -> list.add(item), (list1, list2) -> list1.addAll(list2));
 
-            if (nameMatches || messageMatches) {
-                searchResults.add(user);
-            }
+        filteredChatUsers.setAll(localResults);
+
+        // If the search starts with '@' or is long enough, trigger a public search
+        if (lowerCaseSearch.startsWith("@") || lowerCaseSearch.length() > 3) {
+            performPublicSearch(lowerCaseSearch.replace("@", ""));
         }
-
-        filteredChatUsers.setAll(searchResults);
-        chatListView.scrollTo(0);
     }
 
     // ============ MESSAGE INPUT HANDLING ============
@@ -4025,5 +4045,43 @@ public class MainChatController implements Initializable {
             System.err.println("Could not parse last seen timestamp: " + isoTimestamp);
             return "last seen a long time ago";
         }
+    }
+
+    private void performPublicSearch(String query) {
+        Task<RpcResponse<GetChatInfoOutputModel[]>> searchTask = chatService.searchPublic(query);
+
+        searchTask.setOnSucceeded(event -> {
+            RpcResponse<GetChatInfoOutputModel[]> response = searchTask.getValue();
+            if (response.getStatusCode() == StatusCode.OK && response.getPayload() != null) {
+                Platform.runLater(() -> {
+                    // Keep track of existing local results to avoid duplicates
+                    List<UserViewModel> currentFiltered = new ArrayList<>(filteredChatUsers);
+                    Set<String> existingUserIds = currentFiltered.stream()
+                            .map(UserViewModel::getUserId)
+                            .collect(Collectors.toSet());
+
+                    for (GetChatInfoOutputModel chat : response.getPayload()) {
+                        if (!existingUserIds.contains(chat.getId().toString())) {
+                            UserViewModel uvm = new UserViewModelBuilder()
+                                    .userId(chat.getId().toString())
+                                    .avatarId(chat.getProfilePictureId())
+                                    .userName(chat.getTitle() != null ? chat.getTitle() : "User")
+                                    .lastMessage(chat.getLastMessage()) // This will contain the username
+                                    .type(chat.getType())
+                                    .isOnline(chat.isOnline())
+                                    .lastSeen(chat.getLastSeen())
+                                    .build();
+                            currentFiltered.add(uvm);
+                        }
+                    }
+                    filteredChatUsers.setAll(currentFiltered);
+                });
+            } else {
+                System.err.println("Public search failed: " + response.getMessage());
+            }
+        });
+
+        searchTask.setOnFailed(event -> searchTask.getException().printStackTrace());
+        new Thread(searchTask).start();
     }
 }

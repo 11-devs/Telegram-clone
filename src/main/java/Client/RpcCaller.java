@@ -126,4 +126,8 @@ public class RpcCaller extends RpcCallerBase {
     public RpcResponse<Object> updateName(UpdateNameInputModel model) throws IOException {
         return callRpcAndGetResponse("AccountRpcController", "updateName", Object.class, model);
     }
+
+    public RpcResponse<GetChatInfoOutputModel[]> searchPublic(String query) throws IOException {
+        return callRpcAndGetResponse("ChatRpcController", "searchPublic", GetChatInfoOutputModel[].class, query);
+    }
 }
