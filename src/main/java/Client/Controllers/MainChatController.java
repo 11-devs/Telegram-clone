@@ -23,6 +23,7 @@ import Shared.Events.Models.MessageReadEventModel;
 import Shared.Events.Models.NewMessageEventModel;
 import Shared.Events.Models.UserIsTypingEventModel;
 import Shared.Models.*;
+import Shared.Utils.SceneUtil;
 import Shared.Utils.SidebarUtil;
 import Shared.Models.Message.MessageType;
 import Shared.Utils.TelegramCellUtils;
@@ -571,10 +572,13 @@ public class MainChatController implements Initializable {
         if (currentSelectedUser != null && currentSelectedUser.getUserId().equals(eventModel.getChatId().toString())) {
             Platform.runLater(() -> {
                 // Find the message bubble by its ID and remove it
-                messagesContainer.getChildren().removeIf(node ->
+                boolean removed = messagesContainer.getChildren().removeIf(node ->
                         node instanceof HBox && ((HBox) node).getChildren().stream()
                                 .anyMatch(child -> child instanceof VBox && child.getProperties().containsKey("messageId") && child.getProperties().get("messageId").equals(eventModel.getMessageId()))
                 );
+                if (removed) {
+                    messagesContainer.requestLayout();
+                }
                 if (messagesContainer.getChildren().isEmpty()) {
                     showEmptyChatState();
                 }
@@ -1244,7 +1248,7 @@ public class MainChatController implements Initializable {
                             });
                         }
                     }
-                    scrollToBottom();
+                    Platform.runLater(this::scrollToBottom);
                 });
             } else {
                 System.err.println("Failed to load messages: " + response.getMessage());
@@ -1721,8 +1725,8 @@ public class MainChatController implements Initializable {
     private void showReplyPreview(VBox messageBubble) {
         if (replyPreviewContainer == null || messageBubble == null) return;
 
-        // 1. Reset data state WITHOUT hiding the panel
         resetReplyEditState();
+        if (replyPreviewAnimation != null) replyPreviewAnimation.stop();
 
         // Stop any ongoing animation
         if (replyPreviewAnimation != null) {
@@ -1733,21 +1737,17 @@ public class MainChatController implements Initializable {
         boolean isOwnMessage = messageBubble.getStyleClass().contains("outgoing");
         String replyToName = isOwnMessage ? this.ownUsername : (currentSelectedUser != null ? currentSelectedUser.getUserName() : "User");
 
-        // 3. Extract message text
-        Label messageTextLabel = (Label) messageBubble.getChildren().stream()
-                .filter(node -> node instanceof Label && node.getStyleClass().contains("message-text"))
-                .findFirst().orElse(null);
+        String originalMessageText = (String) messageBubble.getProperties().get("raw_text");
+        if (originalMessageText == null) {
+            System.err.println("Could not find 'raw_text' property on message bubble for reply.");
+            return;
+        }
 
-        if (messageTextLabel == null) return;
-        String originalMessageText = messageTextLabel.getText();
-
-        // 4. Update UI labels
         replyToLabel.setText("Reply to " + replyToName);
-        replyMessageLabel.setText(originalMessageText.length() > 100 ?
-                originalMessageText.substring(0, 97) + "..." : originalMessageText);
-        messageInputField.clear(); // Clear input field for the new reply
+        String previewText = TextUtil.stripFormattingForCopying(originalMessageText);
+        replyMessageLabel.setText(previewText.length() > 100 ? previewText.substring(0, 97) + "..." : previewText);
+        messageInputField.clear();
 
-        // 5. If the panel was hidden, show it now with animation
         if (!replyPreviewContainer.isVisible()) {
             replyPreviewContainer.setVisible(true);
             replyPreviewContainer.setManaged(true);
@@ -1764,7 +1764,6 @@ public class MainChatController implements Initializable {
             replyPreviewAnimation = new ParallelTransition(slideDown, fadeIn);
             replyPreviewAnimation.play();
         }
-
         messageInputField.requestFocus();
     }
 
@@ -3400,7 +3399,7 @@ public class MainChatController implements Initializable {
         }
 
         MenuItem forwardItem = createIconMenuItem("Forward", "/Client/images/context-menu/forward.png");
-        forwardItem.setOnAction(e -> forwardMessage());
+        forwardItem.setOnAction(e -> forwardMessage(messageBubble));
 
         MenuItem editItem = createIconMenuItem("Edit", "/Client/images/context-menu/edit.png");
         editItem.setOnAction(e -> editMessage(messageBubble));
@@ -3584,14 +3583,6 @@ public class MainChatController implements Initializable {
         }
     }
 
-    /**
-     * Forwards a message (placeholder).
-     */
-    private void forwardMessage(UUID messageId) {
-        System.out.println("Forwarding message: " + messageId);
-        // TODO: Implement message forwarding UI and logic.
-    }
-
     protected void sendTypingStatus(boolean isTyping) {
         if (currentSelectedUser == null) return;
         Task<Void> typingTask = chatService.sendTypingStatus(UUID.fromString(currentSelectedUser.getUserId()), isTyping);
@@ -3636,11 +3627,60 @@ public class MainChatController implements Initializable {
     // ============ MESSAGE ACTIONS ============
 
     /**
-     * Forwards a message (placeholder).
+     * Forwards a message.
      */
-    private void forwardMessage() {
-        System.out.println("Forwarding message");
-        // TODO: Implement message forwarding (Server: Send message to new chat, UI: Update UI).
+    private void forwardMessage(VBox messageBubble) {
+        if (messageBubble == null) return;
+
+        UUID messageId = (UUID) messageBubble.getProperties().get("messageId");
+        if (messageId == null) {
+            showTemporaryNotification("Cannot forward this message (ID not found).\n");
+            return;
+        }
+
+        System.out.println("Forwarding message: " + messageId);
+
+        try {
+            var forwardingData = new ForwardMessageController.ForwardingData(messageId, allChatUsers);
+
+            Stage parentStage = (Stage) mainChatContainer.getScene().getWindow();
+
+            Stage dialogStage = SceneUtil.createDialog(
+                    "/Client/fxml/forwardMessageDialog.fxml",
+                    parentStage,
+                    this,
+                    forwardingData,
+                    "Forward Message"
+            );
+
+            dialogStage.show();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            showTemporaryNotification("Could not open forward dialog.\n");
+        }
+    }
+
+    /**
+     * Executes the actual forwarding of a message to multiple chats.
+     * This is called by the ForwardMessageController.
+     *
+     * @param messageId        The ID of the message to forward.
+     * @param recipientChatIds A list of chat IDs to forward the message to.
+     */
+    public void executeForwardMessage(UUID messageId, List<UUID> recipientChatIds) {
+//        Task<Void> forwardTask = chatService.forwardMessage(messageId, recipientChatIds); // TODO
+//
+//        forwardTask.setOnSucceeded(event -> {
+//            Platform.runLater(() -> showTemporaryNotification("Message forwarded successfully!\n"));
+//        });
+//
+//        forwardTask.setOnFailed(event -> {
+//            forwardTask.getException().printStackTrace();
+//            Platform.runLater(() -> showTemporaryNotification("Failed to forward message.\n"));
+//        });
+//
+//        new Thread(forwardTask).start();
     }
 
     /**
@@ -3652,8 +3692,8 @@ public class MainChatController implements Initializable {
     private void editMessage(VBox messageBubble) {
         if (messageBubble == null) return;
 
-        // 1. Reset data state WITHOUT hiding the panel
         resetReplyEditState();
+        if (replyPreviewAnimation != null) replyPreviewAnimation.stop();
 
         // Stop any ongoing animation
         if (replyPreviewAnimation != null) {
@@ -3664,23 +3704,18 @@ public class MainChatController implements Initializable {
         isEditing = true;
         editingMessageBubble = messageBubble;
 
-        // 3. Extract message text
-        Label messageTextLabel = (Label) messageBubble.getChildren().stream()
-                .filter(node -> node instanceof Label && node.getStyleClass().contains("message-text"))
-                .findFirst().orElse(null);
-
-        if (messageTextLabel == null) {
-            resetReplyEditState(); // Abort if text not found
+        String originalMessageText = (String) messageBubble.getProperties().get("raw_text");
+        if (originalMessageText == null) {
+            System.err.println("Could not find 'raw_text' property on message bubble for edit.");
+            resetReplyEditState();
             return;
         }
-        String originalMessageText = messageTextLabel.getText();
+        this.originalEditText = originalMessageText;
 
-        // 4. Update UI labels and input field
         replyToLabel.setText("Edit Message");
-        replyMessageLabel.setText(originalMessageText);
+        replyMessageLabel.setText(TextUtil.stripFormattingForCopying(originalMessageText));
         messageInputField.setText(originalMessageText);
 
-        // 5. If the panel was hidden, show it now with animation
         if (!replyPreviewContainer.isVisible()) {
             replyPreviewContainer.setVisible(true);
             replyPreviewContainer.setManaged(true);
@@ -3717,6 +3752,8 @@ public class MainChatController implements Initializable {
         } else {
             messagesContainer.getChildren().remove(messageBubble); // Fallback: remove VBox directly
         }
+
+        messagesContainer.requestLayout();
 
         // TODO: (Server) Send delete request to the server
         System.out.println("Message deleted from UI. (Implement server deletion)");

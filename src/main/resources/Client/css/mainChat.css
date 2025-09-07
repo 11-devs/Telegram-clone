@@ -749,6 +749,94 @@
     -fx-opacity: 1.0;
 }
 
+/* ============ FORWARD DIALOG STYLES ============ */
+.dialog-pane {
+    -fx-background-color: #17212B;
+    -fx-background-radius: 10px;
+    -fx-border-width: 0;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 25, 0, 0, 8);
+}
+
+.dialog-title {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 18px;
+    -fx-font-weight: 600;
+    -fx-padding: 0 0 10px 0;
+}
+
+
+.forward-search-field {
+    -fx-background-color: transparent;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 14px;
+    -fx-prompt-text-fill: #313C49;
+    -fx-padding: 8px 5px;
+    -fx-border-color: transparent transparent #313C49 transparent;
+    -fx-border-width: 0 0 2px 0;
+    -fx-background-insets: 0;
+}
+
+.forward-search-field:focused {
+    -fx-border-color: transparent transparent #6AB2F2 transparent;
+}
+
+.dialog-pane .list-view {
+    -fx-background-color: #17212B;
+}
+
+.dialog-pane .list-view .list-cell {
+    -fx-background-color: #17212B;
+}
+
+.dialog-pane .list-view .list-cell:hover {
+    -fx-background-color: #232E3C;
+}
+
+.dialog-pane .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-pref-width: 8px;
+    -fx-padding: 2px;
+}
+
+.dialog-pane .scroll-bar:vertical .track {
+    -fx-background-color: #1E293B;
+    -fx-border-color: transparent;
+    -fx-background-radius: 4px;
+}
+
+.dialog-pane .scroll-bar:vertical .thumb {
+    -fx-background-color: #4A5568;
+    -fx-background-radius: 4px;
+}
+
+.dialog-pane .scroll-bar:vertical .thumb:hover {
+    -fx-background-color: #6AB2F2;
+}
+
+.dialog-pane .scroll-bar .increment-button,
+.dialog-pane .scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-pref-height: 0;
+}
+
+.dialog-pane .scroll-bar .increment-arrow,
+.dialog-pane .scroll-bar .decrement-arrow {
+    -fx-shape: " ";
+}
+
+.dialog-button {
+    -fx-background-color: #17212B;
+    -fx-text-fill: #6AB2F2;
+    -fx-font-size: 14px;
+    -fx-padding: 5px 15px;
+    -fx-background-radius: 5px;
+}
+
+.dialog-button:hover {
+    -fx-background-color: #1D2A39;
+}
+
 /* ============ DOCUMENT MESSAGE BUBBLE STYLES ============ */
 
 /* Document icon container */
