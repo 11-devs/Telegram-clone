@@ -218,8 +218,8 @@ public class UserCustomCellController {
         );
         statusIconSvg.visibleProperty().bind(messageStatusPanel.visibleProperty());
         statusIconSvg.contentProperty().bind(currentUser.messageStatusProperty().map(status -> switch (status) {
-            case "sent" -> "M2.75 8.75 L6.25 12.25 L13.25 4.75";
-            case "delivered", "read" -> "m1.75 9.75 2.5 2.5m3.5-4 2.5-2.5m-4.5 4 2.5 2.5 6-6.5";
+            case "sent", "delivered" -> "M2.75 8.75 L6.25 12.25 L13.25 4.75";
+            case "read" -> "m1.75 9.75 2.5 2.5m3.5-4 2.5-2.5m-4.5 4 2.5 2.5 6-6.5";
             default -> "";
         }));
         statusIconSvg.getStyleClass().add("status-icon");
