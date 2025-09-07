@@ -3150,7 +3150,7 @@ public class MainChatController implements Initializable {
     private void showSideBar() {
         if (sidebarController != null) {
             Stage parentStage = (Stage) menuButton.getScene().getWindow();
-            //SidebarUtil.showSidebarDialog(parentStage, "/Client/fxml/sidebarMenu.fxml", this);
+            SidebarUtil.showSidebarDialog(parentStage, "/Client/fxml/sidebarMenu.fxml", this);
         } else {
             System.out.println("SidebarController is not initialized!");
         }

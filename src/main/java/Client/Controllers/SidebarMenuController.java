@@ -259,8 +259,26 @@ public class SidebarMenuController implements Initializable {
     @FXML
     private void handleContacts() {
         System.out.println("Contacts clicked");
-        // TODO: Navigate to contacts view
         toggleSidebar(false); // Close sidebar
+        Stage parentStage = primaryStage != null ? primaryStage : (Stage) sidebarMenuContainer.getScene().getWindow();
+        try {
+            // Re-use the existing dialog animation logic
+            Stage dialogStage = applyDialogAnimation(parentStage, this, "/Client/fxml/contactsSection.fxml", "Contacts");
+            dialogStage.setResizable(true); // Allow resizing for contacts view
+            dialogStage.sizeToScene();
+
+            // Center the dialog stage
+            Platform.runLater(() -> {
+                double centerX = parentStage.getX() + (parentStage.getWidth() - dialogStage.getWidth()) / 2;
+                double centerY = parentStage.getY() + (parentStage.getHeight() - dialogStage.getHeight()) / 2;
+                dialogStage.setX(centerX);
+                dialogStage.setY(centerY);
+            });
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Error loading contacts dialog: " + e.getMessage());
+        }
     }
 
     /**
@@ -451,4 +469,9 @@ public class SidebarMenuController implements Initializable {
     public VBox getSidebarContainer() {
         return sidebarMenuContainer;
     }
+
+
+
+
+
 }
