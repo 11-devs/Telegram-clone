@@ -24,6 +24,7 @@ public class Server {
         builder.getServices().AddSingleton(MessageReadEvent.class);
         builder.getServices().AddSingleton(UserTypingEvent.class);
         builder.getServices().AddSingleton(UserStatusChangedEvent.class);
+        builder.getServices().AddSingleton(ChatInfoChangedEvent.class);
         builder.addController(AccountRpcController.class);
         builder.addController(MessageRpcController.class);
         builder.addController(ChatRpcController.class);

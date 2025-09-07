@@ -4,16 +4,18 @@ import JSocket2.Protocol.Rpc.RpcControllerBase;
 import JSocket2.Protocol.Rpc.RpcResponse;
 import JSocket2.Protocol.StatusCode;
 import Server.DaoManager;
+import Server.Events.ChatInfoChangedEvent;
 import Shared.Api.Models.AccountController.*;
+import Shared.Events.Models.ChatInfoChangedEventModel;
 import Shared.Models.Account.Account;
-import Shared.Models.Chat.PrivateChat;
 import Shared.Models.Chat.SavedMessages;
 import Shared.Models.Media.Media;
-import Shared.Models.Message.MediaMessage;
+import Shared.Models.Membership.Membership;
 import Shared.Models.PendingAuth.PendingAuth;
 import Shared.Models.Session.Session;
 import Shared.Utils.PasswordUtil;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
@@ -28,8 +30,10 @@ public class AccountRpcController extends RpcControllerBase {
     private final Duration OTP_RESEND_COOLDOWN = Duration.ofSeconds(60);
     private final int MAX_OTP_ATTEMPTS = 5;
     private final Duration LOCKOUT_DURATION = Duration.ofMinutes(5);
-    public AccountRpcController(DaoManager daoManager) {
+    private final ChatInfoChangedEvent chatInfoChangedEvent;
+    public AccountRpcController(DaoManager daoManager, ChatInfoChangedEvent chatInfoChangedEvent) {
         this.daoManager = daoManager;
+        this.chatInfoChangedEvent = chatInfoChangedEvent;
     }
 public RpcResponse<Boolean> isPhoneNumberRegistered(String phoneNumber){
    return Ok(daoManager.getAccountDAO().findByField("phoneNumber",phoneNumber) != null);
@@ -417,9 +421,34 @@ public RpcResponse<Boolean> isPhoneNumberRegistered(String phoneNumber){
         account.setFirstName(model.getFirstName());
         account.setLastName(model.getLastName());
         daoManager.getAccountDAO().update(account);
-
+        ChatInfoChangedEventModel eventModel = new ChatInfoChangedEventModel(null, account.getFirstName() + " " + account.getLastName(),null);
+        broadcastChatInfoUpdate(currentUserId,eventModel);
         return Ok();
     }
+
+    private void broadcastChatInfoUpdate(UUID currentUserId,ChatInfoChangedEventModel eventModel) {
+
+        List<Membership> userMemberships = daoManager.getMembershipDAO().findAllByField("account.id", currentUserId);
+        for (Membership userMembership : userMemberships) {
+            List<Membership> chatPeers = daoManager.getMembershipDAO().findAllByField("chat.id", userMembership.getChat().getId());
+            for (Membership peer : chatPeers) {
+                // Don't send the notification to the user themselves
+                if (!peer.getAccount().getId().equals(currentUserId)) {
+                    eventModel.setChatId(userMembership.getChat().getId());
+                    try {
+                        chatInfoChangedEvent.Invoke(
+                                getServerSessionManager(),
+                                peer.getAccount().getId().toString(),
+                                eventModel
+                        );
+                    } catch (IOException ex) {
+                        System.err.println("Failed to send status event to " + peer.getAccount().getId() + ": " + ex.getMessage());
+                    }
+                }
+            }
+        }
+    }
+
     private String generateOTP() {
         int otp = 10000 + (int)(Math.random() * 90000);
         return String.valueOf(otp);
@@ -456,9 +485,10 @@ public RpcResponse<Boolean> isPhoneNumberRegistered(String phoneNumber){
             return NotFound();
         }
 
-        account.setProfilePictureId(model.getProfilePictureId());
+        account.setProfilePictureId(model.getProfilePictureMediaId());
         daoManager.getAccountDAO().update(account);
-
+        ChatInfoChangedEventModel eventModel = new ChatInfoChangedEventModel(null, null,model.getProfilePictureFileId());
+        broadcastChatInfoUpdate(currentUserId,eventModel);
         return Ok();
     }
     //private String generateAccessToken(account account) {

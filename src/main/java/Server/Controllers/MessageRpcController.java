@@ -60,6 +60,8 @@ public class MessageRpcController extends RpcControllerBase {
         output.setTimestamp(message.getTimestamp() != null ? message.getTimestamp().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) : null);
         output.setEdited(message.isEdited());
         output.setMessageType(message.getType());
+        output.setForwardedFromSenderName(message.getForwardedFromSenderName());
+
 
         boolean isOutgoing = Objects.equals(output.getSenderId().toString(), getCurrentUser().getUserId());
         output.setOutgoing(isOutgoing);
@@ -117,6 +119,20 @@ public class MessageRpcController extends RpcControllerBase {
                 }
                 break;
         }
+
+        Message repliedTo = message.getRepliedToMessage();
+        if (repliedTo != null) {
+            output.setRepliedToMessageId(repliedTo.getId());
+            if (repliedTo.getSender() != null) {
+                output.setRepliedToSenderName(repliedTo.getSender().getFirstName());
+            }
+            if (repliedTo instanceof TextMessage) {
+                output.setRepliedToMessageContent(((TextMessage) repliedTo).getTextContent());
+            } else {
+                // For media, etc., just use the type as a placeholder.
+                output.setRepliedToMessageContent(repliedTo.getType().toString());
+            }
+        }
         return output;
     }
 
@@ -131,7 +147,12 @@ public class MessageRpcController extends RpcControllerBase {
 
     public RpcResponse<List<GetMessageOutputModel>> getMessagesByChat(GetMessageByChatInputModel model) {
         List<Message> messages = daoManager.getMessageDAO().findByJpql(
-                "SELECT m FROM Message m JOIN FETCH m.sender s LEFT JOIN FETCH TREAT(m AS MediaMessage).media WHERE m.chat.id = :chatId",
+                "SELECT m FROM Message m " +
+                        "JOIN FETCH m.sender s " +
+                        "LEFT JOIN FETCH m.repliedToMessage r " +
+                        "LEFT JOIN FETCH r.sender rs " +
+                        "LEFT JOIN FETCH TREAT(m AS MediaMessage).media " +
+                        "WHERE m.chat.id = :chatId AND m.isDeleted = false",
                 query -> query.setParameter("chatId", model.getChatId())
         );
 
@@ -158,6 +179,8 @@ public class MessageRpcController extends RpcControllerBase {
         eventModel.setTimestamp(message.getTimestamp().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
         eventModel.setEdited(message.isEdited());
         eventModel.setMessageType(message.getType());
+        eventModel.setForwardedFromSenderName(message.getForwardedFromSenderName());
+
 
         if (message instanceof TextMessage) {
             eventModel.setTextContent(((TextMessage) message).getTextContent());
@@ -169,6 +192,19 @@ public class MessageRpcController extends RpcControllerBase {
                 eventModel.setFileName(media.getFileName());
                 eventModel.setFileSize(media.getSize());
                 eventModel.setFileExtension(media.getFileExtension());
+            }
+        }
+
+        Message repliedTo = message.getRepliedToMessage();
+        if (repliedTo != null) {
+            eventModel.setRepliedToMessageId(repliedTo.getId());
+            if (repliedTo.getSender() != null) {
+                eventModel.setRepliedToSenderName(repliedTo.getSender().getFirstName());
+            }
+            if (repliedTo instanceof TextMessage) {
+                eventModel.setRepliedToMessageContent(((TextMessage) repliedTo).getTextContent());
+            } else {
+                eventModel.setRepliedToMessageContent(repliedTo.getType().toString());
             }
         }
 
@@ -223,6 +259,13 @@ public class MessageRpcController extends RpcControllerBase {
                 return BadRequest("The specified message type is not supported yet.");
         }
 
+        if (model.getRepliedToMessageId() != null) {
+            Message repliedTo = daoManager.getMessageDAO().findById(model.getRepliedToMessageId());
+            if (repliedTo != null) {
+                newMessage.setRepliedToMessage(repliedTo);
+            }
+        }
+
         newMessage.setSender(sender);
         newMessage.setChat(chat);
         newMessage.setTimestamp(LocalDateTime.now());
@@ -249,6 +292,67 @@ public class MessageRpcController extends RpcControllerBase {
         );
 
         return Ok(output);
+    }
+
+    public RpcResponse<Object> forwardMessage(ForwardMessageInputModel model) {
+        Account forwarder = daoManager.getAccountDAO().findById(UUID.fromString(getCurrentUser().getUserId()));
+        if (forwarder == null) {
+            return BadRequest("Forwarding user not found.");
+        }
+
+        Message originalMessage = daoManager.getMessageDAO().findById(model.getMessageToForwardId());
+        if (originalMessage == null) {
+            return NotFound();
+        }
+
+        String originalSenderName = originalMessage.getSender().getFirstName();
+        if (originalMessage.getSender().getLastName() != null) {
+            originalSenderName += " " + originalMessage.getSender().getLastName();
+        }
+
+        for (UUID targetChatId : model.getTargetChatIds()) {
+            Chat targetChat = daoManager.getChatDAO().findById(targetChatId);
+            if (targetChat == null) continue; // Skip if chat doesn't exist
+
+            Message forwardedMessage;
+
+            if (originalMessage instanceof TextMessage originalTextMessage) {
+                TextMessage newTextMessage = new TextMessage();
+                newTextMessage.setTextContent(originalTextMessage.getTextContent());
+                forwardedMessage = newTextMessage;
+            } else if (originalMessage instanceof MediaMessage originalMediaMessage) {
+                MediaMessage newMediaMessage = new MediaMessage();
+                newMediaMessage.setMedia(originalMediaMessage.getMedia()); // Re-use the same media entry
+                forwardedMessage = newMediaMessage;
+            } else {
+                continue; // Skip unsupported message types
+            }
+
+            forwardedMessage.setSender(forwarder);
+            forwardedMessage.setChat(targetChat);
+            forwardedMessage.setTimestamp(LocalDateTime.now());
+            forwardedMessage.setForwardedFromSenderName(originalSenderName);
+            forwardedMessage.setType(originalMessage.getType());
+
+            daoManager.getMessageDAO().insert(forwardedMessage);
+
+            // Update last read for the forwarder in the target chat
+            Membership forwarderMembership = daoManager.getMembershipDAO().findOneByJpql(
+                    "SELECT m FROM Membership m WHERE m.chat.id = :chatId AND m.account.id = :accountId",
+                    q -> {
+                        q.setParameter("chatId", targetChat.getId());
+                        q.setParameter("accountId", forwarder.getId());
+                    });
+
+            if (forwarderMembership != null) {
+                forwarderMembership.setLastReadMessage(forwardedMessage);
+                daoManager.getMembershipDAO().update(forwarderMembership);
+            }
+
+            broadcastNewMessageEvent(forwardedMessage);
+        }
+
+        return Ok();
     }
 
     public RpcResponse<Object> editMessage(EditMessageInputModel model) {

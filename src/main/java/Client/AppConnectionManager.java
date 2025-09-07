@@ -29,6 +29,7 @@ public class AppConnectionManager {
         builder.addEventSubscriber(MessageReadSubscriber.class);
         builder.addEventSubscriber(UserTypingSubscriber.class);
         builder.addEventSubscriber(UserStatusChangedSubscriber.class);
+        builder.addEventSubscriber(ChatInfoChangedSubscriber.class);
         builder.getServices().AddSingleton(ChatUIService.class);
 
         // 3. Conceptually, the builder is enhanced to use the DI and event system.

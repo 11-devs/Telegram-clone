@@ -1,19 +1,30 @@
 package Shared.Api.Models.AccountController;
 
 public class SetProfilePictureInputModel {
-    private String profilePictureId;
+    private String profilePictureMediaId;
 
     public SetProfilePictureInputModel() {}
 
-    public SetProfilePictureInputModel(String profilePictureId) {
-        this.profilePictureId = profilePictureId;
+    public SetProfilePictureInputModel(String profilePictureMediaId,String profilePictureFileId) {
+        this.profilePictureMediaId = profilePictureMediaId;
+        this.profilePictureFileId = profilePictureFileId;
     }
 
-    public String getProfilePictureId() {
-        return profilePictureId;
+    public String getProfilePictureMediaId() {
+        return profilePictureMediaId;
     }
 
-    public void setProfilePictureId(String profilePictureId) {
-        this.profilePictureId = profilePictureId;
+    public void setProfilePictureMediaId(String profilePictureMediaId) {
+        this.profilePictureMediaId = profilePictureMediaId;
+    }
+    private String profilePictureFileId;
+
+
+    public String getProfilePictureFileId() {
+        return profilePictureFileId;
+    }
+
+    public void setProfilePictureFileId(String profilePictureFileId) {
+        this.profilePictureFileId = profilePictureFileId;
     }
 }

@@ -13,6 +13,8 @@ public class ChatUIService {
     private Consumer<MessageReadEventModel> messageReadEventHandler;
     private Consumer<UserIsTypingEventModel> userTypingEventHandler;
     private Consumer<UserStatusChangedEventModel> userStatusChangedEventHandler;
+    private Consumer<ChatInfoChangedEventModel> chatInfoChangedEventHandler;
+
     public void setActiveChatController(MainChatController controller) {
         if (controller != null) {
             this.newMessageEventHandler = controller::handleIncomingMessage;
@@ -21,6 +23,7 @@ public class ChatUIService {
             this.messageReadEventHandler = controller::handleMessageRead;
             this.userTypingEventHandler = controller::handleUserTyping;
             this.userStatusChangedEventHandler = controller::handleUserStatusChanged;
+            this.chatInfoChangedEventHandler = controller::handleChatInfoChanged;
         } else {
             this.newMessageEventHandler = null;
             this.messageEditedEventHandler = null;
@@ -28,6 +31,7 @@ public class ChatUIService {
             this.messageReadEventHandler = null;
             this.userTypingEventHandler = null;
             this.userStatusChangedEventHandler = null;
+            this.chatInfoChangedEventHandler = null;
         }
     }
 
@@ -75,6 +79,14 @@ public class ChatUIService {
             Platform.runLater(() -> userStatusChangedEventHandler.accept(eventModel));
         } else {
             System.err.println("ChatUIService: No active chat controller to handle user status changed event.");
+        }
+    }
+
+    public void onChatInfoChanged(ChatInfoChangedEventModel eventModel) {
+        if (chatInfoChangedEventHandler != null) {
+            Platform.runLater(() -> chatInfoChangedEventHandler.accept(eventModel));
+        } else {
+            System.err.println("ChatUIService: No active chat controller to handle chat info changed event.");
         }
     }
 }

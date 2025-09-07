@@ -66,6 +66,7 @@ public class ClientLifecycleManager implements IClientLifecycleListener {
             for (Membership peer : chatPeers) {
                 // Don't send the notification to the user themselves
                 if (!peer.getAccount().getId().equals(userId)) {
+                    event.setChatId(userMembership.getChat().getId());
                     try {
                         userStatusChangedEvent.Invoke(
                                 serverSessionManager,

@@ -19,6 +19,45 @@ public class NewMessageEventModel {
     private long fileSize;
     private String fileExtension;
 
+    public UUID getRepliedToMessageId() {
+        return repliedToMessageId;
+    }
+
+    public void setRepliedToMessageId(UUID repliedToMessageId) {
+        this.repliedToMessageId = repliedToMessageId;
+    }
+
+    private UUID repliedToMessageId;
+
+    public String getRepliedToSenderName() {
+        return repliedToSenderName;
+    }
+
+    public void setRepliedToSenderName(String repliedToSenderName) {
+        this.repliedToSenderName = repliedToSenderName;
+    }
+
+    private String repliedToSenderName;
+
+    public String getRepliedToMessageContent() {
+        return repliedToMessageContent;
+    }
+
+    public void setRepliedToMessageContent(String repliedToMessageContent) {
+        this.repliedToMessageContent = repliedToMessageContent;
+    }
+
+    private String repliedToMessageContent;
+
+    public String getForwardedFromSenderName() {
+        return forwardedFromSenderName;
+    }
+
+    public void setForwardedFromSenderName(String forwardedFromSenderName) {
+        this.forwardedFromSenderName = forwardedFromSenderName;
+    }
+
+    private String forwardedFromSenderName;
     //<editor-fold desc="Getters and Setters">
     public UUID getMessageId() {
         return messageId;

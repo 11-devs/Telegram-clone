@@ -240,7 +240,7 @@ public class MyAccountSettingsController {
                     uploadTask.setOnSucceeded(e -> {
                         try {
                             String mediaId = createMediaResponse.getPayload().toString();
-                            setProfilePictureOnServer(mediaId, selectedFile);
+                            setProfilePictureOnServer(mediaId,fileId, selectedFile);
                         } catch (Exception ex) {
                             System.err.println("Error setting profile picture after upload: " + ex.getMessage());
                             Platform.runLater(this::restoreUIOnFailure);
@@ -270,8 +270,8 @@ public class MyAccountSettingsController {
             });
         }
     }
-    private void setProfilePictureOnServer(String mediaId, File imageFile) {
-        SetProfilePictureInputModel model = new SetProfilePictureInputModel(mediaId);
+    private void setProfilePictureOnServer(String mediaId,String fileId, File imageFile) {
+        SetProfilePictureInputModel model = new SetProfilePictureInputModel(mediaId,fileId);
         Task<RpcResponse<Object>> setProfilePictureTask = new Task<>() {
             @Override
             protected RpcResponse<Object> call() throws Exception {
