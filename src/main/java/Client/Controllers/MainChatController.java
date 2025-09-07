@@ -146,6 +146,15 @@ public class MainChatController implements Initializable {
         return chatListView;
     }
 
+    public String getCurrentUserId() {
+        return currentUserId;
+    }
+
+    public void setCurrentUserId(String currentUserId) {
+        this.currentUserId = currentUserId;
+    }
+
+    private String currentUserId;
     /**
      * ListView displaying the chat list with UserViewModel items.
      */
@@ -4498,5 +4507,9 @@ public ChatService getChatService() {
             chatListView.getSelectionModel().select(userToSelect);
             chatListView.scrollTo(userToSelect);
         });
+    }
+
+    public boolean isMyProfile(UserViewModel userData) {
+        return userData.getUserId() == currentUserId;
     }
 }
