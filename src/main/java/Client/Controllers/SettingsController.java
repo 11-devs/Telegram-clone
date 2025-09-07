@@ -9,14 +9,15 @@ import JSocket2.Protocol.StatusCode;
 import Shared.Api.Models.AccountController.GetAccountInfoOutputModel;
 import Shared.Utils.AlertUtil;
 import Shared.Utils.DialogUtil;
+import Shared.Utils.SceneUtil;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Side;
 import javafx.scene.Parent;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
@@ -28,6 +29,7 @@ import javafx.stage.Stage;
 import java.io.File;
 import java.io.IOException;
 import java.util.Objects;
+import java.util.Optional;
 
 public class SettingsController {
 
@@ -49,6 +51,7 @@ public class SettingsController {
     private Button backButton;
     @FXML
     private Label settingsTitleLabel;
+    @FXML private Button moreOptionsButton;
 
     private Stage dialogStage;
     private FileDownloadService fileDownloadService;
@@ -79,6 +82,8 @@ public class SettingsController {
         } catch (Exception e) {
             System.out.println("Could not load profile picture: " + e.getMessage());
         }
+        moreOptionsButton.setOnAction(event -> showMoreOptionsMenu());
+
         // Initialize to show main settings content and hide sub-section pane
         mainSettingsContent.setVisible(true);
         mainSettingsContent.setManaged(true);
@@ -205,16 +210,6 @@ public class SettingsController {
         showSubSection("/Client/fxml/advancedSettings.fxml", "Advanced");
     }
 
-    @FXML
-    private void handleSpeakersCamera() {
-        showSubSection("/Client/fxml/speakersCameraSettings.fxml", "Speakers and Camera");
-    }
-
-    @FXML
-    private void handleBatteryAnimations() {
-        showSubSection("/Client/fxml/batteryAnimationsSettings.fxml", "Battery and Animations");
-    }
-
     public void updateUserInfoOnHeader(GetAccountInfoOutputModel model) {
         String name = model.getFirstName() + " " + model.getLastName();
         updateDisplayNameOnHeader(name);
@@ -235,39 +230,28 @@ public class SettingsController {
         }
     }
 
-    // Method to show a subsection within the settings dialog
+    /**
+     * Shows a sub-section by loading its FXML and placing it in the content pane.
+     * Delegates the loading and controller setup to SceneUtil.
+     *
+     * @param fxmlPath The path to the FXML file for the sub-section.
+     * @param title    The title to display in the header.
+     */
     private void showSubSection(String fxmlPath, String title) {
         if (fxmlPath.contains("myAccountSettings.fxml") && accountInfo == null) {
-            //AlertUtil.showWarning("User data is still loading. Please try again in a moment.");
-            return;
+            return; // Wait for user data to be loaded
         }
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
-            Parent subSectionRoot = loader.load();
 
-            // Set parent controller and dialog stage to the sub-section controller
-            Object subController = loader.getController();
-            this.currentSubController = subController;
+        // 1. Use SceneUtil to load the sub-scene and set up its controller
+        Parent subSectionRoot = SceneUtil.loadSubScene(
+                fxmlPath,
+                this,          // Pass this SettingsController as the parent
+                this.dialogStage, // Pass the dialog's stage
+                this.accountInfo  // Pass the account info as data
+        );
 
-            if (subController instanceof MyAccountSettingsController myAccountController) {
-                myAccountController.setUserData(accountInfo);
-            }
-
-            if (subController != null) {
-                try {
-                    subController.getClass().getMethod("setParentController", SettingsController.class).invoke(subController, this);
-                    subController.getClass().getMethod("setDialogStage", Stage.class).invoke(subController, dialogStage);
-                    // The sub-controller's setSectionTitle is now effectively unused for the title bar,
-                    // but we keep the call to avoid breaking other sub-sections that might still use it internally.
-                    subController.getClass().getMethod("setSectionTitle", String.class).invoke(subController, title);
-                } catch (NoSuchMethodException e) {
-                    System.err.println("Sub-controller " + subController.getClass().getName() + " missing required setter methods. " + e.getMessage());
-                } catch (Exception e) {
-                    System.err.println("Error invoking setter on sub-controller: " + e.getMessage());
-                    e.printStackTrace();
-                }
-            }
-
+        // 2. If loading was successful, update the UI
+        if (subSectionRoot != null) {
             settingsTitleLabel.setText(title);
             backButton.setVisible(true);
             backButton.setManaged(true);
@@ -277,9 +261,7 @@ public class SettingsController {
             settingsContentPane.setManaged(true);
             mainSettingsContent.setVisible(false);
             mainSettingsContent.setManaged(false);
-
-        } catch (IOException e) {
-            e.printStackTrace();
+        } else {
             AlertUtil.showError("Failed to load settings sub-section: " + title);
         }
     }
@@ -301,5 +283,59 @@ public class SettingsController {
         settingsContentPane.setManaged(false);
         mainSettingsContent.setVisible(true);
         mainSettingsContent.setManaged(true);
+    }
+    /**
+     * Creates and shows a context menu
+     */
+    private void showMoreOptionsMenu() {
+        ContextMenu contextMenu = new ContextMenu();
+        contextMenu.setAutoHide(true);
+
+        // --- Create "editProfile" menu item ---
+        MenuItem editItem = new MenuItem("Edit Profile");
+
+        try {
+            ImageView editLogo = new ImageView(new Image(Objects.requireNonNull(getClass().getResource("/Client/images/edit-icon.png")).toExternalForm()));
+            editLogo.setFitHeight(18);
+            editLogo.setFitWidth(18);
+            editItem.setGraphic(editLogo);
+        } catch (Exception e) {
+            System.err.println("Could not load editProfile icon.");
+        }
+
+        // --- Set the action
+        editItem.setOnAction(event -> handleEdit());
+
+        contextMenu.getItems().add(editItem);
+
+        // --- Create "Log Out" menu item ---
+        MenuItem logOutItem = new MenuItem("Log Out");
+
+        logOutItem.getStyleClass().add("logout-menu-item");
+
+        try {
+            ImageView logOutIcon = new ImageView(new Image(Objects.requireNonNull(getClass().getResource("/Client/images/logout-icon.png")).toExternalForm()));
+            logOutIcon.setFitHeight(18);
+            logOutIcon.setFitWidth(18);
+            logOutItem.setGraphic(logOutIcon);
+        } catch (Exception e) {
+            System.err.println("Could not load logout icon.");
+        }
+
+        // --- Set the action for the "Log Out" item ---
+        logOutItem.setOnAction(event -> handleLogOut());
+
+        contextMenu.getItems().add(logOutItem);
+
+        // --- Show the menu aligned to the button ---
+        contextMenu.show(moreOptionsButton, Side.BOTTOM, 0, 5);
+    }
+
+    private void handleEdit() {
+
+    }
+
+    private void handleLogOut() {
+
     }
 }
