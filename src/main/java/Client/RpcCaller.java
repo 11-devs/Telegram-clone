@@ -4,6 +4,8 @@ import JSocket2.Core.Client.ConnectionManager;
 import JSocket2.Protocol.Rpc.RpcCallerBase;
 import JSocket2.Protocol.Rpc.RpcResponse;
 import Shared.Api.Models.ChatController.*;
+import Shared.Api.Models.ContactController.*;
+import Shared.Api.Models.ContactController.GetContactsOutputModel;
 import Shared.Api.Models.MediaController.CreateMediaInputModel;
 import Shared.Api.Models.MembershipController.GetChatMembersOutputModel;
 import Shared.Api.Models.MembershipController.UpdateMemberRoleInputModel;
@@ -153,4 +155,20 @@ public class RpcCaller extends RpcCallerBase {
     public RpcResponse<Object> forwardMessage(ForwardMessageInputModel model) throws IOException {
         return callRpcAndGetResponse("MessageRpcController", "forwardMessage", Object.class, model);
     }
+
+    // Add these methods inside the RpcCaller class
+
+    public RpcResponse<GetContactsOutputModel> getContacts(GetContactsInputModel model) throws IOException {
+        return callRpcAndGetResponse("ContactRpcController", "getContacts", GetContactsOutputModel.class, model);
+    }
+
+    public RpcResponse<AddContactOutputModel> addContact(AddContactInputModel model) throws IOException {
+        return callRpcAndGetResponse("ContactRpcController", "addContact", AddContactOutputModel.class, model);
+    }
+
+    public RpcResponse<RemoveContactOutputModel> removeContact(RemoveContactInputModel model) throws IOException {
+        return callRpcAndGetResponse("ContactRpcController", "removeContact", RemoveContactOutputModel.class, model);
+    }
+
+
 }

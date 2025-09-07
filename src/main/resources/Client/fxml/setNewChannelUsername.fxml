@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.RadioButton?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox fx:id="dialogRoot" prefWidth="450.0" spacing="25.0" styleClass="dialog-root" stylesheets="@../css/setNewChannelUsername.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1">
+    <padding>
+        <Insets bottom="20.0" left="25.0" right="25.0" top="20.0" />
+    </padding>
+    <children>
+        <fx:define>
+            <ToggleGroup fx:id="channelTypeGroup" />
+        </fx:define>
+
+        <!-- Public Channel Option -->
+        <VBox spacing="5.0">
+            <children>
+                <RadioButton fx:id="publicChannelRadio" selected="true" styleClass="channel-radio-button" text="Public Channel" toggleGroup="$channelTypeGroup" />
+                <Label styleClass="description-label" text="Anyone can find the channel in search and join." />
+            </children>
+        </VBox>
+
+        <!-- Private Channel Option -->
+        <VBox spacing="5.0">
+            <children>
+                <RadioButton fx:id="privateChannelRadio" styleClass="channel-radio-button" text="Private Channel" toggleGroup="$channelTypeGroup" />
+                <Label styleClass="description-label" text="Only people with an invite link can join." />
+            </children>
+        </VBox>
+
+        <!-- Dynamic content based on selection -->
+        <StackPane fx:id="linkContentPane">
+            <children>
+                <!-- Invite Link Section (for Private Channel) -->
+                <VBox fx:id="inviteLinkContainer" managed="false" spacing="8.0" visible="false">
+                    <children>
+                        <Label styleClass="invite-link-header" text="Invite link" />
+                        <Label fx:id="inviteLinkField" styleClass="invite-link-text" text="https://t.me/+QVcvkOrkt9IyNWjk" />
+                    </children>
+                </VBox>
+
+                <!-- Public Link Section -->
+                <VBox fx:id="publicLinkContainer" spacing="8.0">
+                    <children>
+                        <Label styleClass="invite-link-header" text="Link" />
+                        <HBox alignment="BASELINE_LEFT" spacing="2.0">
+                           <children>
+                              <Label styleClass="link-prefix-label" text="t.me/" />
+                              <TextField fx:id="publicLinkField" styleClass="link-text-field" HBox.hgrow="ALWAYS" />
+                           </children>
+                        </HBox>
+                    </children>
+                </VBox>
+            </children>
+        </StackPane>
+
+
+        <!-- Action Buttons -->
+        <HBox alignment="BOTTOM_RIGHT" spacing="10.0" VBox.vgrow="ALWAYS">
+            <children>
+                <Button fx:id="skipButton" mnemonicParsing="false" styleClass="dialog-button" text="Skip" />
+                <Button fx:id="saveButton" mnemonicParsing="false" styleClass="dialog-button" text="Save" />
+            </children>
+        </HBox>
+    </children>
+</VBox>

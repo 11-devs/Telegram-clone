@@ -6,7 +6,6 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 public class AdvancedSettingsController {
-
     private SettingsController parentController;
     private Stage dialogStage; // Reference to the actual dialog stage
     @FXML
