@@ -787,7 +787,7 @@ public ChatService getChatService() {
         loadUserChatsFromServer();
         // TODO: Implement fetching data from the server or database.
     }
-    private void loadUserChatsFromServer() {
+    void loadUserChatsFromServer() {
 
         Task<RpcResponse<GetChatInfoOutputModel[]>> getChatsTask = chatService.fetchUserChats();
 
