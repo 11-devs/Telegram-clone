@@ -6,6 +6,7 @@ import Server.DaoManager;
 import Shared.Api.Models.ChatController.*;
 import Shared.Models.Account.Account;
 import Shared.Models.Chat.*;
+import Shared.Models.Media.Media;
 import Shared.Models.Membership.Membership;
 import Shared.Models.Membership.MembershipType;
 import Shared.Models.Message.Message;
@@ -50,14 +51,24 @@ public class ChatRpcController extends RpcControllerBase {
                             Account otherUser = otherUserOpt.get();
                             String otherUserName = otherUser.getFirstName() + (otherUser.getLastName() != null ? " " + otherUser.getLastName() : "");
                             output.setTitle(otherUserName.trim());
-                            output.setProfilePictureId(otherUser.getProfilePictureId());
+                            if(otherUser.getProfilePictureId() != null && !otherUser.getProfilePictureId().trim().isEmpty()) {
+                                Media media = daoManager.getEntityManager().find(Media.class, UUID.fromString(otherUser.getProfilePictureId()));
+                                if (media != null) {
+                                    output.setProfilePictureId(media.getFileId());
+                                }
+                            }
                         } else {
                             output.setTitle("Deleted Account");
                             output.setProfilePictureId(null);
                         }
                     } else {
                         output.setTitle(chat.getTitle());
-                        output.setProfilePictureId(chat.getProfilePictureId());
+                        if(chat.getProfilePictureId() != null && !chat.getProfilePictureId().trim().isEmpty()) {
+                        Media media = daoManager.getEntityManager().find(Media.class, UUID.fromString(chat.getProfilePictureId()));
+                        if (media != null) {
+                            output.setProfilePictureId(media.getFileId());
+                        }
+                        }
                     }
 
                     Message lastMessage = daoManager.getMessageDAO().findOneByJpql("SELECT m FROM Message m JOIN FETCH m.sender WHERE m.chat.id = :chatId AND m.isDeleted = false ORDER BY m.timestamp DESC", query -> {

@@ -6,6 +6,7 @@ import JSocket2.Core.Client.ConnectionManager;
 import JSocket2.Protocol.Transfer.*;
 import JSocket2.Protocol.Transfer.Download.DownloadFileInfoModel;
 import javafx.application.Platform;
+import javafx.scene.image.Image;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,7 +29,7 @@ public class FileDownloadService {
     private final Path cacheDir = Paths.get("ClientData/cache/avatars");
     private final Path documentCacheDir = Paths.get("ClientData/cache/documents");
     private final Map<String, CompletableFuture<File>> activeDownloads = new ConcurrentHashMap<>();
-
+    private final Map<String, Image> imageCache = new ConcurrentHashMap<>();
     private FileDownloadService() {
         try {
             Files.createDirectories(cacheDir);
@@ -85,7 +86,27 @@ public class FileDownloadService {
     private final Map<String, TransferInfo> infoCache = new ConcurrentHashMap<>();
 
     //... existing methods
+    public CompletableFuture<Image> getImage(String fileId) {
+        if (imageCache.containsKey(fileId)) {
+            return CompletableFuture.completedFuture(imageCache.get(fileId));
+        }
 
+        // getFile handles the file-level caching and downloading
+        return getFile(fileId).thenApplyAsync(file -> {
+            try {
+                // The Image constructor with background loading is efficient.
+                Image image = new Image(file.toURI().toString(), true);
+                if (!image.isError()) {
+                    // Cache the successfully loaded image for future requests.
+                    imageCache.put(fileId, image);
+                }
+                return image;
+            } catch (Exception e) {
+                System.err.println("Failed to create Image object for fileId " + fileId + ": " + e.getMessage());
+                return null; // The caller should handle the null case.
+            }
+        }, executor); // Use the background executor
+    }
     /**
      * Asynchronously retrieves metadata for a file from the server.
      * This method initiates a download to get the TransferInfo but does not download the file chunks.

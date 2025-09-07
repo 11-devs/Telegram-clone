@@ -1,8 +1,10 @@
 package Client.Controllers;
 
+import Client.Services.FileDownloadService;
 import Shared.Models.UserViewModel;
 import Shared.Models.UserType;
 import Shared.Utils.TextUtil;
+import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
@@ -266,7 +268,7 @@ public class UserCustomCellController {
         updateCellAppearance();
     }
 
-    private void unbindAll() {
+    void unbindAll() {
         if (userNameLabel != null) userNameLabel.textProperty().unbind();
         if (lastMessageLabel != null) lastMessageLabel.textProperty().unbind();
         if (messageTimeLabel != null) messageTimeLabel.textProperty().unbind();
@@ -362,22 +364,39 @@ public class UserCustomCellController {
             typeLogo.setVisible(false);
         }
     }
-
     private void updateAvatar() {
         if (avatarImage == null) return;
 
+        // Set default avatar immediately to clear the old image from the recycled cell.
+        // This prevents a "flicker" of the wrong user's avatar while the new one loads.
+        loadDefaultAvatar();
+
         String avatarPath = currentUser.getAvatarId();
         if (avatarPath != null && !avatarPath.isEmpty()) {
-            try {
-                avatarImage.setImage(new Image(avatarPath));
-            } catch (Exception e) {
-                loadDefaultAvatar();
-            }
-        } else {
-            loadDefaultAvatar();
+            loadAvatar(avatarPath);
         }
     }
-
+    private void loadAvatar(String pictureId) {
+        if (pictureId != null && !pictureId.isEmpty()) {
+            FileDownloadService.getInstance().getImage(pictureId).thenAccept(avatar -> {
+                // This check is crucial. The cell might have been recycled for another user
+                // by the time the image has loaded. We only set the image if the cell
+                // still represents the user for whom the request was made.
+                if (avatar != null && currentUser != null && pictureId.equals(currentUser.getAvatarId())) {
+                    Platform.runLater(() -> {
+                        avatarImage.setImage(avatar);
+                    });
+                }
+            }).exceptionally(e -> {
+                // Handle cases where image loading fails.
+                System.err.println("Failed to get or load profile avatar " + pictureId + ": " + e.getMessage());
+                if (currentUser != null && pictureId.equals(currentUser.getAvatarId())) {
+                    Platform.runLater(this::loadDefaultAvatar);
+                }
+                return null;
+            });
+        }
+    }
     private void loadDefaultAvatar() {
         try {
             avatarImage.setImage(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Client/images/11Devs-white.png"))));

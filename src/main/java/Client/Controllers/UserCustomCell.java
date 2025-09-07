@@ -44,16 +44,26 @@ public class UserCustomCell extends ListCell<UserViewModel> {
         if (empty || item == null) {
             setText(null);
             setGraphic(null);
+            // When a cell is cleared, make sure to unbind any listeners
+            // to prevent memory leaks and incorrect updates.
+            if (controller != null && currentUser != null) {
+                controller.unbindAll();
+            }
             currentUser = null;
         } else {
-            currentUser = item; // Storage within the cell itself
-            if (controller != null) {
-                controller.setCurrentUser(item); // Transfer to controller
-                controller.updateCell(item); // Display update
-                setGraphic(root);
-            } else {
-                System.err.println("Controller is null, skipping updateCell.");
+            // Key optimization: only run the expensive update logic if the UserViewModel has changed.
+            // This prevents reloading images and rebinding listeners when scrolling.
+            if (currentUser != item) {
+                if (controller != null) {
+                    controller.updateCell(item);
+                }
             }
+            // It's important to set the currentUser and graphic outside the if-block.
+            // `currentUser` must be up-to-date for the next `updateItem` call.
+            // `setGraphic` must be called to ensure the cell's content is visible,
+            // especially when it's being reused.
+            currentUser = item;
+            setGraphic(root);
         }
     }
 }
