@@ -372,12 +372,16 @@ public class UserCustomCellController {
         loadDefaultAvatar();
 
         String avatarPath = currentUser.getAvatarId();
-        if (avatarPath != null && !avatarPath.isEmpty()) {
+        if (currentUser.getType() == UserType.SAVED_MESSAGES){
+            Image defaultSavedMessagesAvatar = new Image(Objects.requireNonNull(getClass().getResource("/Client/images/SavedMessagesProfile.png")).toExternalForm());
+            avatarImage.setImage(defaultSavedMessagesAvatar);
+        }
+        else if (avatarPath != null && !avatarPath.isEmpty()) {
             loadAvatar(avatarPath);
         }
     }
     private void loadAvatar(String pictureId) {
-        if (pictureId != null && !pictureId.isEmpty()) {
+         if (pictureId != null && !pictureId.isEmpty()) {
             FileDownloadService.getInstance().getImage(pictureId).thenAccept(avatar -> {
                 // This check is crucial. The cell might have been recycled for another user
                 // by the time the image has loaded. We only set the image if the cell
@@ -399,6 +403,7 @@ public class UserCustomCellController {
     }
     private void loadDefaultAvatar() {
         try {
+
             avatarImage.setImage(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Client/images/11Devs-white.png"))));
         } catch (Exception e) {
             System.err.println("Failed to load default avatar image.");

@@ -1160,7 +1160,11 @@ public ChatService getChatService() {
         // Assuming UserViewModel has getAvatarId()
         String avatarId = user.getAvatarId();
 
-        if (avatarId != null && !avatarId.isEmpty()) {
+        if (user.getType() == UserType.SAVED_MESSAGES){
+            Image defaultSavedMessagesAvatar = new Image(Objects.requireNonNull(getClass().getResource("/Client/images/SavedMessagesProfile.png")).toExternalForm());
+            headerAvatarImage.setImage(defaultSavedMessagesAvatar);
+        }
+        else if (avatarId != null && !avatarId.isEmpty()) {
             fileDownloadService.getFile(avatarId).thenAccept(file -> {
                 Platform.runLater(() -> {
                     // Check if the current user is still the one we initiated this download for
@@ -3189,7 +3193,11 @@ public ChatService getChatService() {
         if (isTypingIndicatorVisible) {
             return;
         }
-        if (user.isOnline() && user.getType() == UserType.USER) {
+        if (user.getType() == UserType.SAVED_MESSAGES) {
+            chatSubtitleLabel.setText("");
+            chatSubtitleLabel.getStyleClass().setAll("chat-subtitle", "online");
+        }
+        else if (user.isOnline() && user.getType() == UserType.USER) {
             chatSubtitleLabel.setText("online");
             chatSubtitleLabel.getStyleClass().setAll("chat-subtitle", "online");
         } else if (user.getLastSeen() != null && !user.getLastSeen().isEmpty() && user.getType() == UserType.USER) {
