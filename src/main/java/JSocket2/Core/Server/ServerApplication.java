@@ -26,7 +26,6 @@ public class ServerApplication {
     public ServerSessionManager getServerSessionManager() {
         return serverSessionManager;
     }
-
     final ServerSessionManager serverSessionManager;
     private final Map<UUID, CompletableFuture<Message>> pendingRequests;
     public ServerApplication(int port, RpcControllerCollection rpcControllerCollection, ServiceCollection services) throws IOException {
@@ -35,7 +34,6 @@ public class ServerApplication {
         this.serverSocket = new ServerSocket(PORT);
         this.serverSessionManager =serviceProvider.GetService(ServerSessionManager.class);
         this.pendingRequests = new ConcurrentHashMap<>();
-
         this.rpcDispatcher = rpcControllerCollection.CreateRpcDispatcher(this.serviceProvider);
 
     }

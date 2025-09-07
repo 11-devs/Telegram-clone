@@ -63,4 +63,9 @@ public class ServerSessionManager {
             }
         }
     }
+    public boolean isUserOnline(String userId) {
+        if (userId == null) return false;
+        var list = userSessions.get(userId);
+        return list != null && !list.isEmpty();
+    }
 }

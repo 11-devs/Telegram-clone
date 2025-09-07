@@ -1,11 +1,7 @@
 package Client.Services.UI;
 
 import Client.Controllers.MainChatController;
-import Shared.Events.Models.MessageDeletedEventModel;
-import Shared.Events.Models.MessageEditedEventModel;
-import Shared.Events.Models.MessageReadEventModel;
-import Shared.Events.Models.NewMessageEventModel;
-import Shared.Events.Models.UserIsTypingEventModel;
+import Shared.Events.Models.*;
 import javafx.application.Platform;
 
 import java.util.function.Consumer;
@@ -16,7 +12,7 @@ public class ChatUIService {
     private Consumer<MessageDeletedEventModel> messageDeletedEventHandler;
     private Consumer<MessageReadEventModel> messageReadEventHandler;
     private Consumer<UserIsTypingEventModel> userTypingEventHandler;
-
+    private Consumer<UserStatusChangedEventModel> userStatusChangedEventHandler;
     public void setActiveChatController(MainChatController controller) {
         if (controller != null) {
             this.newMessageEventHandler = controller::handleIncomingMessage;
@@ -24,12 +20,14 @@ public class ChatUIService {
             this.messageDeletedEventHandler = controller::handleMessageDeleted;
             this.messageReadEventHandler = controller::handleMessageRead;
             this.userTypingEventHandler = controller::handleUserTyping;
+            this.userStatusChangedEventHandler = controller::handleUserStatusChanged;
         } else {
             this.newMessageEventHandler = null;
             this.messageEditedEventHandler = null;
             this.messageDeletedEventHandler = null;
             this.messageReadEventHandler = null;
             this.userTypingEventHandler = null;
+            this.userStatusChangedEventHandler = null;
         }
     }
 
@@ -70,6 +68,13 @@ public class ChatUIService {
             Platform.runLater(() -> userTypingEventHandler.accept(eventModel));
         } else {
             System.err.println("ChatUIService: No active chat controller to handle user typing event.");
+        }
+    }
+    public void onUserStatusChanged(UserStatusChangedEventModel eventModel) {
+        if (userStatusChangedEventHandler != null) {
+            Platform.runLater(() -> userStatusChangedEventHandler.accept(eventModel));
+        } else {
+            System.err.println("ChatUIService: No active chat controller to handle user status changed event.");
         }
     }
 }

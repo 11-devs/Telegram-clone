@@ -1,5 +1,6 @@
 package JSocket2.Protocol;
 
+import JSocket2.Core.Server.IClientLifecycleListener;
 import JSocket2.Protocol.Authentication.IAuthService;
 import JSocket2.Protocol.Authentication.InvalidAccessKeyException;
 import JSocket2.Core.Server.ServerSession;
@@ -24,8 +25,8 @@ public class ServerMessageProcessor implements IMessageProcessor {
     private final ServerSession serverSession;
     private final IAuthService authService;
     private RsaKeyManager rsaKeyManager;
-
-    public ServerMessageProcessor(MessageHandler handler, RpcDispatcher rpcDispatcher, ServerFileTransferManager fileTransferManager, ServerSession serverSession, RsaKeyManager rsaKeyManager, IAuthService authService) {
+    private final IClientLifecycleListener clientLifecycleListener;
+    public ServerMessageProcessor(MessageHandler handler, RpcDispatcher rpcDispatcher, ServerFileTransferManager fileTransferManager, ServerSession serverSession, RsaKeyManager rsaKeyManager, IAuthService authService, IClientLifecycleListener clientLifecycleListener) {
         this.gson = new Gson();
         this.messageHandler = handler;
         this.rpcDispatcher = rpcDispatcher;
@@ -33,6 +34,7 @@ public class ServerMessageProcessor implements IMessageProcessor {
         this.serverSession = serverSession;
         this.rsaKeyManager = rsaKeyManager;
         this.authService = authService;
+        this.clientLifecycleListener = clientLifecycleListener;
     }
     @Override
     public void Invoke(Message message) throws IOException {
@@ -83,6 +85,9 @@ public class ServerMessageProcessor implements IMessageProcessor {
                     continue;
                 var user = authService.Login(key);
                 serverSession.subscribeUser(user);
+                if (clientLifecycleListener != null) {
+                    clientLifecycleListener.onClientAuthenticated(serverSession);
+                }
             }
                 responseMetadata = gson.toJson(new RpcResponseMetadata(StatusCode.OK.code, "Auth was successful"));
         }

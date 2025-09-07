@@ -28,7 +28,23 @@ public class GetChatInfoOutputModel {
     private String lastMessage;
     private String lastMessageTimestamp;
     private String lastMessageSenderName;
+    private boolean isOnline;
+    private String lastSeen;
+    public boolean isOnline() {
+        return isOnline;
+    }
 
+    public void setOnline(boolean online) {
+        isOnline = online;
+    }
+
+    public String getLastSeen() {
+        return lastSeen;
+    }
+
+    public void setLastSeen(String lastSeen) {
+        this.lastSeen = lastSeen;
+    }
     //<editor-fold desc="Getters and Setters">
     public UUID getId() {
         return id;

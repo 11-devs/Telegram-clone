@@ -4,7 +4,7 @@ import Shared.Models.BaseEntity;
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
-
+import java.time.LocalDateTime;
 @Entity
 @Table(name = "accounts")
 @SQLDelete(sql = "UPDATE accounts SET is_deleted = true WHERE id = ? and version = ?")
@@ -39,6 +39,16 @@ public class Account extends BaseEntity {
     @Column(nullable = true)
     private AccountStatus status;
 
+    public LocalDateTime getLastSeen() {
+        return lastSeen;
+    }
+
+    public void setLastSeen(LocalDateTime lastSeen) {
+        this.lastSeen = lastSeen;
+    }
+
+    @Column(name = "last_seen")
+    private LocalDateTime lastSeen;
 
     public Account(String firstName,String lastName, String hashedPassword, String username, String profilePictureId, String bio) {
         this.firstName = firstName;

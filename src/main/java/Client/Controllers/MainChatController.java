@@ -18,11 +18,7 @@ import Shared.Api.Models.MediaController.CreateMediaInputModel;
 import Shared.Api.Models.MessageController.GetMessageOutputModel;
 import Shared.Api.Models.MessageController.SendMessageInputModel;
 import Shared.Api.Models.MessageController.SendMessageOutputModel;
-import Shared.Events.Models.MessageDeletedEventModel;
-import Shared.Events.Models.MessageEditedEventModel;
-import Shared.Events.Models.MessageReadEventModel;
-import Shared.Events.Models.NewMessageEventModel;
-import Shared.Events.Models.UserIsTypingEventModel;
+import Shared.Events.Models.*;
 import Shared.Models.*;
 //import Shared.Utils.SidebarUtil;
 import Shared.Models.Message.MessageType;
@@ -62,6 +58,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import javafx.util.Callback;
 import javafx.util.Duration;
 import com.jfoenix.controls.JFXToggleButton;
 import javafx.scene.input.Clipboard;
@@ -70,6 +67,7 @@ import javafx.geometry.Point2D;
 
 import java.awt.*;
 import java.io.IOException;
+import java.time.format.FormatStyle;
 import java.util.*;
 import java.io.File;
 import java.net.URI;
@@ -86,7 +84,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
+import javafx.beans.Observable;
 import javafx.scene.Node;
 
 import static JSocket2.Utils.FileUtil.getFileExtension;
@@ -811,8 +809,18 @@ public class MainChatController implements Initializable {
      * Currently loads sample data.
      */
     private void initializeData() {
-        allChatUsers = FXCollections.observableArrayList();
-        filteredChatUsers = FXCollections.observableArrayList();
+        Callback<UserViewModel, Observable[]> extractor = user -> new Observable[]{
+                user.isOnlineProperty(),
+                user.lastSeenProperty(),
+                user.lastMessageProperty(),
+                user.timeProperty(),
+                user.notificationsNumberProperty(),
+                user.isTypingProperty(),
+                user.messageStatusProperty()
+        };
+
+        allChatUsers = FXCollections.observableArrayList(extractor);
+        filteredChatUsers = FXCollections.observableArrayList(extractor);
         currentMessages = FXCollections.observableArrayList();
 
         // Load sample data for demonstration
@@ -833,11 +841,13 @@ public class MainChatController implements Initializable {
                             .userId(chat.getId().toString())
                             .avatarId(chat.getProfilePictureId())
                             .userName(chat.getTitle() != null ? chat.getTitle() : "Private Chat")
-                            .lastMessage(chat.getLastMessage()) // Use real last message
-                            .time(chat.getLastMessageTimestamp())     // Use real timestamp
+                            .lastMessage(chat.getLastMessage())
+                            .time(chat.getLastMessageTimestamp())
                             .type(chat.getType())
                             .notificationsNumber(String.valueOf(chat.getUnreadCount()))
                             .isMuted(chat.isMuted())
+                            .isOnline(chat.isOnline())
+                            .lastSeen(chat.getLastSeen())
                             .build();
                     userViewModels.add(uvm);
                 }
@@ -2826,8 +2836,11 @@ public class MainChatController implements Initializable {
             profileUsernameLabel.setVisible(false);
         }
 
-        profileStatusLabel.setText(user.isOnline() ? "online" :
-                (user.getLastSeen() != null ? user.getLastSeen() : "offline"));
+        if (user.isOnline()) {
+            profileStatusLabel.setText("online");
+        } else {
+            profileStatusLabel.setText(formatLastSeen(user.getLastSeen()));
+        }
 
         if (user.getPhoneNumber() != null && !user.getPhoneNumber().isEmpty()) {
             profilePhoneLabel.setText(user.getPhoneNumber());
@@ -2956,16 +2969,13 @@ public class MainChatController implements Initializable {
         if (isTypingIndicatorVisible) {
             return;
         }
-
         if (user.isOnline() && user.getType() == UserType.USER) {
             chatSubtitleLabel.setText("online");
-            chatSubtitleLabel.getStyleClass().setAll("chat-subtitle");
+            chatSubtitleLabel.getStyleClass().setAll("chat-subtitle", "online");
         } else if (user.getLastSeen() != null && !user.getLastSeen().isEmpty() && user.getType() == UserType.USER) {
-            chatSubtitleLabel.setText(user.getLastSeen());
+            chatSubtitleLabel.setText(formatLastSeen(user.getLastSeen()));
             chatSubtitleLabel.getStyleClass().setAll("chat-subtitle");
         } else if (user.getType() == UserType.GROUP || user.getType() == UserType.SUPERGROUP) {
-            // For groups, the subtitle is either the member count or empty.
-            // Since member count is in its own label, we can clear this one.
             chatSubtitleLabel.setText("");
             chatSubtitleLabel.getStyleClass().setAll("chat-subtitle");
         } else {
@@ -3976,5 +3986,44 @@ public class MainChatController implements Initializable {
         messagesContainer.getChildren().clear();
         // TODO (UI): Ensure all event listeners are removed to prevent memory leaks.
         // TODO (Server): Notify server of cleanup or session end if applicable.
+    }
+    public void handleUserStatusChanged(UserStatusChangedEventModel eventModel) {
+        allChatUsers.stream()
+                .filter(user -> user.getUserId().equals(eventModel.getUserId().toString()))
+                .findFirst()
+                .ifPresent(user -> {
+                    user.setOnline(eventModel.isOnline());
+                    if (!eventModel.isOnline() && eventModel.getLastSeenTimestamp() != null) {
+                        user.setLastSeen(eventModel.getLastSeenTimestamp());
+                    }
+
+                    // If the updated user is currently selected, refresh the header and right panel
+                    if (currentSelectedUser != null && currentSelectedUser.getUserId().equals(user.getUserId())) {
+                        updateChatHeader(user);
+                        if (isRightPanelVisible) {
+                            updateRightPanel(user);
+                        }
+                    }
+                });
+    }
+    private String formatLastSeen(String isoTimestamp) {
+        if (isoTimestamp == null || isoTimestamp.isBlank()) {
+            return "last seen a long time ago";
+        }
+        try {
+            LocalDateTime lastSeenTime = LocalDateTime.parse(isoTimestamp);
+            LocalDateTime now = LocalDateTime.now();
+
+            if (lastSeenTime.toLocalDate().isEqual(now.toLocalDate())) {
+                return "last seen today at " + lastSeenTime.format(DateTimeFormatter.ofPattern("HH:mm"));
+            } else if (lastSeenTime.toLocalDate().isEqual(now.toLocalDate().minusDays(1))) {
+                return "last seen yesterday at " + lastSeenTime.format(DateTimeFormatter.ofPattern("HH:mm"));
+            } else {
+                return "last seen on " + lastSeenTime.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM));
+            }
+        } catch (Exception e) {
+            System.err.println("Could not parse last seen timestamp: " + isoTimestamp);
+            return "last seen a long time ago";
+        }
     }
 }

@@ -23,6 +23,7 @@ public class ClientHandler implements Runnable {
     private ServerFileTransferManager fileTransferManager;
     private RsaKeyManager rsaKeyManager;
     private IAuthService authService;
+    private final IClientLifecycleListener clientLifecycleListener;
     private final ServiceProvider serviceProvider;
     private final Map<UUID, CompletableFuture<Message>> pendingRequests;
     private final ServerSession serverSession;
@@ -43,8 +44,9 @@ public class ClientHandler implements Runnable {
         this.pendingRequests = pendingRequests;
         this.fileTransferManager = new ServerFileTransferManager(messageHandler,this.pendingRequests);
         this.authService =  serviceProvider.GetService(IAuthService.class);
+        this.clientLifecycleListener = serviceProvider.GetService(IClientLifecycleListener.class);
         sendRsaPublicKey();
-        this.messageProcessor = new ServerMessageProcessor(this.messageHandler,this.rpcDispatcher,this.fileTransferManager, serverSession,rsaKeyManager,this.authService);
+        this.messageProcessor = new ServerMessageProcessor(this.messageHandler,this.rpcDispatcher,this.fileTransferManager, serverSession,rsaKeyManager,this.authService,this.clientLifecycleListener);
 
     }
     private void sendRsaPublicKey() throws IOException {
@@ -72,6 +74,9 @@ public class ClientHandler implements Runnable {
                 }
             } catch (IOException e) {
                 System.out.println(e.fillInStackTrace());
+                if (clientLifecycleListener != null) {
+                    clientLifecycleListener.onClientDisconnected(serverSession);
+                }
                 try {
                     fileTransferManager.deactivateTransfers();
                 } catch (IOException ex) {
@@ -81,6 +86,7 @@ public class ClientHandler implements Runnable {
             }
         }
     }
+
     public void send(Message message) throws IOException {
         messageHandler.write(message);
     }

@@ -12,6 +12,7 @@ public class ServerApplicationBuilder {
     private final RpcControllerCollection rpcControllerCollection;
     private final ServiceCollection services;
     private boolean setAuth = false;
+    private Class<? extends IClientLifecycleListener> clientLifecycleListenerType;
     public ServerApplicationBuilder(){
         services = new ServiceCollection();
         rpcControllerCollection = new RpcControllerCollection();
@@ -22,7 +23,12 @@ public class ServerApplicationBuilder {
         this.port = port;
         return this;
     }
-
+    public ServerApplicationBuilder setClientLifecycleListener(Class<? extends IClientLifecycleListener> listenerType) {
+        this.clientLifecycleListenerType = listenerType;
+        // Register the implementation as a singleton so it can be injected and resolved.
+        services.AddSingleton(IClientLifecycleListener.class, listenerType);
+        return this;
+    }
     public ServiceCollection getServices(){
         return services;
     }
