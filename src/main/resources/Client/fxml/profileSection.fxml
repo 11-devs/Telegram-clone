@@ -75,7 +75,7 @@
                                 <!-- Name and Status -->
                                 <VBox alignment="CENTER_LEFT" spacing="5.0" HBox.hgrow="ALWAYS">
                                     <children>
-                                        <Label fx:id="userNameLabel" prefHeight="30.0" prefWidth="221.0" styleClass="profile-name" text="User Name" />
+                                        <Label fx:id="displayNameLabel" prefHeight="30.0" prefWidth="221.0" styleClass="profile-name" text="User Name" />
                                         <Label fx:id="statusLabel" prefHeight="18.0" prefWidth="48.0" styleClass="profile-status" text="online">
                                             <VBox.margin>
                                                 <Insets left="2.0" />

@@ -23,7 +23,7 @@ public class ProfileSectionController {
     // FXML Fields
     @FXML private Label profileHeaderTitle;
     @FXML private ImageView profilePictureImage;
-    @FXML private Label userNameLabel;
+    @FXML private Label displayNameLabel;
     @FXML private Label statusLabel;
 
     @FXML private VBox profileFieldsSection;
@@ -97,8 +97,8 @@ public class ProfileSectionController {
         if (userData == null) return;
 
         // 1. Update common fields
-        usernameValueLabel.setText(userData.getDisplayName());
-        userNameLabel.setText(userData.getUsername());
+        usernameValueLabel.setText(userData.getUsername());
+        displayNameLabel.setText(userData.getDisplayName());
         bioLabel.setText(userData.getBio() != null && !userData.getBio().isEmpty() ? userData.getBio() : "No bio yet.");
 
         // Load real profile picture
