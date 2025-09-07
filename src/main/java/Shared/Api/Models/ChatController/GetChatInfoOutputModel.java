@@ -10,6 +10,16 @@ public class GetChatInfoOutputModel {
     private int unreadCount;
     private boolean isMuted;
 
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    private String phoneNumber;
+
     public String getUsername() {
         return username;
     }
