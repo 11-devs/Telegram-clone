@@ -1,0 +1,71 @@
+/* Client/css/newContactDialog.css */
+
+/* Reusing styles from editNameDialog.css for consistency */
+.dialog-root {
+    -fx-background-color: #202B36; /* Slightly lighter background than parent to make it pop */
+    -fx-font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    -fx-padding: 0;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 15, 0.5, 0, 0); /* Add a subtle shadow */
+}
+
+.dialog-title {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 20px;
+    -fx-font-weight: 600;
+}
+
+/* Floating labels for text fields */
+.field-label-dialog {
+    -fx-text-fill: #92A3AF;
+    -fx-font-size: 13px;
+}
+
+.field-label-dialog-active {
+    -fx-text-fill: #4FC3F7;
+    -fx-font-size: 13px;
+}
+
+/* Text fields with bottom border */
+.dialog-text-field {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: 400;
+    -fx-padding: 2px 0px;
+    -fx-border-width: 0 0 1px 0;
+    -fx-border-color: #555555;
+    -fx-background-insets: 0;
+    -fx-prompt-text-fill: #72879B;
+}
+
+.dialog-text-field:focused {
+    -fx-border-color: transparent transparent #4FC3F7 transparent;
+    -fx-highlight-fill: #4FC3F7;
+}
+
+/* Icons next to text fields */
+.field-icon {
+    -fx-opacity: 0.6;
+}
+
+/* Label for displaying error messages */
+.error-label {
+    -fx-text-fill: #E53935; /* Standard error red */
+    -fx-font-size: 12px;
+}
+
+/* Action buttons at the bottom */
+.dialog-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #4FC3F7;
+    -fx-font-size: 14px;
+    -fx-padding: 8px 15px;
+    -fx-cursor: hand;
+}
+
+.dialog-button:hover {
+    -fx-background-color: rgba(79, 195, 247, 0.1);
+    -fx-background-radius: 5px;
+}

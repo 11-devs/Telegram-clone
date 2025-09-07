@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.SVGPath?>
+
+<VBox prefHeight="650.0" prefWidth="400.0" styleClass="settings-sub-section" stylesheets="@../css/settings.css, @../css/contactsSection.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.Controllers.ContactsSectionController">
+    <children>
+        <!-- Header -->
+        <HBox alignment="CENTER_LEFT" styleClass="title-bar">
+            <padding>
+                <Insets bottom="12.0" left="20.0" right="15.0" top="12.0" />
+            </padding>
+            <children>
+                <Label styleClass="contacts-title" text="Contacts" />
+                <Region HBox.hgrow="ALWAYS" />
+                <Button fx:id="sortButton" styleClass="icon-button">
+                    <graphic>
+                        <SVGPath content="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z" styleClass="svg-icon" />
+                    </graphic>
+                </Button>
+            </children>
+        </HBox>
+          <HBox alignment="CENTER_LEFT" style="-fx-background-color: transparent;" styleClass="search-container">
+              <padding>
+                  <Insets bottom="6.0" left="12.0" right="12.0" top="6.0" />
+              </padding>
+              <VBox.margin>
+                  <Insets bottom="10.0" left="15.0" right="15.0" top="10.0" />
+              </VBox.margin>
+              <children>
+                  <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true" styleClass="search-icon">
+                      <image>
+                          <Image url="@../images/search-icon.png" />
+                      </image>
+                  </ImageView>
+                  <TextField fx:id="searchContactsField" prefHeight="31.0" prefWidth="366.0" promptText="Search" styleClass="search-field" HBox.hgrow="ALWAYS" />
+              </children>
+          </HBox>
+
+        <!-- Search and List -->
+        <VBox style="-fx-border-color: dark gray; -fx-border-width: 1 0 0 0;" VBox.vgrow="ALWAYS">
+            <children>
+                <ListView fx:id="contactsListView" styleClass="contacts-list" VBox.vgrow="ALWAYS" />
+            </children>
+        </VBox>
+
+        <!-- Footer -->
+        <VBox fx:id="footer" alignment="CENTER" spacing="0.0" styleClass="contacts-footer">
+            <children>
+                <HBox alignment="CENTER_LEFT" prefHeight="50.0" style="-fx-border-color: gray; -fx-border-width: 1 0 0 0;" styleClass="border-top-enabled">
+                    <children>
+                        <Button fx:id="addContactButton" mnemonicParsing="false" onAction="#handleNewContact" styleClass="footer-action-button" text="Add Contact" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Button fx:id="closeButton" mnemonicParsing="false" onAction="#handleBack" styleClass="footer-action-button" text="Close" />
+                    </children>
+                    <padding>
+                        <Insets left="15.0" right="15.0" />
+                    </padding>
+                </HBox>
+            </children>
+        </VBox>
+    </children>
+</VBox>

@@ -1,0 +1,133 @@
+/* Client/css/contactsSection.css */
+
+/* The root container inherits base styling from settings.css */
+.settings-sub-section {
+    -fx-background-color: #17212B;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+}
+
+/* Header styles */
+.title-bar {
+    -fx-effect: none; /* remove shadow from settings.css */
+    -fx-padding: 15px 20px;
+}
+
+.contacts-title {
+    -fx-text-fill: white;
+    -fx-font-size: 20px;
+    -fx-font-weight: 500;
+}
+
+.svg-icon {
+    -fx-fill: #92A3AF;
+}
+
+/* Search container and field, adapted from image */
+.search-container {
+    -fx-background-color: transparent;
+    -fx-background-radius: 18px;
+    -fx-border-color: transparent;
+    -fx-padding: 6px 12px;
+}
+
+.search-container .search-icon {
+    -fx-opacity: 0.6;
+}
+
+.search-field {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: #FFFFFF;
+    -fx-prompt-text-fill: #92A3AF;
+    -fx-font-size: 14px;
+    -fx-font-weight: 400;
+    -fx-background-insets: 0;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.search-field:focused {
+    -fx-effect: null;
+}
+
+/* Contacts List */
+.contacts-list {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-selection-bar: #2B5278; /* Color for selected item */
+    -fx-selection-bar-text: white;
+}
+
+.contacts-list .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 0; /* Let contactCell.css handle padding */
+}
+
+.contacts-list .list-cell:hover {
+    -fx-background-color: #232E3A;
+}
+
+.contacts-list .list-cell:selected {
+    -fx-background-color: #2B5278; /* Consistent selected color */
+}
+
+/* Scrollbar styling */
+.contacts-list .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-pref-width: 8px;
+    -fx-padding: 2px;
+}
+
+.contacts-list .scroll-bar:vertical .track {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-background-radius: 4px;
+    -fx-border-radius: 4px;
+}
+
+.contacts-list .scroll-bar:vertical .thumb {
+    -fx-background-color: rgba(146, 163, 175, 0.3);
+    -fx-background-insets: 0;
+    -fx-background-radius: 4px;
+}
+
+.contacts-list .scroll-bar:vertical .thumb:hover {
+    -fx-background-color: rgba(146, 163, 175, 0.5);
+}
+
+.contacts-list .scroll-bar:vertical .increment-button,
+.contacts-list .scroll-bar:vertical .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.contacts-list .scroll-bar .increment-arrow,
+.contacts-list .scroll-bar .decrement-arrow {
+    -fx-shape: "";
+    -fx-padding: 0;
+}
+
+/* Footer Section */
+.contacts-footer {
+    -fx-padding: 0;
+}
+
+.footer-separator {
+    -fx-background-color: #2C3E50;
+    -fx-pref-height: 1px;
+}
+
+.footer-action-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #4FC3F7; /* Telegram accent blue */
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+    -fx-padding: 8px 10px;
+    -fx-cursor: hand;
+    -fx-background-radius: 5px;
+}
+
+.footer-action-button:hover {
+    -fx-background-color: rgba(79, 195, 247, 0.1); /* Subtle blue hover */
+}
