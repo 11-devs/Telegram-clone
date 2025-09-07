@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.SVGPath?>
+<?import javafx.scene.layout.StackPane?> <!-- ADD THIS IMPORT -->
+
+<VBox fx:id="dialogRoot" alignment="TOP_CENTER" prefHeight="600.0" prefWidth="420.0" spacing="15.0" styleClass="dialog-root" stylesheets="@../css/addMembersDialog.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.Controllers.AddMembersDialogController">
+    <padding>
+        <Insets bottom="15.0" left="20.0" right="20.0" top="15.0" />
+    </padding>
+    <children>
+        <!-- Header -->
+        <HBox alignment="CENTER_LEFT" prefHeight="25.0">
+            <children>
+                <Label styleClass="dialog-title" text="Add Members" />
+                <Region HBox.hgrow="ALWAYS" />
+                <Label fx:id="selectedCountLabel" styleClass="selected-count-label" text="0 / 200,000" />
+            </children>
+        </HBox>
+
+        <!-- Search Bar -->
+        <HBox alignment="CENTER_LEFT" styleClass="search-bar-container">
+            <children>
+                <SVGPath content="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" styleClass="search-icon" />
+                <TextField fx:id="searchField" promptText="Search" styleClass="search-field" HBox.hgrow="ALWAYS" />
+            </children>
+        </HBox>
+
+        <!-- Selected Members Horizontal ScrollPane (Initially hidden) -->
+        <ScrollPane fx:id="selectedMembersScrollPane" fitToHeight="true" hbarPolicy="AS_NEEDED" vbarPolicy="NEVER" managed="false" styleClass="selected-members-scrollpane" visible="false">
+            <content>
+                <HBox fx:id="selectedMembersHBox" alignment="CENTER_LEFT" spacing="8.0">
+                    <padding>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                    </padding>
+                </HBox>
+            </content>
+        </ScrollPane>
+
+        <!-- Separator -->
+        <Separator fx:id="listSeparator" managed="false" visible="false" />
+
+        <!-- Contacts List & Empty State Container (WRAPPER) -->
+        <StackPane VBox.vgrow="ALWAYS">
+            <children>
+                <ListView fx:id="contactsListView" styleClass="contacts-list-view" />
+                <!-- NEW: Empty State Message -->
+                <VBox fx:id="emptyStateContainer" alignment="CENTER" spacing="10.0" visible="false" managed="false">
+                    <children>
+                        <ImageView fitHeight="64.0" fitWidth="64.0" pickOnBounds="true" preserveRatio="true">
+                            <image>
+                                <Image url="@../images/empty-list-icon.png" /> <!-- Placeholder image, ensure it exists -->
+                            </image>
+                        </ImageView>
+                        <Label styleClass="empty-state-title" text="No contacts found" />
+                        <Label styleClass="empty-state-subtitle" text="Add new contacts to start a group chat." textAlignment="CENTER" wrapText="true" />
+                    </children>
+                    <padding><Insets bottom="20.0" left="20.0" right="20.0" top="20.0" /></padding>
+                </VBox>
+            </children>
+        </StackPane>
+
+        <!-- Footer Buttons -->
+        <HBox alignment="CENTER_RIGHT" spacing="10.0">
+            <children>
+                <Button fx:id="backButton" mnemonicParsing="false" onAction="#handleBack" styleClass="dialog-button" text="CANCEL" />
+                <Button fx:id="createButton" defaultButton="true" mnemonicParsing="false" onAction="#handleCreate" styleClass="dialog-button, create-button" text="CREATE" />
+            </children>
+            <VBox.margin>
+                <Insets top="5.0" />
+            </VBox.margin>
+        </HBox>
+    </children>
+</VBox>
