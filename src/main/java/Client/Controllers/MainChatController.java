@@ -514,7 +514,7 @@ public ChatService getChatService() {
                     if (!user.isMuted()) {
                         SystemNotificationUtil.showNotification(user.getUserName(), notificationMessage);
                     }
-                    reorderAndRefreshChatList(user);
+                    sortAndRefreshChatList();
                 });
     }
 
@@ -558,7 +558,7 @@ public ChatService getChatService() {
                     // Update with the clean new content. The cell controller will format it.
                     user.setLastMessage(eventModel.getNewContent());
                     user.setTime(eventModel.getTimestamp());
-                    reorderAndRefreshChatList(user);
+                    sortAndRefreshChatList();
                 });
     }
 
@@ -588,7 +588,7 @@ public ChatService getChatService() {
                         user.setLastMessage(eventModel.getNewLastMessageContent());
                         user.setTime(eventModel.getNewLastMessageTimestamp());
                     }
-                    reorderAndRefreshChatList(user);
+                    sortAndRefreshChatList();
                 });
     }
 
@@ -620,7 +620,7 @@ public ChatService getChatService() {
                 .ifPresent(user -> {
                     // CORRECT: Update the message status to 'read' (double tick)
                     user.setMessageStatus("read");
-                    reorderAndRefreshChatList(user);
+                    sortAndRefreshChatList();
                 });
     }
 
@@ -654,6 +654,7 @@ public ChatService getChatService() {
 
     /**
      * Updates the status and timestamp of a specific message bubble.
+     * This version is specifically designed to work with IMAGE-BASED status icons (ImageView).
      *
      * @param messageNode The HBox container of the message to update.
      * @param status      The new status ("sending", "delivered", "read", "failed").
@@ -662,33 +663,68 @@ public ChatService getChatService() {
     private void updateMessageStatus(HBox messageNode, String status, String time) {
         if (messageNode == null) return;
 
-        // The VBox bubble is the first (and only) child for outgoing messages
+        // The VBox bubble is the first child for outgoing messages
         if (messageNode.getChildren().isEmpty() || !(messageNode.getChildren().getFirst() instanceof VBox bubble)) {
             return;
         }
-        // The HBox timeContainer is the last child of the bubble
-        if (bubble.getChildren().isEmpty() || !(bubble.getChildren().getLast() instanceof HBox timeContainer)) {
-            return;
+
+        // The HBox timeContainer is usually the last child of the bubble.
+        // We find it by searching for the last HBox in the bubble's children.
+        Optional<HBox> timeContainerOpt = bubble.getChildren().stream()
+                .filter(n -> n instanceof HBox)
+                .map(n -> (HBox) n)
+                .reduce((first, second) -> second); // Gets the last HBox
+
+        if (timeContainerOpt.isEmpty()) return;
+        HBox timeContainer = timeContainerOpt.get();
+
+        // --- 1. Update Time (if provided) ---
+        if (time != null) {
+            // Find the time Label (which is not a status icon) and update its text
+            timeContainer.getChildren().stream()
+                    .filter(n -> n instanceof Label && !n.getStyleClass().contains("edited-indicator"))
+                    .map(n -> (Label) n)
+                    .findFirst()
+                    .ifPresent(timeLabel -> timeLabel.setText(time));
         }
 
-        // Update time if provided
-        if (time != null && !timeContainer.getChildren().isEmpty() && timeContainer.getChildren().getFirst() instanceof Label timeLabel) {
-            timeLabel.setText(time);
-        }
+        // --- 2. Update Status Icon ---
+        // Get the correct image path for the new status
+        String imagePath = switch (status.toLowerCase()) {
+            case "sending" -> "/Client/images/status/sending.png";
+            case "sent", "delivered" -> "/Client/images/status/sent.png";
+            case "read" -> "/Client/images/status/read.png";
+            default -> null; // For "failed" or other statuses, we show no icon.
+        };
 
-        // Find the status label
-        Label statusLabel = null;
-        for (var node : timeContainer.getChildren()) {
-            if (node.getStyleClass().contains("message-status")) {
-                statusLabel = (Label) node;
-                break;
+        // Find the existing status icon ImageView
+        Optional<ImageView> existingIconOpt = timeContainer.getChildren().stream()
+                .filter(n -> n instanceof ImageView && n.getStyleClass().contains("status-icon-image"))
+                .map(n -> (ImageView) n)
+                .findFirst();
+
+        if (imagePath != null) {
+            // If the new status has an icon (sending, sent, read)
+            try {
+                Image newStatusImage = new Image(Objects.requireNonNull(getClass().getResource(imagePath)).toExternalForm());
+                if (existingIconOpt.isPresent()) {
+                    // If an icon already exists, just update its image
+                    existingIconOpt.get().setImage(newStatusImage);
+                } else {
+                    // This case shouldn't happen if create...Bubble methods work correctly, but as a fallback:
+                    // If no icon exists, create a new one and add it.
+                    ImageView statusIcon = new ImageView(newStatusImage);
+                    statusIcon.setFitHeight(16);
+                    statusIcon.setPreserveRatio(true);
+                    statusIcon.getStyleClass().add("status-icon-image");
+                    timeContainer.getChildren().add(statusIcon);
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to load or update status icon: " + imagePath);
             }
-        }
-
-        if (statusLabel != null) {
-            statusLabel.setText(getStatusIcon(status));
-            statusLabel.getStyleClass().removeAll("sending", "sent", "delivered", "read", "failed");
-            statusLabel.getStyleClass().add(status);
+        } else {
+            // If the new status has NO icon (e.g., "failed"), remove the existing icon if it's there.
+            existingIconOpt.ifPresent(imageView -> timeContainer.getChildren().remove(imageView));
         }
     }
 
@@ -705,35 +741,31 @@ public ChatService getChatService() {
     }
 
     /**
-     * Refreshes the chat list to reflect the latest message.
-     * A future enhancement could be to move the chat to the top of the list.
-     * @param user The UserViewModel of the chat that was updated.
+     * Sorts the master chat list based on the latest message time and then
+     * explicitly refreshes the ListView to reflect all changes, including internal
+     * property changes like message status.
      */
-    private void reorderAndRefreshChatList(UserViewModel user) {
+    private void sortAndRefreshChatList() {
         Platform.runLater(() -> {
-            // 1. Preserve the current selection to prevent UI jumps.
-            UserViewModel previouslySelectedUser = chatListView.getSelectionModel().getSelectedItem();
-
-            // 2. Sort the master list based on the latest message time. This is more efficient.
+            UserViewModel selected = chatListView.getSelectionModel().getSelectedItem();
             allChatUsers.sort((u1, u2) -> {
                 try {
                     LocalDateTime t1 = (u1.getTime() != null && !u1.getTime().isEmpty()) ? LocalDateTime.parse(u1.getTime()) : LocalDateTime.MIN;
                     LocalDateTime t2 = (u2.getTime() != null && !u2.getTime().isEmpty()) ? LocalDateTime.parse(u2.getTime()) : LocalDateTime.MIN;
-                    return t2.compareTo(t1); // Newest first
+                    return t2.compareTo(t1);
                 } catch (Exception e) {
-                    return 0; // Should not happen with consistent ISO format
+                    return 0;
                 }
             });
 
-            // 3. Re-apply the current search filter to update the displayed list correctly.
             performSearch(searchField.getText());
 
-            // 4. Restore the selection. The ListView will find the object at its new index.
-            if (previouslySelectedUser != null) {
-                chatListView.getSelectionModel().select(previouslySelectedUser);
+            if (selected != null) {
+                chatListView.getSelectionModel().select(selected);
             }
 
-            // 5. Scroll the list view to the top to show the newly arrived chat.
+            chatListView.refresh();
+
             chatListView.scrollTo(0);
         });
     }
@@ -2031,20 +2063,14 @@ public ChatService getChatService() {
                 file.getAbsolutePath()
         );
 
-        // Create a temporary ID to track the message bubble during upload
         String tempId = UUID.randomUUID().toString();
-
-        // Get reply info for the temporary bubble if it exists
         String repliedToSenderName = (activeReplyInfo != null) ? activeReplyInfo.senderName : null;
         String repliedToMessageContent = (activeReplyInfo != null) ? activeReplyInfo.content : null;
 
-        // Add a temporary bubble showing "sending" status, now with potential reply headers
         HBox messageNode = addDocumentMessageBubble(docInfo, true, getCurrentTime(), "sending", repliedToSenderName, repliedToMessageContent, null);
         VBox bubble = (VBox) messageNode.getChildren().getFirst();
         temporaryMessageNodes.put(tempId, messageNode);
 
-
-        // Get the progress indicator from the bubble's properties
         ProgressIndicator progressIndicator = (ProgressIndicator) bubble.getProperties().get("progressIndicator");
 
         var app = connectionManager.getClient();
@@ -2052,11 +2078,9 @@ public ChatService getChatService() {
 
         backgroundExecutor.submit(() -> {
             try {
-                // Step 1: Initiate upload and get a File ID from the server
                 FileInfoModel info = app.getFileTransferManager().initiateUpload(file);
                 String fileId = info.FileId;
 
-                // Step 2: Create a media entry in the database via RPC
                 CreateMediaInputModel createMediaInput = new CreateMediaInputModel(
                         UUID.fromString(fileId),
                         file.getName(),
@@ -2071,7 +2095,6 @@ public ChatService getChatService() {
                 }
                 UUID mediaId = createMediaResponse.getPayload();
 
-                // Step 3: Set up a progress listener to update the UI
                 IProgressListener listener = (transferred, total) -> {
                     double progress = (total > 0) ? ((double) transferred / total) : 0;
                     Platform.runLater(() -> {
@@ -2079,24 +2102,20 @@ public ChatService getChatService() {
                     });
                 };
 
-                // Step 4: Create and start the upload task
                 UploadTask uploadTask = new UploadTask(app.getFileTransferManager(), info, file, listener);
                 app.registerTask(fileId, uploadTask);
 
                 uploadTask.setOnSucceeded(e -> {
                     app.unregisterTask(fileId);
 
-                    // Step 5: Once upload is complete, send the media message via RPC
                     SendMessageInputModel messageInput = new SendMessageInputModel();
                     messageInput.setChatId(UUID.fromString(currentSelectedUser.getUserId()));
                     messageInput.setMessageType(MessageType.MEDIA);
                     messageInput.setMediaId(mediaId);
 
-                    // BUGFIX: Add reply information if present when attaching a file
                     if (activeReplyInfo != null) {
                         messageInput.setRepliedToMessageId(activeReplyInfo.messageId);
                     }
-                    // BUGFIX: Close reply preview after sending the attachment
                     closeReplyPreview();
 
                     Task<RpcResponse<SendMessageOutputModel>> sendMessageTask = chatService.sendMessage(messageInput);
@@ -2105,19 +2124,20 @@ public ChatService getChatService() {
                         HBox finalMessageNode = temporaryMessageNodes.remove(tempId);
                         if (finalMessageNode != null) {
                             if (smResponse.getStatusCode() == StatusCode.OK) {
-                                // Update the message bubble with the final "sent" status and server timestamp
+                                VBox finalBubble = (VBox) finalMessageNode.getChildren().getFirst();
                                 Platform.runLater(() -> {
                                     updateMessageStatus(finalMessageNode, "sent", LocalDateTime.parse(smResponse.getPayload().getTimestamp()).format(DateTimeFormatter.ofPattern("HH:mm")));
-                                    VBox finalBubble = (VBox) finalMessageNode.getChildren().getFirst();
                                     finalBubble.getProperties().put("messageId", smResponse.getPayload().getMessageId());
                                     finalBubble.getProperties().put("messageTimestamp", LocalDateTime.parse(smResponse.getPayload().getTimestamp()));
-
                                     finalizeDocumentBubbleDisplay(finalBubble);
 
+                                    currentSelectedUser.setLastMessage(docInfo.getFileName());
+                                    currentSelectedUser.setTime(smResponse.getPayload().getTimestamp());
+                                    currentSelectedUser.setMessageStatus("sent");
+                                    sortAndRefreshChatList();
                                 });
                             } else {
                                 Platform.runLater(() -> updateMessageStatus(finalMessageNode, "failed", null));
-                                reorderAndRefreshChatList(currentSelectedUser);
                             }
                         }
                     });
@@ -2718,14 +2738,10 @@ public ChatService getChatService() {
             editMessage(messageId, text);
             closeReplyPreview();
         } else {
-            HBox messageNode;
-            if (activeReplyInfo != null) {
-                messageNode = addMessageBubble(text, true, getCurrentTime(), "sending", null, false,
-                        activeReplyInfo.senderName, activeReplyInfo.content, null);
-            } else {
-                messageNode = addMessageBubble(text, true, getCurrentTime(), "sending", null, false,
-                        null, null, null);
-            }
+            HBox messageNode = addMessageBubble(text, true, getCurrentTime(), "sending", null, false,
+                    (activeReplyInfo != null) ? activeReplyInfo.senderName : null,
+                    (activeReplyInfo != null) ? activeReplyInfo.content : null,
+                    null);
 
             SendMessageInputModel input = new SendMessageInputModel();
             input.setChatId(UUID.fromString(currentSelectedUser.getUserId()));
@@ -2742,7 +2758,6 @@ public ChatService getChatService() {
             sendMessageTask.setOnSucceeded(event -> {
                 RpcResponse<SendMessageOutputModel> response = sendMessageTask.getValue();
                 if (response.getStatusCode() == StatusCode.OK) {
-                    System.out.println("Message sent successfully. ID: " + response.getPayload().getMessageId());
                     LocalDateTime serverTimestamp = LocalDateTime.parse(response.getPayload().getTimestamp());
                     String formattedTime = serverTimestamp.format(DateTimeFormatter.ofPattern("HH:mm"));
 
@@ -2754,10 +2769,10 @@ public ChatService getChatService() {
 
                         currentSelectedUser.setLastMessage(text);
                         currentSelectedUser.setTime(response.getPayload().getTimestamp());
-                        reorderAndRefreshChatList(currentSelectedUser);
+                        currentSelectedUser.setMessageStatus("sent");
+                        sortAndRefreshChatList();
                     });
                 } else {
-                    System.err.println("Failed to send message: " + response.getMessage());
                     Platform.runLater(() -> {
                         updateMessageStatus(messageNode, "failed", null);
                         showTemporaryNotification("Failed to send message: " + response.getMessage() + "\n");
@@ -2766,21 +2781,22 @@ public ChatService getChatService() {
             });
 
             sendMessageTask.setOnFailed(event -> {
-                sendMessageTask.getException().printStackTrace();
                 Platform.runLater(() -> {
                     updateMessageStatus(messageNode, "failed", null);
                     showTemporaryNotification("Error sending message.\n");
                 });
+                sendMessageTask.getException().printStackTrace();
             });
 
             new Thread(sendMessageTask).start();
-
         }
 
         messageInputField.clear();
         updateSendButtonState();
-        Platform.runLater(() -> messageInputField.requestFocus());
-        Platform.runLater(() -> Platform.runLater(this::scrollToBottom));
+        Platform.runLater(() -> {
+            messageInputField.requestFocus();
+            scrollToBottom();
+        });
     }
 
     /**
@@ -4296,7 +4312,7 @@ public ChatService getChatService() {
                     }
 
                     if (lastUpdatedUser != null) {
-                        reorderAndRefreshChatList(lastUpdatedUser);
+                        sortAndRefreshChatList();
                     }
                 } else {
                     showTemporaryNotification("Failed to forward message: " + response.getMessage() + "\n");
