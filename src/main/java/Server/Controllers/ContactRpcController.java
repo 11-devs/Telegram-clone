@@ -23,21 +23,25 @@ public class ContactRpcController extends RpcControllerBase {
         UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
         Account owner = daoManager.getAccountDAO().findById(currentUserId);
         if (owner == null) {
-            return BadRequest("Owner account not found.");
+            return Forbidden("Owner account not found or invalid session.");
         }
 
-        Account contactUser = daoManager.getAccountDAO().findById(model.getContactId());
+        if (model.getPhoneNumber() == null || model.getPhoneNumber().trim().isEmpty()) {
+            return BadRequest("Phone number cannot be empty.");
+        }
+
+        Account contactUser = daoManager.getAccountDAO().findByField("phoneNumber", model.getPhoneNumber());
         if (contactUser == null) {
-            return BadRequest("ContactViewModel user account not found.");
+            return BadRequest("User with the specified phone number not found.");
         }
 
-        if (Objects.equals(currentUserId, model.getContactId())) {
-            return BadRequest("Cannot add yourself as a contact.");
+        if (owner.getId().equals(contactUser.getId())) {
+            return BadRequest("You cannot add yourself as a contact.");
         }
 
         List<Contact> existingContacts = daoManager.getContactDAO().findAllByField("owner.id", currentUserId);
         boolean alreadyExists = existingContacts.stream()
-                .anyMatch(c -> c.getContact().getId().equals(model.getContactId()));
+                .anyMatch(c -> c.getContact().getId().equals(contactUser.getId()));
 
         if (alreadyExists) {
             return BadRequest("This user is already in your contacts.");
@@ -46,7 +50,12 @@ public class ContactRpcController extends RpcControllerBase {
         Contact newContact = new Contact();
         newContact.setOwner(owner);
         newContact.setContact(contactUser);
-        newContact.setSavedName(model.getSavedName());
+
+        String savedName = model.getSavedName();
+        if (savedName == null || savedName.trim().isEmpty()) {
+            savedName = contactUser.getFirstName() + (contactUser.getLastName() != null ? " " + contactUser.getLastName() : "");
+        }
+        newContact.setSavedName(savedName.trim());
 
         daoManager.getContactDAO().insert(newContact);
 
@@ -65,8 +74,9 @@ public class ContactRpcController extends RpcControllerBase {
 
                     // If a custom name is saved, use it. Otherwise, use the contact's actual name.
                     if (contact.getSavedName() != null && !contact.getSavedName().trim().isEmpty()) {
-                        firstName = contact.getSavedName();
-                        lastName = ""; // Custom name is a single field
+                        String[] names = contact.getSavedName().split(" ", 2);
+                        firstName = names[0];
+                        lastName = names.length > 1 ? names[1] : "";
                     } else {
                         firstName = contactUser.getFirstName();
                         lastName = contactUser.getLastName();
@@ -120,10 +130,10 @@ public class ContactRpcController extends RpcControllerBase {
         String firstName;
         String lastName;
 
-        // If a custom name is saved, use it. Otherwise, use the contact's actual name.
         if (contact.getSavedName() != null && !contact.getSavedName().trim().isEmpty()) {
-            firstName = contact.getSavedName();
-            lastName = ""; // Custom name is a single field
+            String[] names = contact.getSavedName().split(" ", 2);
+            firstName = names[0];
+            lastName = names.length > 1 ? names[1] : "";
         } else {
             firstName = contactUser.getFirstName();
             lastName = contactUser.getLastName();

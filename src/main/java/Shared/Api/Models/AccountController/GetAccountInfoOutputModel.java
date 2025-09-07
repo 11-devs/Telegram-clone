@@ -2,7 +2,10 @@ package Shared.Api.Models.AccountController;
 
 import Shared.Models.Account.AccountStatus;
 
+import java.util.UUID;
+
 public class GetAccountInfoOutputModel {
+    private UUID id;
     private String firstName;
     private String lastName;
     private String username;
@@ -11,6 +14,9 @@ public class GetAccountInfoOutputModel {
     private String profilePictureMediaId;
     private String profilePictureFileId;
     private AccountStatus status;
+
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
     public String getFirstName() { return firstName; }
     public void setFirstName(String firstName) { this.firstName = firstName; }

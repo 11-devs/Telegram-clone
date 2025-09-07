@@ -5,6 +5,8 @@ import Client.AppConnectionManager;
 import Client.RpcCaller;
 import JSocket2.Protocol.Rpc.RpcResponse;
 import JSocket2.Protocol.StatusCode;
+import Shared.Api.Models.AccountController.GetAccountInfoOutputModel;
+import Shared.Utils.AlertUtil;
 import Shared.Utils.AnimationUtil;
 import Shared.Utils.DeviceUtil;
 import javafx.animation.TranslateTransition;
@@ -21,6 +23,7 @@ import javafx.util.Duration;
 import java.io.IOException;
 import java.util.Map;
 
+import static Shared.Utils.SceneUtil.changeScene;
 import static Shared.Utils.SceneUtil.changeSceneWithSameSize;
 
 public class ResetAccountController {
@@ -113,7 +116,7 @@ public class ResetAccountController {
                             if (AccessKeyManager.LoginWithAccessKey(accessKey, AppConnectionManager.getInstance().getConnectionManager().getClient()) == StatusCode.OK) {
                                 setStatusMessage("Account reset and logged in successfully!", false);
                                 System.out.println("Account reset and logged in successfully.");
-                                changeSceneWithSameSize(root, "/Client/fxml/mainChat.fxml");
+                                fetchUserInfoAndProceedToMainChat();
                             } else {
                                 setStatusMessage("Account reset, but failed to log in automatically.", true);
                                 System.err.println("Account reset, but failed to log in automatically.");
@@ -161,5 +164,37 @@ public class ResetAccountController {
         statusLabel.setText("");
         statusLabel.pseudoClassStateChanged(errorPseudoClass, false);
         statusLabel.setStyle("");
+    }
+
+    private void fetchUserInfoAndProceedToMainChat() {
+        Task<RpcResponse<GetAccountInfoOutputModel>> getAccountInfoTask = new Task<>() {
+            @Override
+            protected RpcResponse<GetAccountInfoOutputModel> call() throws Exception {
+                return rpcCaller.getAccountInfo();
+            }
+        };
+
+        getAccountInfoTask.setOnSucceeded(event -> {
+            RpcResponse<GetAccountInfoOutputModel> response = getAccountInfoTask.getValue();
+            if (response.getStatusCode() == StatusCode.OK) {
+                AppConnectionManager.getInstance().setCurrentUserInfo(response.getPayload());
+                Platform.runLater(() -> changeScene(root, "/Client/fxml/mainChat.fxml", (MainChatController controller) -> {}, true));
+            } else {
+                Platform.runLater(() -> {
+                    AlertUtil.showError("Failed to load user profile. Please try logging in again. Reason: " + response.getMessage());
+                    changeSceneWithSameSize(root, "/Client/fxml/phoneNumber.fxml");
+                });
+            }
+        });
+
+        getAccountInfoTask.setOnFailed(event -> {
+            getAccountInfoTask.getException().printStackTrace();
+            Platform.runLater(() -> {
+                AlertUtil.showError("An unexpected error occurred while fetching your profile. Please check your connection.");
+                changeSceneWithSameSize(root, "/Client/fxml/phoneNumber.fxml");
+            });
+        });
+
+        new Thread(getAccountInfoTask).start();
     }
 }

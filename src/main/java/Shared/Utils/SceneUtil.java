@@ -99,6 +99,7 @@ public class SceneUtil {
             throw new RuntimeException("Error loading scene with same size: " + fxmlPath, e);
         }
     }
+
     public static <T> void changeSceneWithSameSize(Node node, String fxmlPath, Consumer<T> dataUpdater) {
         try {
             FXMLLoader loader = new FXMLLoader(SceneUtil.class.getResource(fxmlPath));
@@ -122,6 +123,7 @@ public class SceneUtil {
             throw new RuntimeException("Error loading scene with same size: " + fxmlPath, e);
         }
     }
+
     public static <T> Stage createDialog(String fxmlPath, Stage parentStage, Object parentController, Object data, String title) throws IOException {
         // Load the FXML file
         URL fxmlUrl = SceneUtil.class.getResource(fxmlPath);
@@ -171,5 +173,54 @@ public class SceneUtil {
         }
 
         return dialogStage;
+    }
+
+    public static <T extends Parent> T loadSubScene(String fxmlPath, Object parentController, Stage dialogStage, Object data) {
+        try {
+            URL fxmlUrl = SceneUtil.class.getResource(fxmlPath);
+            if (fxmlUrl == null) {
+                System.err.println("FXML file not found: " + fxmlPath);
+                return null;
+            }
+
+            FXMLLoader loader = new FXMLLoader(fxmlUrl);
+            T subSectionRoot = loader.load();
+            Object subController = loader.getController();
+
+            if (subController != null) {
+                // Dynamically set properties on the sub-controller using reflection
+                try {
+                    // Set Dialog Stage
+                    subController.getClass().getMethod("setDialogStage", Stage.class).invoke(subController, dialogStage);
+                } catch (NoSuchMethodException ignored) { /* Method not required */ }
+
+                try {
+                    // Set Parent Controller
+                    subController.getClass().getMethod("setParentController", parentController.getClass()).invoke(subController, parentController);
+                } catch (NoSuchMethodException e) {
+                    try {
+                        subController.getClass().getMethod("setParentController", Object.class).invoke(subController, parentController);
+                    } catch (NoSuchMethodException ignored) { /* Method not required */ }
+                }
+
+                try {
+                    // Set Data
+                    if (data != null) {
+                        subController.getClass().getMethod("setData", data.getClass()).invoke(subController, data);
+                    }
+                } catch (NoSuchMethodException e) {
+                    try {
+                        subController.getClass().getMethod("setData", Object.class).invoke(subController, data);
+                    } catch (NoSuchMethodException ignored) { /* Method not required */ }
+                }
+            }
+
+            return subSectionRoot;
+
+        } catch (Exception e) {
+            System.err.println("Error loading sub-scene: " + fxmlPath);
+            e.printStackTrace();
+            return null;
+        }
     }
 }

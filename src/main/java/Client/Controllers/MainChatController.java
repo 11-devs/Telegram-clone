@@ -3520,7 +3520,7 @@ public ChatService getChatService() {
     }
 
     /**
-     * Opens the settings dialog (placeholder).
+     * Opens the settings dialog
      */
     private void openSettings() {
         System.out.println("Opening settings");
