@@ -3,7 +3,6 @@ package Client.Services;
 import Client.RpcCaller;
 import JSocket2.Protocol.Rpc.RpcResponse;
 import Shared.Api.Models.ChatController.*;
-import Shared.Api.Models.MembershipController.GetChatMembersInputModel;
 import Shared.Api.Models.MembershipController.GetChatMembersOutputModel;
 import Shared.Api.Models.MembershipController.UpdateMemberRoleInputModel;
 import Shared.Api.Models.MessageController.*;
