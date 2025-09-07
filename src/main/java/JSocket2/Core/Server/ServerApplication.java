@@ -2,9 +2,7 @@ package JSocket2.Core.Server;
 
 import JSocket2.DI.ServiceCollection;
 import JSocket2.DI.ServiceProvider;
-import JSocket2.Protocol.Authentication.IAuthService;
 import JSocket2.Protocol.Rpc.RpcControllerCollection;
-import JSocket2.Utils.Logger;
 import JSocket2.Protocol.Rpc.RpcDispatcher;
 import JSocket2.Protocol.Message;
 
@@ -13,7 +11,6 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,7 +40,6 @@ public class ServerApplication {
             System.out.println("Server run in " + InetAddress.getLocalHost().getHostAddress() + ":"+PORT);
             while (!serverSocket.isClosed()) {
                 Socket socket = serverSocket.accept();
-                Logger.get().info("A new client has connected");
                 ClientHandler clientHandler = new ClientHandler(serviceProvider,socket, rpcDispatcher, serverSessionManager,pendingRequests);
                 new Thread(clientHandler).start();
             }
@@ -59,10 +55,8 @@ public class ServerApplication {
 
     public void Close() {
         try {
-            Logger.get().info("Server has closed");
             serverSocket.close();
         } catch (IOException e) {
-            Logger.get().error("Error while closing the server socket");
         }
     }
 }
