@@ -169,6 +169,10 @@ public class RpcCaller extends RpcCallerBase {
     public RpcResponse<RemoveContactOutputModel> removeContact(RemoveContactInputModel model) throws IOException {
         return callRpcAndGetResponse("ContactRpcController", "removeContact", RemoveContactOutputModel.class, model);
     }
+    public RpcResponse<GetChatInfoOutputModel> getSavedMessage() throws IOException {
+        return callRpcAndGetResponse("ChatRpcController", "getSavedMessage", GetChatInfoOutputModel.class);
+
+    }
 
 
 }
