@@ -3,7 +3,6 @@ import Shared.Database.DAO.GenericDAO;
 import Shared.Models.Account.Account;
 import Shared.Models.Chat.Chat;
 import Shared.Models.Chat.*;
-import Shared.Models.Contact.Contact;
 import Shared.Models.Folder.Folder;
 import Shared.Models.Interaction.Interaction;
 import Shared.Models.Media.Media;
@@ -14,6 +13,7 @@ import Shared.Models.PendingAuth.PendingAuth;
 import Shared.Models.Relationship.Relationship;
 import Shared.Models.Session.Session;
 import Shared.Models.Setting.Setting;
+import Shared.Models.Contact.Contact;
 import jakarta.persistence.EntityManager;
 
 public class DaoManager {
@@ -92,7 +92,7 @@ public class DaoManager {
         return privateChatDAO;
     }
 
-    // Contact DAO
+    // ContactViewModel DAO
     public GenericDAO<Contact> getContactDAO() {
         if (contactDAO == null) {
             contactDAO = new GenericDAO<>(Contact.class, entityManager);
