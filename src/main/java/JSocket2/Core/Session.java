@@ -1,7 +1,6 @@
 package JSocket2.Core;
 
 import JSocket2.Cryptography.EncryptionUtil;
-
 import javax.crypto.SecretKey;
 
 public abstract class Session {
