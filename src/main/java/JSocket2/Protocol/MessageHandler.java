@@ -81,7 +81,7 @@ public class MessageHandler {
             out.write(message.getPayload());
         }
     }
-    public void write(Message message) throws IOException {
+    public synchronized void write(Message message) throws IOException {
         if(message.header.is_encrypted && message.header.type != MessageType.AES_KEY){
             MessageUtil.EncryptMessage(message,session.getAESKey());
         }
