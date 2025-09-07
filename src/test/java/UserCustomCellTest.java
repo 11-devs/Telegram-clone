@@ -106,7 +106,7 @@ public class UserCustomCellTest extends Application {
                 .build());
 
         users.add(new UserViewModelBuilder()
-                .userName("Muted Contact")
+                .userName("Muted ContactViewModel")
                 .lastMessage("This contact is muted")
                 .time(getTimeHoursAgo(5))
                 .notificationsNumber("5")
@@ -159,7 +159,7 @@ public class UserCustomCellTest extends Application {
                 Thread.sleep(2000);
                 Platform.runLater(() -> {
                     UserViewModel newUser = new UserViewModelBuilder()
-                            .userName("New Contact")
+                            .userName("New ContactViewModel")
                             .lastMessage("Hello! I'm new here")
                             .time(getCurrentTime())
                             .isOnline(true)

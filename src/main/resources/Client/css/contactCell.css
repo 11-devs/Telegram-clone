@@ -19,8 +19,9 @@
 /* Avatar styling */
 .avatar-image {
     -fx-background-radius: 20px; /* Smaller radius for smaller avatar */
-    -fx-border-radius: 20px;
+    -fx-border-radius: 50%;
     -fx-smooth: true;
+    -fx-border-color: white;
 }
 
 .type-logo { /* For bot/channel/group icon overlay */

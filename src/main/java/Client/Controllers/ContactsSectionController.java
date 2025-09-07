@@ -2,7 +2,7 @@ package Client.Controllers;
 
 import Client.AppConnectionManager;
 import Client.RpcCaller;
-import Client.Services.ContactService;
+import Client.Services.ChatService;
 import JSocket2.Protocol.Rpc.RpcResponse;
 import JSocket2.Protocol.StatusCode;
 import Shared.Api.Models.AccountController.GetAccountInfoOutputModel;
@@ -10,6 +10,7 @@ import Shared.Api.Models.ContactController.AddContactOutputModel;
 import Shared.Api.Models.ContactController.ContactInfo;
 import Shared.Api.Models.ContactController.GetContactsOutputModel;
 import Shared.Utils.AlertUtil;
+import Shared.Utils.DialogUtil;
 import Shared.Utils.SceneUtil;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -33,7 +34,7 @@ public class ContactsSectionController {
 
     private Stage dialogStage;
     private Object parentController; // Can be SidebarMenuController or another controller
-    private ContactService contactService;
+    private ChatService chatService;
     private ObservableList<ContactInfo> allContacts = FXCollections.observableArrayList();
     private FilteredList<ContactInfo> filteredContacts;
 
@@ -49,19 +50,10 @@ public class ContactsSectionController {
 
     @FXML
     private void initialize() {
-        GetAccountInfoOutputModel currentUser = AppConnectionManager.getInstance().getCurrentUserInfo();
-        if (currentUser == null) {
-            Platform.runLater(() -> {
-                AlertUtil.showError("Could not identify the current user. Please try again.");
-                if (dialogStage != null) {
-                    dialogStage.close();
-                }
-            });
-            return;
-        }
+
 
         RpcCaller rpcCaller = AppConnectionManager.getInstance().getRpcCaller();
-        contactService = new ContactService(rpcCaller);
+        chatService = new ChatService(rpcCaller);
 
         filteredContacts = new FilteredList<>(allContacts, p -> true);
         contactsListView.setItems(filteredContacts);
@@ -73,7 +65,7 @@ public class ContactsSectionController {
     }
 
     private void loadContacts() {
-        Task<RpcResponse<GetContactsOutputModel>> fetchTask = contactService.fetchContacts();
+        Task<RpcResponse<GetContactsOutputModel>> fetchTask = chatService.fetchContacts();
         fetchTask.setOnSucceeded(e -> {
             RpcResponse<GetContactsOutputModel> response = fetchTask.getValue();
             if (response.getStatusCode() == StatusCode.OK && response.getPayload() != null) {
@@ -110,7 +102,7 @@ public class ContactsSectionController {
                     this.dialogStage,
                     this,
                     null,
-                    "New Contact"
+                    "New ContactViewModel"
             );
             newContactDialog.showAndWait();
             // The dialog controller will call the addContact method below.
@@ -121,12 +113,13 @@ public class ContactsSectionController {
     }
     
     public void addContact(String firstName, String lastName, String phoneNumber) {
-        Task<RpcResponse<AddContactOutputModel>> addTask = contactService.addContact(firstName, lastName, phoneNumber);
+        Task<RpcResponse<AddContactOutputModel>> addTask = chatService.addContact(firstName, lastName, phoneNumber);
         addTask.setOnSucceeded(e -> {
             RpcResponse<AddContactOutputModel> response = addTask.getValue();
             if (response.getStatusCode() == StatusCode.OK) {
                 Platform.runLater(() -> {
-                    AlertUtil.showSuccess("Contact added successfully!");
+//                    AlertUtil.showSuccess("ContactViewModel added successfully!");
+//                    DialogUtil.showNotificationDialog();
                     loadContacts(); // Refresh the list
                 });
             } else {

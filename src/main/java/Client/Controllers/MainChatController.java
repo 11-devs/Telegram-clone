@@ -432,7 +432,9 @@ public class MainChatController implements Initializable {
     private FileDownloadService fileDownloadService;
     //private UserIdentity currentUser;
     private final Gson gson = new Gson();
-
+public ChatService getChatService() {
+    return chatService;
+}
 
 
     @Override
@@ -1159,7 +1161,11 @@ public class MainChatController implements Initializable {
         // Assuming UserViewModel has getAvatarId()
         String avatarId = user.getAvatarId();
 
-        if (avatarId != null && !avatarId.isEmpty()) {
+        if (user.getType() == UserType.SAVED_MESSAGES){
+            Image defaultSavedMessagesAvatar = new Image(Objects.requireNonNull(getClass().getResource("/Client/images/SavedMessagesProfile.png")).toExternalForm());
+            headerAvatarImage.setImage(defaultSavedMessagesAvatar);
+        }
+        else if (avatarId != null && !avatarId.isEmpty()) {
             fileDownloadService.getFile(avatarId).thenAccept(file -> {
                 Platform.runLater(() -> {
                     // Check if the current user is still the one we initiated this download for
@@ -3222,7 +3228,11 @@ public class MainChatController implements Initializable {
         if (isTypingIndicatorVisible) {
             return;
         }
-        if (user.isOnline() && user.getType() == UserType.USER) {
+        if (user.getType() == UserType.SAVED_MESSAGES) {
+            chatSubtitleLabel.setText("");
+            chatSubtitleLabel.getStyleClass().setAll("chat-subtitle", "online");
+        }
+        else if (user.isOnline() && user.getType() == UserType.USER) {
             chatSubtitleLabel.setText("online");
             chatSubtitleLabel.getStyleClass().setAll("chat-subtitle", "online");
         } else if (user.getLastSeen() != null && !user.getLastSeen().isEmpty() && user.getType() == UserType.USER) {
@@ -3472,7 +3482,7 @@ public class MainChatController implements Initializable {
     /**
      * Refreshes the chat list UI.
      */
-    private void refreshChatList() {
+    void refreshChatList() {
         Platform.runLater(() -> {
             chatListView.refresh();
         });

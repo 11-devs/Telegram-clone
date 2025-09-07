@@ -6,14 +6,19 @@ import Shared.Utils.SceneUtil;
 import javafx.animation.*;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.effect.ColorAdjust;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import javafx.util.Duration;
 import com.jfoenix.controls.JFXToggleButton;
 
@@ -203,15 +208,31 @@ public class SidebarMenuController implements Initializable {
             );
             fadeIn.play();
 
-            Stage newGroupDialog = SceneUtil.createDialog(
-                    "/Client/fxml/createGroupDialog.fxml",
-                    currentPrimaryStage,
-                    this,
-                    null,
-                    "New Group"
-            );
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/Client/fxml/createGroupDialog.fxml"));
+            Parent root = loader.load();
 
-            newGroupDialog.showAndWait();
+            if (!(parentController instanceof MainChatController)) {
+                throw new IllegalStateException("SidebarMenuController's parent is not MainChatController, cannot create group.");
+            }
+            CreateGroupDialogController controller = loader.getController();
+            controller.init((MainChatController) parentController, currentPrimaryStage);
+
+            Stage dialogStage = new Stage();
+            dialogStage.initOwner(currentPrimaryStage);
+            dialogStage.initModality(Modality.WINDOW_MODAL);
+            dialogStage.initStyle(StageStyle.UNDECORATED);
+
+            Scene scene = new Scene(root);
+            scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
+            dialogStage.setScene(scene);
+            dialogStage.initStyle(StageStyle.TRANSPARENT);
+
+            dialogStage.setOnShown(e -> {
+                dialogStage.setX(currentPrimaryStage.getX() + currentPrimaryStage.getWidth() / 2 - dialogStage.getWidth() / 2);
+                dialogStage.setY(currentPrimaryStage.getY() + currentPrimaryStage.getHeight() / 2 - dialogStage.getHeight() / 2);
+            });
+
+            dialogStage.showAndWait();
 
             Timeline fadeOut = new Timeline(
                     new KeyFrame(Duration.ZERO, new KeyValue(dimEffect.brightnessProperty(), -0.3, Interpolator.EASE_BOTH)),
@@ -222,10 +243,14 @@ public class SidebarMenuController implements Initializable {
             }
             fadeOut.play();
 
-        } catch (IOException e) {
+        } catch (IOException | IllegalStateException e) {
             e.printStackTrace();
             System.err.println("Error loading new group dialog: " + e.getMessage());
             AlertUtil.showError("Could not open the new group creation window.");
+            // Also, remove the dim effect in case of an error
+            if (currentPrimaryStage.getScene() != null && currentPrimaryStage.getScene().getRoot() != null) {
+                currentPrimaryStage.getScene().getRoot().setEffect(null);
+            }
         }
     }
 
