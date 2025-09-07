@@ -431,7 +431,9 @@ public class MainChatController implements Initializable {
     private FileDownloadService fileDownloadService;
     //private UserIdentity currentUser;
     private final Gson gson = new Gson();
-
+public ChatService getChatService() {
+    return chatService;
+}
 
 
     @Override
@@ -3437,7 +3439,7 @@ public class MainChatController implements Initializable {
     /**
      * Refreshes the chat list UI.
      */
-    private void refreshChatList() {
+    void refreshChatList() {
         Platform.runLater(() -> {
             chatListView.refresh();
         });

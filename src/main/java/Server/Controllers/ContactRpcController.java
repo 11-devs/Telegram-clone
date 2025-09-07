@@ -9,6 +9,7 @@ import Shared.Models.Contact.Contact;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class ContactRpcController extends RpcControllerBase {
@@ -19,21 +20,22 @@ public class ContactRpcController extends RpcControllerBase {
     }
 
     public RpcResponse<Object> addContact(AddContactInputModel model) {
-        Account owner = daoManager.getAccountDAO().findById(model.getOwnerId());
+        UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
+        Account owner = daoManager.getAccountDAO().findById(currentUserId);
         if (owner == null) {
             return BadRequest("Owner account not found.");
         }
 
         Account contactUser = daoManager.getAccountDAO().findById(model.getContactId());
         if (contactUser == null) {
-            return BadRequest("Contact user account not found.");
+            return BadRequest("ContactViewModel user account not found.");
         }
 
-        if (Objects.equals(model.getOwnerId(), model.getContactId())) {
+        if (Objects.equals(currentUserId, model.getContactId())) {
             return BadRequest("Cannot add yourself as a contact.");
         }
 
-        List<Contact> existingContacts = daoManager.getContactDAO().findAllByField("owner.id", model.getOwnerId());
+        List<Contact> existingContacts = daoManager.getContactDAO().findAllByField("owner.id", currentUserId);
         boolean alreadyExists = existingContacts.stream()
                 .anyMatch(c -> c.getContact().getId().equals(model.getContactId()));
 
@@ -48,11 +50,12 @@ public class ContactRpcController extends RpcControllerBase {
 
         daoManager.getContactDAO().insert(newContact);
 
-        return Ok(new AddContactOutputModel("Contact added successfully.", newContact.getId()));
+        return Ok(new AddContactOutputModel("ContactViewModel added successfully.", newContact.getId()));
     }
 
-    public RpcResponse<Object> getContacts(GetContactsInputModel model) {
-        List<Contact> contacts = daoManager.getContactDAO().findAllByField("owner.id", model.getOwnerId());
+    public RpcResponse<Object> getContacts() {
+        UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
+        List<Contact> contacts = daoManager.getContactDAO().findAllByField("owner.id", currentUserId);
 
         List<ContactInfo> contactInfos = contacts.stream()
                 .map(contact -> {
@@ -84,7 +87,8 @@ public class ContactRpcController extends RpcControllerBase {
     }
 
     public RpcResponse<Object> removeContact(RemoveContactInputModel model) {
-        List<Contact> contacts = daoManager.getContactDAO().findAllByField("owner.id", model.getOwnerId());
+        UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
+        List<Contact> contacts = daoManager.getContactDAO().findAllByField("owner.id", currentUserId);
 
         Contact contactToRemove = contacts.stream()
                 .filter(c -> c.getContact().getId().equals(model.getContactId()))
@@ -92,15 +96,16 @@ public class ContactRpcController extends RpcControllerBase {
                 .orElse(null);
 
         if (contactToRemove == null) {
-            return BadRequest("Contact not found.");
+            return BadRequest("ContactViewModel not found.");
         }
 
         daoManager.getContactDAO().delete(contactToRemove);
 
-        return Ok(new RemoveContactOutputModel("Contact removed successfully."));
+        return Ok(new RemoveContactOutputModel("ContactViewModel removed successfully."));
     }
     public RpcResponse<Object> getContact(GetContactInputModel model) {
-        List<Contact> contacts = daoManager.getContactDAO().findAllByField("owner.id", model.getOwnerId());
+        UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
+        List<Contact> contacts = daoManager.getContactDAO().findAllByField("owner.id",currentUserId);
 
         Contact contact = contacts.stream()
                 .filter(c -> c.getContact().getId().equals(model.getContactId()))
@@ -108,7 +113,7 @@ public class ContactRpcController extends RpcControllerBase {
                 .orElse(null);
 
         if (contact == null) {
-            return BadRequest("Contact not found.");
+            return BadRequest("ContactViewModel not found.");
         }
 
         Account contactUser = contact.getContact();

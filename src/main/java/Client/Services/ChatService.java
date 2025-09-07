@@ -3,6 +3,10 @@ package Client.Services;
 import Client.RpcCaller;
 import JSocket2.Protocol.Rpc.RpcResponse;
 import Shared.Api.Models.ChatController.*;
+import Shared.Api.Models.ContactController.AddContactInputModel;
+import Shared.Api.Models.ContactController.AddContactOutputModel;
+import Shared.Api.Models.ContactController.GetContactsInputModel;
+import Shared.Api.Models.ContactController.GetContactsOutputModel;
 import Shared.Api.Models.MembershipController.GetChatMembersOutputModel;
 import Shared.Api.Models.MembershipController.UpdateMemberRoleInputModel;
 import Shared.Api.Models.MessageController.*;
@@ -192,6 +196,25 @@ public class ChatService {
             @Override
             protected RpcResponse<Object> call() throws Exception {
                 return rpcCaller.updateMemberRole(model);
+            }
+        };
+    }
+    public Task<RpcResponse<GetContactsOutputModel>> fetchContacts() {
+        return new Task<>() {
+            @Override
+            protected RpcResponse<GetContactsOutputModel> call() throws Exception {
+                return rpcCaller.getContacts();
+            }
+        };
+    }
+
+    public Task<RpcResponse<AddContactOutputModel>> addContact(String firstName, String lastName, String phoneNumber) {
+        return new Task<>() {
+            @Override
+            protected RpcResponse<AddContactOutputModel> call() throws Exception {
+                AddContactInputModel input = new AddContactInputModel();
+                input.setSavedName(firstName + " " + lastName + ";" + phoneNumber);
+                return rpcCaller.addContact(input);
             }
         };
     }

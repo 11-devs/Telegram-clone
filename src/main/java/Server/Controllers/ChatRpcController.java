@@ -167,23 +167,25 @@ public class ChatRpcController extends RpcControllerBase {
         ownerMembership.setChat(groupChat);
         ownerMembership.setInvitedBy(null);
         ownerMembership.setType(MembershipType.OWNER);
+        ownerMembership.setJoinDate(LocalDateTime.now());
         daoManager.getMembershipDAO().insert(ownerMembership);
 
         // Add initial members
-        for (UUID memberId : model.getMemberIds()) {
-            if (!memberId.equals(creatorId)) {
-                Account member = daoManager.getAccountDAO().findById(memberId);
-                if (member != null) {
-                    Membership memberMembership = new Membership();
-                    memberMembership.setAccount(member);
-                    memberMembership.setChat(groupChat);
-                    memberMembership.setInvitedBy(creator);
-                    memberMembership.setType(MembershipType.MEMBER);
-                    daoManager.getMembershipDAO().insert(memberMembership);
+        if(model.getMemberIds() != null) {
+            for (UUID memberId : model.getMemberIds()) {
+                if (!memberId.equals(creatorId)) {
+                    Account member = daoManager.getAccountDAO().findById(memberId);
+                    if (member != null) {
+                        Membership memberMembership = new Membership();
+                        memberMembership.setAccount(member);
+                        memberMembership.setChat(groupChat);
+                        memberMembership.setInvitedBy(creator);
+                        memberMembership.setType(MembershipType.MEMBER);
+                        daoManager.getMembershipDAO().insert(memberMembership);
+                    }
                 }
             }
         }
-
         CreateGroupOutputModel output = new CreateGroupOutputModel(groupChat.getId(), groupChat.getType(), groupChat.getTitle(), groupChat.getProfilePictureId(), groupChat.getDescription(), creatorId, model.getMemberIds());
         return Ok(output);
     }

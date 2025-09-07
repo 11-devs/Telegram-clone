@@ -1,0 +1,117 @@
+.dialog-root {
+-fx-background-color: #202B36;
+-fx-font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+-fx-background-radius: 8px;
+-fx-border-radius: 8px;
+-fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 15, 0.5, 0, 0);
+}
+/* --- Search Bar --- */
+.search-bar-container {
+-fx-background-color: #17212B;
+-fx-background-radius: 18px;
+-fx-padding: 6px 12px;
+}
+.search-icon {
+-fx-fill: #92A3AF;
+-fx-opacity: 0.7;
+-fx-scale-x: 0.9;
+-fx-scale-y: 0.9;
+}
+.search-field {
+-fx-background-color: transparent;
+-fx-text-fill: white;
+-fx-prompt-text-fill: #92A3AF;
+-fx-font-size: 14px;
+-fx-padding: 0 0 0 10px;
+-fx-background-insets: 0;
+-fx-focus-color: transparent;
+-fx-faint-focus-color: transparent;
+}
+/* --- Selected Count Label --- */
+.selected-count-label {
+-fx-text-fill: #92A3AF;
+-fx-font-size: 13px;
+-fx-padding: 5px 0;
+}
+/* --- Contacts List View --- */
+.contacts-list-view {
+-fx-background-color: transparent;
+-fx-padding: 0;
+}
+.contacts-list-view .list-cell {
+-fx-background-color: transparent;
+-fx-padding: 0;
+-fx-border-width: 0;
+-fx-cursor: hand;
+-fx-background-radius: 6px;
+}
+.contacts-list-view .list-cell:hover {
+-fx-background-color: #232E3A;
+}
+.contacts-list-view .list-cell:filled:selected {
+-fx-background-color: #2B5278; /* Although selection is via checkbox, this is good practice */
+}
+/* --- Contact Cell CheckBox Styling --- /
+.contacts-list-view .check-box .box {
+-fx-background-color: #2F3A4A;
+-fx-border-color: #313C49;
+-fx-border-radius: 50%; / Circular checkbox */
+-fx-padding: 8px;
+}
+.contacts-list-view .check-box:selected .box {
+-fx-background-color: #2F6EA5;
+-fx-border-color: #2F6EA5;
+}
+.contacts-list-view .check-box .mark {
+-fx-background-color: white;
+-fx-shape: "M3.788,10.232c-0.264,0-0.52-0.104-0.704-0.288L0.296,7.156c-0.392-0.392-0.392-1.024,0-1.416 s1.024-0.392,1.416,0l2.08,2.08l5.296-5.296c0.392-0.392,1.024-0.392,1.416,0s0.392,1.024,0,1.416L4.492,9.944 C4.308,10.128,4.052,10.232,3.788,10.232z";
+-fx-padding: 4px;
+}
+/* --- Scrollbar Styling --- */
+.contacts-list-view .scroll-bar:vertical {
+-fx-background-color: transparent;
+-fx-pref-width: 8px;
+-fx-padding: 2px;
+}
+.contacts-list-view .scroll-bar:vertical .track {
+-fx-background-color: transparent;
+-fx-border-color: transparent;
+-fx-background-radius: 4px;
+-fx-border-radius: 4px;
+}
+.contacts-list-view .scroll-bar:vertical .thumb {
+-fx-background-color: rgba(146, 163, 175, 0.3);
+-fx-background-insets: 0;
+-fx-background-radius: 4px;
+}
+.contacts-list-view .scroll-bar:vertical .thumb:hover {
+-fx-background-color: rgba(146, 163, 175, 0.5);
+}
+.contacts-list-view .scroll-bar:vertical .increment-button,
+.contacts-list-view .scroll-bar:vertical .decrement-button {
+-fx-background-color: transparent;
+-fx-padding: 0;
+}
+.contacts-list-view .scroll-bar .increment-arrow,
+.contacts-list-view .scroll-bar .decrement-arrow {
+-fx-shape: "";
+-fx-padding: 0;
+}
+/* --- Action Buttons --- */
+.dialog-button {
+-fx-background-color: transparent;
+-fx-text-fill: #4FC3F7;
+-fx-font-size: 14px;
+-fx-font-weight: 600;
+-fx-padding: 8px 15px;
+-fx-cursor: hand;
+-fx-text-transform: uppercase;
+}
+.dialog-button:hover {
+-fx-background-color: rgba(79, 195, 247, 0.1);
+-fx-background-radius: 5px;
+}
+.create-button {
+/* Making the primary action button slightly more prominent */
+-fx-text-fill: #59c6ff;
+}

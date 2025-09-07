@@ -1,0 +1,217 @@
+package Client.Controllers;
+
+import Client.RpcCaller;
+import Client.Tasks.UploadTask;
+import JSocket2.Core.Client.ConnectionManager;
+import JSocket2.Protocol.Rpc.RpcResponse;
+import JSocket2.Protocol.StatusCode;
+import JSocket2.Protocol.Transfer.FileInfoModel;
+import JSocket2.Protocol.Transfer.IProgressListener;
+import Shared.Api.Models.ChatController.CreateGroupInputModel;
+import Shared.Api.Models.MediaController.CreateMediaInputModel;
+import Shared.Utils.AlertUtil;
+import javafx.application.Platform;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static JSocket2.Utils.FileUtil.getFileExtension;
+
+public class CreateGroupDialogController {
+
+    @FXML private VBox dialogRoot;
+    @FXML private StackPane profilePicturePane;
+    @FXML private ImageView profileImageView;
+    @FXML private TextField groupNameField;
+    @FXML private Button cancelButton;
+    @FXML private Button nextButton;
+
+    private MainChatController mainChatController;
+    private Stage parentStage;
+    private File selectedAvatarFile;
+
+    public void init(MainChatController mainChatController, Stage parentStage) {
+        this.mainChatController = mainChatController;
+        this.parentStage = parentStage;
+        setupUI();
+    }
+
+    private void setupUI() {
+        Image defaultAvatar = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Client/images/11Devs-white.png")));
+        profileImageView.setImage(defaultAvatar);
+        profilePicturePane.setOnMouseClicked(event -> handleChooseAvatar());
+    }
+
+    private void handleChooseAvatar() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Choose Group Avatar");
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg")
+        );
+        selectedAvatarFile = fileChooser.showOpenDialog(dialogRoot.getScene().getWindow());
+
+        if (selectedAvatarFile != null) {
+            Image image = new Image(selectedAvatarFile.toURI().toString());
+            profileImageView.setImage(image);
+        }
+    }
+
+    @FXML
+    private void handleNext() {
+        String groupName = groupNameField.getText().trim();
+        if (groupName.isEmpty()) {
+            AlertUtil.showError("Group name cannot be empty.");
+            return;
+        }
+
+        nextButton.setDisable(true);
+        cancelButton.setDisable(true);
+
+        if (selectedAvatarFile != null) {
+            uploadAvatarAndProceed(groupName);
+        } else {
+            CreateGroupInputModel input = new CreateGroupInputModel();
+            input.setTitle(groupName);
+            input.setProfilePictureId(null);
+            input.setMemberIds(null);
+            input.setDescription("");
+
+            var task = mainChatController.getChatService().createGroup(input);
+            task.setOnSucceeded(event -> Platform.runLater(() -> {
+                AlertUtil.showSuccess("Group '" + groupName + "' created successfully.");
+                mainChatController.refreshChatList();
+                closeDialog();
+            }));
+            task.setOnFailed(event -> Platform.runLater(() -> {
+                AlertUtil.showError("Failed to create group: " + task.getException().getMessage());
+            }));
+
+            new Thread(task).start();
+            //Platform.runLater(() -> proceedToAddMembers(groupName, null));
+        }
+    }
+    private void closeDialog() {
+        Stage stage = (Stage) dialogRoot.getScene().getWindow();
+        stage.close();
+    }
+    private void uploadAvatarAndProceed(String groupName) {
+//        ConnectionManager connectionManager = mainChatController.getConnectionManager();
+//        RpcCaller rpcCaller = mainChatController.getRpcCaller();
+//        var app = connectionManager.getClient();
+//        ExecutorService backgroundExecutor = app.getBackgroundExecutor();
+//
+//        backgroundExecutor.submit(() -> {
+//            try {
+//                FileInfoModel info = app.getFileTransferManager().initiateUpload(selectedAvatarFile);
+//                String fileId = info.FileId;
+//
+//                CreateMediaInputModel createMediaInput = new CreateMediaInputModel(
+//                        UUID.fromString(fileId),
+//                        selectedAvatarFile.getName(),
+//                        selectedAvatarFile.length(),
+//                        getFileExtension(selectedAvatarFile)
+//                );
+//                RpcResponse<UUID> createMediaResponse = rpcCaller.createMediaEntry(createMediaInput);
+//
+//                if (createMediaResponse.getStatusCode() != StatusCode.OK) {
+//                    Platform.runLater(() -> {
+//                        AlertUtil.showError("Failed to prepare avatar upload: " + createMediaResponse.getMessage());
+//                        nextButton.setDisable(false);
+//                        cancelButton.setDisable(false);
+//                    });
+//                    return;
+//                }
+//                UUID mediaId = createMediaResponse.getPayload();
+//
+//                IProgressListener listener = (transferred, total) -> {}; // No-op listener
+//                UploadTask uploadTask = new UploadTask(app.getFileTransferManager(), info, selectedAvatarFile, listener);
+//                app.registerTask(fileId, uploadTask);
+//
+//                uploadTask.setOnSucceeded(e -> {
+//                    app.unregisterTask(fileId);
+//                    System.out.println("Upload successful. Media ID: " + mediaId);
+//                    Platform.runLater(() -> proceedToAddMembers(groupName, mediaId.toString()));
+//                });
+//
+//                uploadTask.setOnFailed(failEvent -> {
+//                    app.unregisterTask(fileId);
+//                    failEvent.getSource().getException().printStackTrace();
+//                    Platform.runLater(() -> {
+//                        AlertUtil.showError("Avatar upload failed.");
+//                        nextButton.setDisable(false);
+//                        cancelButton.setDisable(false);
+//                    });
+//                });
+//
+//                backgroundExecutor.submit(uploadTask);
+//
+//            } catch (Exception ex) {
+//                ex.printStackTrace();
+//                Platform.runLater(() -> {
+//                    AlertUtil.showError("Error starting upload: " + ex.getMessage());
+//                    nextButton.setDisable(false);
+//                    cancelButton.setDisable(false);
+//                });
+//            }
+//        });
+    }
+
+    private void proceedToAddMembers(String groupName, String profilePictureId) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/Client/fxml/addMembersDialog.fxml"));
+            Parent addMembersRoot = loader.load();
+
+            AddMembersDialogController controller = loader.getController();
+            controller.init(mainChatController, groupName, profilePictureId);
+
+            Stage currentStage = (Stage) dialogRoot.getScene().getWindow();
+            currentStage.close();
+
+            Stage dialogStage = new Stage();
+            dialogStage.initOwner(parentStage);
+            dialogStage.initModality(Modality.WINDOW_MODAL);
+            dialogStage.initStyle(StageStyle.UNDECORATED);
+
+            Scene scene = new Scene(addMembersRoot);
+            scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
+            dialogStage.setScene(scene);
+            dialogStage.initStyle(StageStyle.TRANSPARENT);
+
+            dialogStage.setOnShown(e -> {
+                dialogStage.setX(parentStage.getX() + parentStage.getWidth() / 2 - dialogStage.getWidth() / 2);
+                dialogStage.setY(parentStage.getY() + parentStage.getHeight() / 2 - dialogStage.getHeight() / 2);
+            });
+            dialogStage.showAndWait();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            AlertUtil.showError("Could not open the add members window.");
+            nextButton.setDisable(false);
+            cancelButton.setDisable(false);
+        }
+    }
+
+    @FXML
+    private void handleCancel() {
+        Stage stage = (Stage) dialogRoot.getScene().getWindow();
+        stage.close();
+    }
+}
