@@ -44,6 +44,8 @@ public class SidebarMenuController implements Initializable {
     @FXML private Button savedMessagesButton;
     @FXML private Button settingsButton;
 
+    @FXML private Button nightModeButton;
+
     // Toggle Elements
     @FXML private JFXToggleButton nightModeToggleButton;
 
@@ -126,13 +128,18 @@ public class SidebarMenuController implements Initializable {
     }
 
     private void setupNightModeToggle() {
-        updateNightModeToggleAppearance();
-    }
+        nightModeToggleButton.setSelected(isNightModeEnabled);
 
-    private void updateNightModeToggleAppearance() {
-        if (nightModeToggleButton != null) {
+        nightModeButton.setOnAction(event -> {
+            isNightModeEnabled = !isNightModeEnabled;
+
             nightModeToggleButton.setSelected(isNightModeEnabled);
-        }
+
+            applyTheme();
+
+            System.out.println("Night Mode: " + (isNightModeEnabled ? "Enabled" : "Disabled"));
+            // TODO: Apply theme globally
+        });
     }
 
     /**
@@ -276,24 +283,6 @@ public class SidebarMenuController implements Initializable {
     }
 
     /**
-     * Handle night mode toggle
-     */
-    @FXML
-    private void handleNightModeToggle() {
-        isNightModeEnabled = !isNightModeEnabled;
-        updateNightModeToggleAppearance();
-
-        // Animate theme change
-        FadeTransition themeTransition = new FadeTransition(Duration.millis(300), sidebarMenuContainer);
-        themeTransition.setFromValue(0.8);
-        themeTransition.setToValue(1.0);
-        themeTransition.play();
-
-        System.out.println("Night Mode: " + (isNightModeEnabled ? "Enabled" : "Disabled"));
-        // TODO: Apply theme globally
-    }
-
-    /**
      * Handle about/version label click
      */
     @FXML
@@ -363,38 +352,10 @@ public class SidebarMenuController implements Initializable {
     public void setCloseHandler(Runnable closeHandler) {
         this.closeHandler = closeHandler;
     }
-
-    /**
-     * Set sidebar to compact mode
-     */
-    public void setCompactMode(boolean compact) {
-        if (compact) {
-            sidebarMenuContainer.getStyleClass().add("compact");
-        } else {
-            sidebarMenuContainer.getStyleClass().removeAll("compact");
-        }
-    }
-
     /**
      * Get current theme mode
      */
     public boolean isNightModeEnabled() {
         return isNightModeEnabled;
-    }
-
-    /**
-     * Set theme mode programmatically
-     */
-    public void setNightMode(boolean enabled) {
-        isNightModeEnabled = enabled;
-        updateNightModeToggleAppearance();
-        applyTheme();
-    }
-
-    /**
-     * Get sidebar container for external manipulation
-     */
-    public VBox getSidebarContainer() {
-        return sidebarMenuContainer;
     }
 }

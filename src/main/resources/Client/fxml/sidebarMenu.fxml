@@ -169,29 +169,23 @@
                         </HBox>
                     </graphic>
                 </Button>
-            <Button mnemonicParsing="false" styleClass="menu-item-button" text="Button">
-               <graphic>
-                      <!-- Night Mode -->
-                      <HBox alignment="CENTER_LEFT" prefHeight="38.0" prefWidth="253.0" styleClass="menu-item-toggle">
-                          <padding>
-                              <Insets right="20.0" />
-                          </padding>
-                          <children>
-                              <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="menu-item-icon">
-                                  <image>
-                                      <Image url="@../images/night-mode-icon.png" />
-                                  </image>
-                              </ImageView>
-                              <Label styleClass="menu-item-text" text="Night Mode" HBox.hgrow="ALWAYS">
-                                  <HBox.margin>
-                                      <Insets left="20.0" />
-                                  </HBox.margin>
-                              </Label>
-                              <JFXToggleButton fx:id="nightModeToggleButton" prefWidth="66.0" styleClass="sidebar-toggle-button" text="" />
-                          </children>
-                      </HBox>
-               </graphic>
-            </Button>
+                <!-- Night Mode -->
+                <Button fx:id="nightModeButton" alignment="CENTER_LEFT" maxWidth="Infinity" styleClass="menu-item-toggle-button">
+                    <graphic>
+                        <HBox alignment="CENTER_LEFT" spacing="20.0">
+                            <children>
+                                <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="menu-item-icon">
+                                    <image>
+                                        <Image url="@../images/night-mode-icon.png" />
+                                    </image>
+                                </ImageView>
+                                <Label styleClass="menu-item-text" text="Night Mode" />
+                                <Region HBox.hgrow="ALWAYS" />
+                                <JFXToggleButton fx:id="nightModeToggleButton" mouseTransparent="true" styleClass="sidebar-toggle-button" text="" />
+                            </children>
+                        </HBox>
+                    </graphic>
+                </Button>
                 <Region VBox.vgrow="ALWAYS" />
             </VBox>
         </content>
