@@ -141,6 +141,11 @@ public class MainChatController implements Initializable {
      * Text field for searching chats.
      */
     @FXML private TextField searchField;
+
+    public ListView<UserViewModel> getChatListView() {
+        return chatListView;
+    }
+
     /**
      * ListView displaying the chat list with UserViewModel items.
      */
@@ -321,6 +326,11 @@ public class MainChatController implements Initializable {
      * Default users name.
      */
     private String ownUsername = "Me";
+
+    public ObservableList<UserViewModel> getAllChatUsers() {
+        return allChatUsers;
+    }
+
     /**
      * ObservableList of all chat users.
      */
