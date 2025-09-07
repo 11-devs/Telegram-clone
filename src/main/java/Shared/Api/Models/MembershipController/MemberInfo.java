@@ -12,7 +12,6 @@ public class MemberInfo {
     private boolean isOnline;
     private String lastSeen;
 
-    //<editor-fold desc="Constructors">
     public MemberInfo() {}
 
     public MemberInfo(UUID userId, String firstName, String lastName, String username, String profilePictureFileId, String role, boolean isOnline, String lastSeen) {
@@ -25,9 +24,6 @@ public class MemberInfo {
         this.isOnline = isOnline;
         this.lastSeen = lastSeen;
     }
-    //</editor-fold>
-
-    //<editor-fold desc="Getters and Setters">
     public UUID getUserId() {
         return userId;
     }

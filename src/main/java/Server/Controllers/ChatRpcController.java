@@ -28,7 +28,7 @@ public class ChatRpcController extends RpcControllerBase {
         this.daoManager = daoManager;
     }
 
-    public RpcResponse<List<GetChatInfoOutputModel>> getChatsByUser() {
+    public RpcResponse<Object> getChatsByUser() {
         UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
         List<Membership> memberships = daoManager.getMembershipDAO()
                 .findAllByField("account.id", currentUserId);
@@ -69,10 +69,10 @@ public class ChatRpcController extends RpcControllerBase {
                     } else {
                         output.setTitle(chat.getTitle());
                         if(chat.getProfilePictureId() != null && !chat.getProfilePictureId().trim().isEmpty()) {
-                        Media media = daoManager.getEntityManager().find(Media.class, UUID.fromString(chat.getProfilePictureId()));
-                        if (media != null) {
-                            output.setProfilePictureId(media.getFileId());
-                        }
+                            Media media = daoManager.getEntityManager().find(Media.class, UUID.fromString(chat.getProfilePictureId()));
+                            if (media != null) {
+                                output.setProfilePictureId(media.getFileId());
+                            }
                         }
                     }
 
@@ -151,6 +151,104 @@ public class ChatRpcController extends RpcControllerBase {
 
         return Ok(chatInfoList);
     }
+    public RpcResponse<Object> createGroup(CreateGroupInputModel model) {
+        UUID creatorId = UUID.fromString(getCurrentUser().getUserId());
+        Account creator = daoManager.getAccountDAO().findById(creatorId);
+        if (creator == null) {
+            return BadRequest();
+        }
+
+        GroupChat groupChat = new GroupChat(model.getTitle(), model.getProfilePictureId(), creator, model.getDescription());
+        daoManager.getGroupChatDAO().insert(groupChat);
+
+        // Add creator as owner
+        Membership ownerMembership = new Membership();
+        ownerMembership.setAccount(creator);
+        ownerMembership.setChat(groupChat);
+        ownerMembership.setInvitedBy(null);
+        ownerMembership.setType(MembershipType.OWNER);
+        daoManager.getMembershipDAO().insert(ownerMembership);
+
+        // Add initial members
+        for (UUID memberId : model.getMemberIds()) {
+            if (!memberId.equals(creatorId)) {
+                Account member = daoManager.getAccountDAO().findById(memberId);
+                if (member != null) {
+                    Membership memberMembership = new Membership();
+                    memberMembership.setAccount(member);
+                    memberMembership.setChat(groupChat);
+                    memberMembership.setInvitedBy(creator);
+                    memberMembership.setType(MembershipType.MEMBER);
+                    daoManager.getMembershipDAO().insert(memberMembership);
+                }
+            }
+        }
+
+        CreateGroupOutputModel output = new CreateGroupOutputModel(groupChat.getId(), groupChat.getType(), groupChat.getTitle(), groupChat.getProfilePictureId(), groupChat.getDescription(), creatorId, model.getMemberIds());
+        return Ok(output);
+    }
+
+    public RpcResponse<Object> createChannel(CreateChannelInputModel model) {
+        UUID creatorId = UUID.fromString(getCurrentUser().getUserId());
+        Account creator = daoManager.getAccountDAO().findById(creatorId);
+        if (creator == null) {
+            return BadRequest();
+        }
+
+        Channel channel = new Channel(model.getTitle(), model.getProfilePictureId(), creator, model.getDescription(), model.isPublic());
+        daoManager.getChannelDAO().insert(channel);
+
+        Membership ownerMembership = new Membership();
+        ownerMembership.setAccount(creator);
+        ownerMembership.setChat(channel);
+        ownerMembership.setInvitedBy(null);
+        ownerMembership.setType(MembershipType.OWNER);
+        daoManager.getMembershipDAO().insert(ownerMembership);
+
+        CreateChannelOutputModel output = new CreateChannelOutputModel(channel.getId(), channel.getType(), channel.getTitle(), channel.getProfilePictureId(), channel.getDescription(), channel.isPublic(), creatorId);
+        return Ok(output);
+    }
+
+    public RpcResponse<Object> updateChatInfo(UpdateChatInfoInputModel model) {
+        UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
+        Membership membership = daoManager.getMembershipDAO().findOneByJpql("SELECT m FROM Membership m WHERE m.chat.id = :chatId AND m.account.id = :accountId", q -> {
+            q.setParameter("chatId", model.getChatId());
+            q.setParameter("accountId", currentUserId);
+        });
+
+        if (membership == null || (membership.getType() != MembershipType.OWNER && membership.getType() != MembershipType.ADMIN)) {
+            return Forbidden("You do not have permission to edit this chat's info.");
+        }
+
+        Chat chat = membership.getChat();
+        chat.setTitle(model.getTitle());
+        chat.setProfilePictureId(model.getProfilePictureId());
+
+        daoManager.getChatDAO().update(chat);
+
+        UpdateChatInfoOutputModel output = new UpdateChatInfoOutputModel();
+        output.setId(chat.getId());
+        output.setType(chat.getType());
+        output.setTitle(chat.getTitle());
+        output.setProfilePictureId(chat.getProfilePictureId());
+        return Ok(output);
+    }
+
+    public RpcResponse<Object> deleteChat(UUID chatId) {
+        UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
+        Membership membership = daoManager.getMembershipDAO().findOneByJpql("SELECT m FROM Membership m WHERE m.chat.id = :chatId AND m.account.id = :accountId", q -> {
+            q.setParameter("chatId", chatId);
+            q.setParameter("accountId", currentUserId);
+        });
+
+        if (membership == null || membership.getType() != MembershipType.OWNER) {
+            return Forbidden("Only the owner can delete the chat.");
+        }
+
+        daoManager.getChatDAO().delete(membership.getChat());
+        return Ok("Chat deleted successfully.");
+    }
+
     public RpcResponse<Object> toggleChatMute(ToggleChatMuteInputModel model) {
         UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
 

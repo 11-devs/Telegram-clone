@@ -2,8 +2,10 @@ package Client.Services;
 
 import Client.RpcCaller;
 import JSocket2.Protocol.Rpc.RpcResponse;
-import Shared.Api.Models.ChatController.GetChatInfoOutputModel;
-import Shared.Api.Models.ChatController.ToggleChatMuteInputModel;
+import Shared.Api.Models.ChatController.*;
+import Shared.Api.Models.MembershipController.GetChatMembersInputModel;
+import Shared.Api.Models.MembershipController.GetChatMembersOutputModel;
+import Shared.Api.Models.MembershipController.UpdateMemberRoleInputModel;
 import Shared.Api.Models.MessageController.*;
 import Shared.Models.Message.MessageType;
 import javafx.concurrent.Task;
@@ -112,8 +114,8 @@ public class ChatService {
             protected Void call() throws Exception {
                 MarkChatAsReadInputModel input = new MarkChatAsReadInputModel();
                 input.setChatId(chatId);
-                 rpcCaller.markChatAsRead(input);
-                 return null;
+                rpcCaller.markChatAsRead(input);
+                return null;
             }
         };
     }
@@ -137,6 +139,60 @@ public class ChatService {
                 input.setMessageToForwardId(messageId);
                 input.setTargetChatIds(targetChatIds);
                 return rpcCaller.forwardMessage(input);
+            }
+        };
+    }
+
+    public Task<RpcResponse<CreateGroupOutputModel>> createGroup(CreateGroupInputModel model) {
+        return new Task<>() {
+            @Override
+            protected RpcResponse<CreateGroupOutputModel> call() throws Exception {
+                return rpcCaller.createGroup(model);
+            }
+        };
+    }
+
+    public Task<RpcResponse<CreateChannelOutputModel>> createChannel(CreateChannelInputModel model) {
+        return new Task<>() {
+            @Override
+            protected RpcResponse<CreateChannelOutputModel> call() throws Exception {
+                return rpcCaller.createChannel(model);
+            }
+        };
+    }
+
+    public Task<RpcResponse<UpdateChatInfoOutputModel>> updateChatInfo(UpdateChatInfoInputModel model) {
+        return new Task<>() {
+            @Override
+            protected RpcResponse<UpdateChatInfoOutputModel> call() throws Exception {
+                return rpcCaller.updateChatInfo(model);
+            }
+        };
+    }
+
+    public Task<RpcResponse<Object>> deleteChat(UUID chatId) {
+        return new Task<>() {
+            @Override
+            protected RpcResponse<Object> call() throws Exception {
+                return rpcCaller.deleteChat(chatId);
+            }
+        };
+    }
+
+    public Task<RpcResponse<GetChatMembersOutputModel>> getChatMembers(UUID chatId) {
+        return new Task<>() {
+            @Override
+            protected RpcResponse<GetChatMembersOutputModel> call() throws Exception {
+                return rpcCaller.getChatMembers(chatId);
+            }
+        };
+    }
+
+    public Task<RpcResponse<Object>> updateMemberRole(UpdateMemberRoleInputModel model) {
+        return new Task<>() {
+            @Override
+            protected RpcResponse<Object> call() throws Exception {
+                return rpcCaller.updateMemberRole(model);
             }
         };
     }
