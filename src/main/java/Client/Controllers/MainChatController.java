@@ -2111,6 +2111,9 @@ public ChatService getChatService() {
                                     VBox finalBubble = (VBox) finalMessageNode.getChildren().getFirst();
                                     finalBubble.getProperties().put("messageId", smResponse.getPayload().getMessageId());
                                     finalBubble.getProperties().put("messageTimestamp", LocalDateTime.parse(smResponse.getPayload().getTimestamp()));
+
+                                    finalizeDocumentBubbleDisplay(finalBubble);
+
                                 });
                             } else {
                                 Platform.runLater(() -> updateMessageStatus(finalMessageNode, "failed", null));
@@ -2155,9 +2158,13 @@ public ChatService getChatService() {
         iconStack.setAlignment(Pos.CENTER);
         iconStack.setPrefSize(48, 48);
 
+        Region iconBackground = new Region();
+        iconBackground.getStyleClass().addAll("document-icon-background", docInfo.getFileExtension().toLowerCase());
+        iconBackground.setPrefSize(48, 48);
+
         ImageView fileIcon = createFileTypeIcon(docInfo.getFileExtension());
-        fileIcon.setFitWidth(48);
-        fileIcon.setFitHeight(48);
+        fileIcon.setFitWidth(45);
+        fileIcon.setFitHeight(45);
         fileIcon.setPreserveRatio(true);
 
         ProgressIndicator progressIndicator = new ProgressIndicator(0);
@@ -2168,7 +2175,7 @@ public ChatService getChatService() {
         Button actionButton = new Button();
         actionButton.getStyleClass().add("document-action-icon");
 
-        iconStack.getChildren().addAll(fileIcon, progressIndicator, actionButton);
+        iconStack.getChildren().addAll(iconBackground, fileIcon, progressIndicator, actionButton);
 
         VBox fileInfo = new VBox(4);
         HBox.setHgrow(fileInfo, Priority.ALWAYS);
@@ -2179,23 +2186,38 @@ public ChatService getChatService() {
         fileDetails.getStyleClass().addAll("document-details", isOutgoing ? "outgoing" : "incoming");
         fileInfo.getChildren().addAll(fileName, fileDetails);
 
-        // Store UI components in the bubble's properties for later access
         bubble.getProperties().put("progressIndicator", progressIndicator);
         bubble.getProperties().put("actionButton", actionButton);
+        bubble.getProperties().put("fileIcon", fileIcon);
+        bubble.getProperties().put("iconBackground", iconBackground);
+
+        boolean isFileDownloaded;
+        if (docInfo.getStoredPath() != null && !docInfo.getStoredPath().isEmpty()) {
+            File localFile = new File(docInfo.getStoredPath());
+            isFileDownloaded = localFile.exists() && docInfo.getFileSize() == localFile.length();
+        } else {
+            isFileDownloaded = false;
+        }
+        // =================================================================================
 
         if (isOutgoing && "sending".equals(status)) {
             progressIndicator.setVisible(true);
             actionButton.setVisible(false);
+            fileIcon.setVisible(false);
+            iconBackground.setVisible(false);
+        } else if (isFileDownloaded) {
+            progressIndicator.setVisible(false);
+            actionButton.setVisible(false);
+            fileIcon.setVisible(true);
+            iconBackground.setVisible(true);
         } else {
-            File localFile = new File(docInfo.getStoredPath());
-            // Check if the file is already downloaded
-            if (localFile.exists() && docInfo.getFileSize() == localFile.length()) {
-                actionButton.setGraphic(createIconView("/Client/images/context-menu/forward.png", 24)); // Re-using an existing icon
-                actionButton.setOnAction(e -> openDocument(docInfo));
-            } else {
-                actionButton.setGraphic(createIconView("/Client/images/context-menu/download.png", 24));
-                actionButton.setOnAction(e -> startDownload(docInfo, progressIndicator, actionButton, bubble));
-            }
+            progressIndicator.setVisible(false);
+            actionButton.setVisible(true);
+            actionButton.setGraphic(createIconView("/Client/images/context-menu/download.png", 24));
+            actionButton.setOnAction(e -> startDownload(docInfo, progressIndicator, actionButton, bubble));
+
+            fileIcon.setVisible(false);
+            iconBackground.setVisible(false);
         }
 
         docContainer.getChildren().addAll(iconStack, fileInfo);
@@ -2214,9 +2236,22 @@ public ChatService getChatService() {
         }
 
         bubble.getChildren().addAll(docContainer, timeContainer);
-        bubble.setOnMouseClicked(this::handleMessageClick);
-        bubble.setUserData(docInfo);
 
+        bubble.setOnMouseClicked(event -> {
+            if (event.getButton() == MouseButton.SECONDARY) {
+                showMessageContextMenu(event);
+            } else if (event.getButton() == MouseButton.PRIMARY) {
+                if (docInfo.getStoredPath() != null && !docInfo.getStoredPath().isEmpty()) {
+                    File currentFileState = new File(docInfo.getStoredPath());
+                    if (currentFileState.exists()) {
+                        openDocument(docInfo);
+                    }
+                }
+            }
+            event.consume();
+        });
+
+        bubble.setUserData(docInfo);
         return bubble;
     }
 
@@ -2246,38 +2281,60 @@ public ChatService getChatService() {
     }
 
     /**
+     * Updates a document bubble's UI to its final state (after upload or download).
+     * It hides progress/action layers and shows the final file type icon.
+     *
+     * @param bubble The VBox of the document message bubble.
+     */
+    private void finalizeDocumentBubbleDisplay(VBox bubble) {
+        if (bubble == null) return;
+
+        Platform.runLater(() -> {
+            // Retrieve UI components from the bubble's properties
+            ProgressIndicator progressIndicator = (ProgressIndicator) bubble.getProperties().get("progressIndicator");
+            Button actionButton = (Button) bubble.getProperties().get("actionButton");
+            ImageView fileIcon = (ImageView) bubble.getProperties().get("fileIcon");
+            Region iconBackground = (Region) bubble.getProperties().get("iconBackground");
+
+            // Hide overlays
+            if (progressIndicator != null) progressIndicator.setVisible(false);
+            if (actionButton != null) actionButton.setVisible(false);
+
+            // Show the final icon and its background
+            if (fileIcon != null) fileIcon.setVisible(true);
+            if (iconBackground != null) iconBackground.setVisible(true);
+        });
+    }
+
+    /**
      * Starts the download for a given media file and updates the UI accordingly.
      */
     private void startDownload(DocumentInfo docInfo, ProgressIndicator progressIndicator, Button actionButton, VBox bubble) {
         String fileId = docInfo.getFileId();
         if (fileId == null || activeDownloadTasks.containsKey(fileId)) return;
 
-        // Change button to a "cancel" icon
-        actionButton.setGraphic(createIconView("/Client/images/context-menu/delete.png", 24)); // Re-using delete icon for cancel
+        actionButton.setGraphic(createIconView("/Client/images/context-menu/delete.png", 24));
         actionButton.setOnAction(e -> cancelDownload(fileId));
         progressIndicator.setProgress(0);
         progressIndicator.setVisible(true);
+
+        actionButton.setGraphic(null);
+
 
         var app = connectionManager.getClient();
         var transferManager = app.getFileTransferManager();
         var executor = app.getBackgroundExecutor();
 
-        // The download process must be run on a background thread because initiateDownload is a blocking network call.
         executor.submit(() -> {
             try {
-                // Step 1: Explicitly initiate the download. This prepares local temp files and gets final TransferInfo.
                 String destinationPath = fileDownloadService.getDocumentCacheDir().toString();
                 TransferInfo info = transferManager.initiateDownload(fileId, destinationPath);
-
                 if (info == null) {
                     Platform.runLater(() -> resetDownloadUI(progressIndicator, actionButton, docInfo, bubble, "Failed to get file info."));
                     return;
                 }
-
-                // Update the stored path in docInfo to reflect the actual final location
                 docInfo.setStoredPath(new File(info.getDestinationPath(), info.getFileName() + "." + info.getFileExtension()).getPath());
 
-                // Step 2: Create listener and task for the download process.
                 IProgressListener listener = (transferred, total) -> {
                     double progress = (total > 0) ? ((double) transferred / total) : 0;
                     Platform.runLater(() -> progressIndicator.setProgress(progress));
@@ -2287,12 +2344,11 @@ public ChatService getChatService() {
 
                 downloadTask.setOnSucceeded(e -> {
                     activeDownloadTasks.remove(fileId);
-                    Platform.runLater(() -> {
-                        progressIndicator.setVisible(false);
-                        actionButton.setGraphic(createIconView("/Client/images/context-menu/forward.png", 24)); // Re-using icon for "open"
-                        actionButton.setOnAction(evt -> openDocument(docInfo));
-                    });
-                });
+                    // =========================== REFACTORING ===========================
+                    finalizeDocumentBubbleDisplay(bubble);
+                    // ===================================================================
+                });;
+
                 downloadTask.setOnFailed(e -> Platform.runLater(() -> resetDownloadUI(progressIndicator, actionButton, docInfo, bubble, "Download failed.")));
                 downloadTask.setOnCancelled(e -> Platform.runLater(() -> resetDownloadUI(progressIndicator, actionButton, docInfo, bubble, "Download cancelled.")));
 
@@ -2636,6 +2692,11 @@ public ChatService getChatService() {
         String text = messageInputField.getText().trim();
         if (text.isEmpty() || currentSelectedUser == null) return;
 
+        if (emptyChatStateContainer.isVisible()) {
+            messagesContainer.getChildren().clear();
+            showChatArea();
+        }
+
         if (isEditing && editingMessageBubble != null) {
             UUID messageId = (UUID) editingMessageBubble.getProperties().get("messageId");
             editMessage(messageId, text);
@@ -2658,30 +2719,33 @@ public ChatService getChatService() {
                 input.setRepliedToMessageId(activeReplyInfo.messageId);
             }
 
-            closeReplyPreview(); // Close preview immediately
+            closeReplyPreview();
 
             Task<RpcResponse<SendMessageOutputModel>> sendMessageTask = chatService.sendMessage(input);
+
             sendMessageTask.setOnSucceeded(event -> {
                 RpcResponse<SendMessageOutputModel> response = sendMessageTask.getValue();
                 if (response.getStatusCode() == StatusCode.OK) {
                     System.out.println("Message sent successfully. ID: " + response.getPayload().getMessageId());
                     LocalDateTime serverTimestamp = LocalDateTime.parse(response.getPayload().getTimestamp());
                     String formattedTime = serverTimestamp.format(DateTimeFormatter.ofPattern("HH:mm"));
+
                     Platform.runLater(() -> {
                         updateMessageStatus(messageNode, "sent", formattedTime);
-                        ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageId", response.getPayload().getMessageId());
-                        ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageTimestamp", serverTimestamp);
+                        VBox bubble = (VBox) messageNode.getChildren().getFirst();
+                        bubble.getProperties().put("messageId", response.getPayload().getMessageId());
+                        bubble.getProperties().put("messageTimestamp", serverTimestamp);
+
                         currentSelectedUser.setLastMessage(text);
                         currentSelectedUser.setTime(response.getPayload().getTimestamp());
                         reorderAndRefreshChatList(currentSelectedUser);
                     });
                 } else {
                     System.err.println("Failed to send message: " + response.getMessage());
-                    Platform.runLater(() -> showTemporaryNotification("Failed to send message.\n"));
-                    System.err.println("Failed to send message: " + response.getMessage());
                     Platform.runLater(() -> {
                         updateMessageStatus(messageNode, "failed", null);
-                        showTemporaryNotification("Failed to send message.\n");});
+                        showTemporaryNotification("Failed to send message: " + response.getMessage() + "\n");
+                    });
                 }
             });
 
@@ -2695,16 +2759,14 @@ public ChatService getChatService() {
 
             new Thread(sendMessageTask).start();
 
-            currentSelectedUser.setLastMessage(text);
-            currentSelectedUser.setTime(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-            reorderAndRefreshChatList(currentSelectedUser);
         }
+
         messageInputField.clear();
         updateSendButtonState();
         Platform.runLater(() -> messageInputField.requestFocus());
-
         Platform.runLater(() -> Platform.runLater(this::scrollToBottom));
     }
+
     /**
      * Updates the status of the last sent message.
      *
