@@ -22,7 +22,7 @@
             <Insets bottom="15.0" left="25.0" right="10.0" top="15.0" />
         </padding>
         <children>
-            <Label styleClass="profile-header-title" text="My Profile" />
+            <Label fx:id="profileHeaderTitle" styleClass="profile-header-title" text="My Profile" />
             <Region HBox.hgrow="ALWAYS" />
             <Button fx:id="editButton" alignment="CENTER" styleClass="header-icon-button">
                 <graphic>
@@ -150,7 +150,7 @@
                         <children>
                             <VBox spacing="2.0" HBox.hgrow="ALWAYS">
                                 <children>
-                                    <Label fx:id="usernameLabel" prefHeight="19.0" prefWidth="94.0" styleClass="id-value" text="\@UserName" />
+                                    <Label fx:id="usernameValueLabel" prefHeight="19.0" prefWidth="94.0" styleClass="id-value" text="\@UserName" />
                                     <Label styleClass="field-description" text="Username">
                                         <VBox.margin>
                                             <Insets left="3.0" />

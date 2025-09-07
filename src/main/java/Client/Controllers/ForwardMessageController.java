@@ -1,6 +1,5 @@
 package Client.Controllers;
 
-import Client.Services.ChatService;
 import Shared.Models.UserViewModel;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -69,7 +68,7 @@ public class ForwardMessageController {
         }
         String lowerCaseFilter = searchText.toLowerCase().trim();
         List<UserViewModel> searchResult = allChats.stream()
-                .filter(user -> user.getUserName().toLowerCase().contains(lowerCaseFilter))
+                .filter(user -> user.getDisplayName().toLowerCase().contains(lowerCaseFilter))
                 .collect(Collectors.toList());
         filteredChats.setAll(searchResult);
     }

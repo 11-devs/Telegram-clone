@@ -4,7 +4,8 @@ import javafx.beans.property.*;
 
 public class UserViewModel {
 
-    private final StringProperty userName = new SimpleStringProperty();
+    private final StringProperty displayName = new SimpleStringProperty();
+    private final StringProperty username = new SimpleStringProperty();
     private final StringProperty lastMessage = new SimpleStringProperty();
     private final StringProperty time = new SimpleStringProperty();
     private final StringProperty notificationsNumber = new SimpleStringProperty("0");
@@ -32,7 +33,7 @@ public class UserViewModel {
         userId.addListener((obs, oldVal, newVal) -> updateIsMessageSentByCurrentUser());
     }
     // Property getters
-    public StringProperty userNameProperty() { return userName; }
+    public StringProperty displayNameProperty() { return displayName; }
     public StringProperty lastMessageProperty() { return lastMessage; }
     public StringProperty timeProperty() { return time; }
     public StringProperty notificationsNumberProperty() { return notificationsNumber; }
@@ -60,7 +61,7 @@ public class UserViewModel {
     public StringProperty userMembershipTypeProperty() { return userMembershipType; }
     public void setUserMembershipType(String type) { this.userMembershipType.set(type); }
     // Getters
-    public String getUserName() { return userName.get(); }
+    public String getDisplayName() { return displayName.get(); }
     public String getLastMessage() { return lastMessage.get(); }
     public String getTime() { return time.get(); }
     public String getNotificationsNumber() { return notificationsNumber.get(); }
@@ -84,7 +85,7 @@ public class UserViewModel {
     public int getMembersCount() { return membersCount.get(); }
     public String getTypingUserName() { return typingUserName.get(); }
     // Setters
-    public void setUserName(String userName) { this.userName.set(userName); }
+    public void setDisplayName(String displayName) { this.displayName.set(displayName); }
     public void setLastMessage(String lastMessage) { this.lastMessage.set(lastMessage); }
     public void setTime(String time) { this.time.set(time); }
     public void setNotificationsNumber(String notificationsNumber) { this.notificationsNumber.set(notificationsNumber); }
@@ -150,7 +151,7 @@ public class UserViewModel {
     @Override
     public String toString() {
         return "UserViewModel{" +
-                "userName=" + getUserName() +
+                "userName=" + getDisplayName() +
                 ", userId=" + getUserId() +
                 ", phoneNumber=" + getPhoneNumber() +
                 ", bio=" + getBio() +
@@ -170,5 +171,13 @@ public class UserViewModel {
                 ", isDraft=" + isDraft() +
                 ", membersCount=" + getMembersCount() +
                 '}';
+    }
+
+    public String getUsername() {
+        return username.get();
+    }
+
+    public void setUsername(String string) {
+        this.username.set(string);
     }
 }

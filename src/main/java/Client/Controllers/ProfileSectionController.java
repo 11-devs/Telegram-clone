@@ -2,10 +2,8 @@ package Client.Controllers;
 
 import Client.Services.ChatService;
 import Client.Services.FileDownloadService;
-import JSocket2.Protocol.StatusCode;
-import Shared.Api.Models.MembershipController.GetChatMembersOutputModel;
 import Shared.Models.UserViewModel;
-import Shared.Models.UserViewModelBuilder;
+import Shared.Utils.TextUtil;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -19,7 +17,6 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 import java.util.Objects;
-import java.util.UUID;
 
 public class ProfileSectionController {
 
@@ -35,7 +32,7 @@ public class ProfileSectionController {
     @FXML private HBox bioFieldContainer;
     @FXML private Label bioLabel;
     @FXML private HBox usernameFieldContainer;
-    @FXML private Label usernameLabel;
+    @FXML private Label usernameValueLabel;
 
     @FXML private VBox membersSection;
     @FXML private Label membersHeaderLabel;
@@ -69,7 +66,7 @@ public class ProfileSectionController {
                     setGraphic(null);
                 } else {
                     // For now, just display the name. A custom cell with avatar can be added later.
-                    setText(user.getUserName() + (user.getType() != null ? " (" + user.getType() + ")" : ""));
+                    setText(user.getDisplayName() + (user.getType() != null ? " (" + user.getType() + ")" : ""));
                 }
             }
         });
@@ -100,7 +97,8 @@ public class ProfileSectionController {
         if (userData == null) return;
 
         // 1. Update common fields
-        userNameLabel.setText(userData.getUserName());
+        usernameValueLabel.setText(userData.getDisplayName());
+        userNameLabel.setText(userData.getUsername());
         bioLabel.setText(userData.getBio() != null && !userData.getBio().isEmpty() ? userData.getBio() : "No bio yet.");
 
         // Load real profile picture
@@ -133,7 +131,7 @@ public class ProfileSectionController {
         switch (userData.getType()) {
             case USER:
                 profileHeaderTitle.setText("User Info");
-                statusLabel.setText(userData.isOnline() ? "online" : userData.getLastSeen());
+                statusLabel.setText(userData.isOnline() ? "online" : TextUtil.formatLastSeen(userData.getLastSeen()));
 
                 phoneFieldContainer.setVisible(true);
                 phoneFieldContainer.setManaged(true);

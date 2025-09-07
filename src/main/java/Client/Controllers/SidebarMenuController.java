@@ -1,8 +1,6 @@
 package Client.Controllers;
 
-import JSocket2.Protocol.Rpc.RpcResponse;
 import JSocket2.Protocol.StatusCode;
-import Shared.Api.Models.ChatController.GetChatInfoOutputModel;
 import Shared.Models.UserType;
 import Shared.Models.UserViewModel;
 import Shared.Models.UserViewModelBuilder;
@@ -32,7 +30,6 @@ import java.awt.Desktop;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
-import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -193,7 +190,8 @@ public class SidebarMenuController implements Initializable {
 
                 UserViewModel myProfileViewModel = new UserViewModelBuilder()
                         .userId(accountInfo.getId().toString())
-                        .userName(accountInfo.getFirstName() + " " + accountInfo.getLastName())
+                        .displayName(accountInfo.getFirstName() + " " + accountInfo.getLastName())
+                        .username(accountInfo.getUsername())
                         .bio(accountInfo.getBio())
                         .phoneNumber(accountInfo.getPhoneNumber())
                         .avatarId(accountInfo.getProfilePictureFileId())
@@ -430,7 +428,7 @@ public class SidebarMenuController implements Initializable {
                         UserViewModel uvm = new UserViewModelBuilder()
                                 .userId(response.getPayload().getId().toString())
                                 .avatarId(response.getPayload().getProfilePictureId())
-                                .userName(response.getPayload().getTitle())
+                                .displayName(response.getPayload().getTitle())
                                 .lastMessage(response.getPayload().getLastMessage())
                                 .time(response.getPayload().getLastMessageTimestamp())
                                 .type(response.getPayload().getType())

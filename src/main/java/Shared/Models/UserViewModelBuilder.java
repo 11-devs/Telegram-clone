@@ -3,11 +3,14 @@ package Shared.Models;
 public class UserViewModelBuilder {
     private final UserViewModel user = new UserViewModel();
 
-    public UserViewModelBuilder userName(String name) {
-        user.setUserName(name);
+    public UserViewModelBuilder displayName(String name) {
+        user.setDisplayName(name);
         return this;
     }
-
+    public UserViewModelBuilder username(String name) {
+        user.setUsername(name);
+        return this;
+    }
     public UserViewModelBuilder lastMessage(String message) {
         user.setLastMessage(message);
         return this;

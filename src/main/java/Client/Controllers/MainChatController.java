@@ -41,7 +41,6 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.Button;
-import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
@@ -56,7 +55,6 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.shape.Circle;
-import javafx.scene.shape.SVGPath;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.stage.FileChooser;
@@ -78,13 +76,10 @@ import java.io.File;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.regex.Matcher;
@@ -521,7 +516,7 @@ public ChatService getChatService() {
                         }
                     }
                     if (!user.isMuted()) {
-                        SystemNotificationUtil.showNotification(user.getUserName(), notificationMessage);
+                        SystemNotificationUtil.showNotification(user.getDisplayName(), notificationMessage);
                     }
                     reorderAndRefreshChatList(user);
                 });
@@ -805,7 +800,9 @@ public ChatService getChatService() {
                     UserViewModel uvm = new UserViewModelBuilder()
                             .userId(chat.getId().toString())
                             .avatarId(chat.getProfilePictureId())
-                            .userName(chat.getTitle() != null ? chat.getTitle() : "Private Chat")
+                            .username(chat.getUsername())
+                            .bio(chat.getBio())
+                            .displayName(chat.getTitle() != null ? chat.getTitle() : "Private Chat")
                             .lastMessage(chat.getLastMessage())
                             .time(chat.getLastMessageTimestamp())
                             .type(chat.getType())
@@ -981,11 +978,12 @@ public ChatService getChatService() {
         searchField.textProperty().addListener((obs, oldText, newText) -> performSearch(newText));
 
         // Header buttons
-        headerAvatarImage.setOnMouseClicked(e -> {
-            if (currentSelectedUser != null) {
-                showProfileDialog();
-            }
-        });
+
+            headerAvatarImage.setOnMouseClicked(e -> {
+                if (currentSelectedUser != null) {
+                    showProfileDialog();
+                }
+            });
         searchInChatButton.setOnAction(e -> showSearchInChat());
         callButton.setOnAction(e -> startVoiceCall());
         videoCallButton.setOnAction(e -> startVideoCall());
@@ -1150,7 +1148,7 @@ public ChatService getChatService() {
      */
     private void updateChatHeader(UserViewModel user) {
         // Update chat title
-        chatTitleLabel.setText(user.getUserName());
+        chatTitleLabel.setText(user.getDisplayName());
 
         // Update subtitle based on user state
         updateChatSubtitle(user);
@@ -1453,6 +1451,8 @@ public ChatService getChatService() {
                 case SUPERGROUP:
                     dialogTitle = "Channel Info";
                     break;
+                case SAVED_MESSAGES:
+                    return;
                 default:
                     dialogTitle = "Profile Info";
                     break;
@@ -1787,7 +1787,7 @@ public ChatService getChatService() {
                         UserViewModel uvm = new UserViewModelBuilder()
                                 .userId(chatInfo.getId().toString())
                                 .avatarId(chatInfo.getProfilePictureId())
-                                .userName(chatInfo.getTitle())
+                                .displayName(chatInfo.getTitle())
                                 .lastMessage(chatInfo.getLastMessage())
                                 .time(chatInfo.getLastMessageTimestamp())
                                 .type(chatInfo.getType())
@@ -1889,7 +1889,7 @@ public ChatService getChatService() {
 
         // 3. Determine the name of the person being replied to
         boolean isOwnMessage = messageBubble.getStyleClass().contains("outgoing");
-        String replyToName = isOwnMessage ? this.ownUsername : (currentSelectedUser != null ? currentSelectedUser.getUserName() : "User");
+        String replyToName = isOwnMessage ? this.ownUsername : (currentSelectedUser != null ? currentSelectedUser.getDisplayName() : "User");
 
         // 4. Get the raw text of the original message
         String originalMessageText = (String) messageBubble.getProperties().get("raw_text");
@@ -2547,7 +2547,7 @@ public ChatService getChatService() {
         String lowerCaseSearch = searchText.toLowerCase().trim();
 
         for (UserViewModel user : allChatUsers) {
-            boolean nameMatches = user.getUserName().toLowerCase().contains(lowerCaseSearch);
+            boolean nameMatches = user.getDisplayName().toLowerCase().contains(lowerCaseSearch);
             boolean messageMatches = user.getLastMessage() != null && user.getLastMessage().toLowerCase().contains(lowerCaseSearch);
 
             if (nameMatches || messageMatches) {
@@ -3127,9 +3127,9 @@ public ChatService getChatService() {
         if (user == null) return;
 
         // Update profile info
-        profileNameLabel.setText(user.getUserName());
+        profileNameLabel.setText(user.getDisplayName());
 
-        if (user.getUserName() != null && !user.getUserId().isEmpty()) {
+        if (user.getDisplayName() != null && !user.getUserId().isEmpty()) {
             profileUsernameLabel.setText("@" + user.getUserId());
             profileUsernameLabel.setVisible(true);
         } else {
@@ -3139,7 +3139,7 @@ public ChatService getChatService() {
         if (user.isOnline()) {
             profileStatusLabel.setText("online");
         } else {
-            profileStatusLabel.setText(formatLastSeen(user.getLastSeen()));
+            profileStatusLabel.setText(TextUtil.formatLastSeen(user.getLastSeen()));
         }
 
         if (user.getPhoneNumber() != null && !user.getPhoneNumber().isEmpty()) {
@@ -3278,7 +3278,7 @@ public ChatService getChatService() {
             chatSubtitleLabel.setText("online");
             chatSubtitleLabel.getStyleClass().setAll("chat-subtitle", "online");
         } else if (user.getLastSeen() != null && !user.getLastSeen().isEmpty() && user.getType() == UserType.USER) {
-            chatSubtitleLabel.setText(formatLastSeen(user.getLastSeen()));
+            chatSubtitleLabel.setText(TextUtil.formatLastSeen(user.getLastSeen()));
             chatSubtitleLabel.getStyleClass().setAll("chat-subtitle");
         } else if (user.getType() == UserType.GROUP || user.getType() == UserType.SUPERGROUP) {
             chatSubtitleLabel.setText("");
@@ -3650,7 +3650,7 @@ public ChatService getChatService() {
         notificationsToggle.setSelected(!newMuteState);
         notificationStatusLabel.setText(newMuteState ? "Disabled" : "Enabled");
         mutedIcon.setVisible(newMuteState);
-        String message = (newMuteState ? "Muted" : "Unmuted") + " " + currentSelectedUser.getUserName();
+        String message = (newMuteState ? "Muted" : "Unmuted") + " " + currentSelectedUser.getDisplayName();
         showTemporaryNotification(message + "\n");
 
         updateChannelMuteButtonText();
@@ -3673,7 +3673,7 @@ public ChatService getChatService() {
         notificationStatusLabel.setText(isEnabled ? "Enabled" : "Disabled");
         mutedIcon.setVisible(newMuteState);
         updateNotificationToggle(isEnabled);
-        String message = (newMuteState ? "Muted" : "Unmuted") + " " + currentSelectedUser.getUserName();
+        String message = (newMuteState ? "Muted" : "Unmuted") + " " + currentSelectedUser.getDisplayName();
         showTemporaryNotification(message + "\n");
         // --- End of optimistic update ---
 
@@ -3749,7 +3749,7 @@ public ChatService getChatService() {
         boolean newPinState = !currentSelectedUser.isPinned();
         currentSelectedUser.setPinned(newPinState);
 
-        String message = (newPinState ? "Pinned" : "Unpinned") + " " + currentSelectedUser.getUserName();
+        String message = (newPinState ? "Pinned" : "Unpinned") + " " + currentSelectedUser.getDisplayName();
         showTemporaryNotification(message + "\n");
 
         refreshChatList();
@@ -3777,7 +3777,7 @@ public ChatService getChatService() {
     private void blockUser() {
         if (currentSelectedUser == null) return;
 
-        String userName = currentSelectedUser.getUserName();
+        String userName = currentSelectedUser.getDisplayName();
         allChatUsers.remove(currentSelectedUser);
         filteredChatUsers.remove(currentSelectedUser);
 
@@ -4316,7 +4316,7 @@ public ChatService getChatService() {
     public void updateUserOnlineStatus(String userName, boolean isOnline) {
         Platform.runLater(() -> {
             for (UserViewModel user : allChatUsers) {
-                if (user.getUserName().equals(userName)) {
+                if (user.getDisplayName().equals(userName)) {
                     user.setOnline(isOnline);
                     user.setLastSeen(isOnline ? "online" : "last seen just now");
 
@@ -4377,7 +4377,7 @@ public ChatService getChatService() {
      */
     public void selectUserByName(String userName) {
         for (UserViewModel user : allChatUsers) {
-            if (user.getUserName().equals(userName)) {
+            if (user.getDisplayName().equals(userName)) {
                 Platform.runLater(() -> {
                     chatListView.getSelectionModel().select(user);
                 });
@@ -4453,33 +4453,14 @@ public ChatService getChatService() {
                     }
                 });
     }
-    private String formatLastSeen(String isoTimestamp) {
-        if (isoTimestamp == null || isoTimestamp.isBlank()) {
-            return "last seen a long time ago";
-        }
-        try {
-            LocalDateTime lastSeenTime = LocalDateTime.parse(isoTimestamp);
-            LocalDateTime now = LocalDateTime.now();
 
-            if (lastSeenTime.toLocalDate().isEqual(now.toLocalDate())) {
-                return "last seen today at " + lastSeenTime.format(DateTimeFormatter.ofPattern("HH:mm"));
-            } else if (lastSeenTime.toLocalDate().isEqual(now.toLocalDate().minusDays(1))) {
-                return "last seen yesterday at " + lastSeenTime.format(DateTimeFormatter.ofPattern("HH:mm"));
-            } else {
-                return "last seen on " + lastSeenTime.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM));
-            }
-        } catch (Exception e) {
-            System.err.println("Could not parse last seen timestamp: " + isoTimestamp);
-            return "last seen a long time ago";
-        }
-    }
     public void handleChatInfoChanged(ChatInfoChangedEventModel eventModel) {
         allChatUsers.stream()
                 .filter(user -> user.getUserId().equals(eventModel.getChatId().toString()))
                 .findFirst()
                 .ifPresent(user -> {
                     if (eventModel.getNewTitle() != null) {
-                        user.setUserName(eventModel.getNewTitle());
+                        user.setDisplayName(eventModel.getNewTitle());
                     }
                     if (eventModel.getNewProfilePictureId() != null) {
                         user.setAvatarId(eventModel.getNewProfilePictureId());
@@ -4512,7 +4493,7 @@ public ChatService getChatService() {
                 UserViewModel uvm = new UserViewModelBuilder()
                         .userId(contactInfo.getUserId().toString())
                         .avatarId(contactInfo.getProfilePictureId())
-                        .userName(contactInfo.getFirstName() + " " + contactInfo.getLastName())
+                        .displayName(contactInfo.getFirstName() + " " + contactInfo.getLastName())
                         .lastMessage("") // Will be fetched upon selection
                         .time(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
                         .type(UserType.USER.toString())

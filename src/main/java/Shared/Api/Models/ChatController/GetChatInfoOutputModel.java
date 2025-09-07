@@ -10,6 +10,25 @@ public class GetChatInfoOutputModel {
     private int unreadCount;
     private boolean isMuted;
 
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    private String username;
+
+    public String getBio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
+    }
+
+    private String bio;
     public String getUserMembershipType() {
         return userMembershipType;
     }

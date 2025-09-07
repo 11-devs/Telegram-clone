@@ -51,6 +51,8 @@ public class ChatRpcController extends RpcControllerBase {
                             Account otherUser = otherUserOpt.get();
                             String otherUserName = otherUser.getFirstName() + (otherUser.getLastName() != null ? " " + otherUser.getLastName() : "");
                             output.setTitle(otherUserName.trim());
+                            output.setUsername(otherUser.getUsername());
+                            output.setBio(otherUser.getBio());
                             output.setOnline(getServerSessionManager().isUserOnline(otherUser.getId().toString()));
                             if (otherUser.getLastSeen() != null) {
                                 output.setLastSeen(otherUser.getLastSeen().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));

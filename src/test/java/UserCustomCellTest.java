@@ -49,7 +49,7 @@ public class UserCustomCellTest extends Application {
         ObservableList<UserViewModel> users = FXCollections.observableArrayList();
 
         users.add(new UserViewModelBuilder()
-                .userName("John Doe")
+                .displayName("John Doe")
                 .lastMessage("Hey there! How are you doing?")
                 .time(getCurrentTime())
                 .notificationsNumber("2")
@@ -61,7 +61,7 @@ public class UserCustomCellTest extends Application {
                 .build());
 
         users.add(new UserViewModelBuilder()
-                .userName("Alice Smith")
+                .displayName("Alice Smith")
                 .lastMessage("Can we meet tomorrow?")
                 .time(getYesterdayTime())
                 .notificationsNumber("1")
@@ -73,7 +73,7 @@ public class UserCustomCellTest extends Application {
                 .build());
 
         users.add(new UserViewModelBuilder()
-                .userName("Tech Community")
+                .displayName("Tech Community")
                 .lastMessage("New announcement posted!")
                 .time(getTimeHoursAgo(1))
                 .notificationsNumber("15")
@@ -84,7 +84,7 @@ public class UserCustomCellTest extends Application {
                 .build());
 
         users.add(new UserViewModelBuilder()
-                .userName("News Channel")
+                .displayName("News Channel")
                 .lastMessage("Breaking news: Major update released")
                 .time(getTimeHoursAgo(2))
                 .notificationsNumber("0")
@@ -95,7 +95,7 @@ public class UserCustomCellTest extends Application {
                 .build());
 
         users.add(new UserViewModelBuilder()
-                .userName("Admin User")
+                .displayName("Admin User")
                 .lastMessage("I'm an admin of this group")
                 .time(getTimeHoursAgo(4))
                 .notificationsNumber("0")
@@ -106,7 +106,7 @@ public class UserCustomCellTest extends Application {
                 .build());
 
         users.add(new UserViewModelBuilder()
-                .userName("Muted ContactViewModel")
+                .displayName("Muted ContactViewModel")
                 .lastMessage("This contact is muted")
                 .time(getTimeHoursAgo(5))
                 .notificationsNumber("5")
@@ -118,7 +118,7 @@ public class UserCustomCellTest extends Application {
                 .build());
 
         users.add(new UserViewModelBuilder()
-                .userName("Pinned Chat")
+                .displayName("Pinned Chat")
                 .lastMessage("This chat is pinned")
                 .time(getTimeHoursAgo(6))
                 .notificationsNumber("0")
@@ -130,7 +130,7 @@ public class UserCustomCellTest extends Application {
                 .build());
 
         users.add(new UserViewModelBuilder()
-                .userName("Long Message User")
+                .displayName("Long Message User")
                 .lastMessage("This is a very long message that should be truncated in the UI to prevent layout issues and maintain consistent appearance across all chat items")
                 .time(getTimeHoursAgo(7))
                 .notificationsNumber("0")
@@ -159,7 +159,7 @@ public class UserCustomCellTest extends Application {
                 Thread.sleep(2000);
                 Platform.runLater(() -> {
                     UserViewModel newUser = new UserViewModelBuilder()
-                            .userName("New ContactViewModel")
+                            .displayName("New ContactViewModel")
                             .lastMessage("Hello! I'm new here")
                             .time(getCurrentTime())
                             .isOnline(true)
@@ -182,7 +182,7 @@ public class UserCustomCellTest extends Application {
     private void simulateTyping(UserViewModel user, long durationMillis, ListView<UserViewModel> chatListView) {
         new Thread(() -> {
             try {
-                System.out.println("Starting typing simulation for: " + user.getUserName());
+                System.out.println("Starting typing simulation for: " + user.getDisplayName());
                 Platform.runLater(() -> {
                     user.setTyping(true);
                 });
@@ -195,7 +195,7 @@ public class UserCustomCellTest extends Application {
                 Thread.sleep(durationMillis - 2000);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                System.err.println("Typing simulation interrupted for " + user.getUserName() + ": " + e.getMessage());
+                System.err.println("Typing simulation interrupted for " + user.getDisplayName() + ": " + e.getMessage());
             }
         }).start();
     }
