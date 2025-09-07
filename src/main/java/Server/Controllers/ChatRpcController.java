@@ -40,6 +40,7 @@ public class ChatRpcController extends RpcControllerBase {
                     output.setId(chat.getId());
                     output.setType(chat.getType().toString());
                     output.setUserMembershipType(membership.getType().toString());
+
                     if (chat.getType() == ChatType.PRIVATE) {
                         List<Membership> chatMembers = daoManager.getMembershipDAO().findAllByField("chat.id", chat.getId());
                         Optional<Account> otherUserOpt = chatMembers.stream()
@@ -49,6 +50,7 @@ public class ChatRpcController extends RpcControllerBase {
 
                         if (otherUserOpt.isPresent()) {
                             Account otherUser = otherUserOpt.get();
+                            output.setPhoneNumber(otherUser.getPhoneNumber());
                             String otherUserName = otherUser.getFirstName() + (otherUser.getLastName() != null ? " " + otherUser.getLastName() : "");
                             output.setTitle(otherUserName.trim());
                             output.setUsername(otherUser.getUsername());
