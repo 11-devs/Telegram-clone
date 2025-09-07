@@ -23,7 +23,7 @@ import Shared.Events.Models.MessageReadEventModel;
 import Shared.Events.Models.NewMessageEventModel;
 import Shared.Events.Models.UserIsTypingEventModel;
 import Shared.Models.*;
-//import Shared.Utils.SidebarUtil;
+import Shared.Utils.SidebarUtil;
 import Shared.Models.Message.MessageType;
 import Shared.Utils.TelegramCellUtils;
 import Shared.Utils.TextUtil;
@@ -950,7 +950,6 @@ public class MainChatController implements Initializable {
         // Sidebar buttons
         menuButton.setOnAction(e -> showSideBar());
         settingsButton.setOnAction(e -> openSettings());
-        // nightModeButton.setOnAction(e -> toggleTheme()); TODO UI
 
         // Search functionality
         searchField.textProperty().addListener((obs, oldText, newText) -> performSearch(newText));
@@ -1414,23 +1413,31 @@ public class MainChatController implements Initializable {
         bubble.getStyleClass().addAll("message-bubble", isOutgoing ? "outgoing" : "incoming");
         bubble.setMaxWidth(420);
 
+        bubble.getProperties().put("raw_text", text);
+
         // Add sender name for incoming group messages
         if (!isOutgoing && senderName != null && currentSelectedUser != null &&
                 (currentSelectedUser.getType() == UserType.GROUP || currentSelectedUser.getType() == UserType.SUPERGROUP)) {
             Label senderLabel = new Label(senderName);
             senderLabel.getStyleClass().add("sender-name");
+            senderLabel.setMouseTransparent(true);
             bubble.getChildren().add(senderLabel);
         }
 
-        // Message text
-        Label messageText = new Label(text);
-        messageText.getStyleClass().addAll("message-text", isOutgoing ? "outgoing" : "incoming");
-        messageText.setWrapText(true);
+        TextFlow messageTextFlow = createFormattedTextFlow(text, isOutgoing);
+        messageTextFlow.setMouseTransparent(true);
 
         // Time and status container
         HBox timeContainer = new HBox();
         timeContainer.setSpacing(4);
         timeContainer.setAlignment(Pos.CENTER_RIGHT);
+        timeContainer.setMouseTransparent(true);
+
+        if (isEdited) {
+            Label editedLabel = new Label("edited");
+            editedLabel.getStyleClass().add("edited-indicator");
+            timeContainer.getChildren().add(editedLabel);
+        }
 
         Label timeLabel = new Label(time);
         timeLabel.getStyleClass().addAll("message-time", isOutgoing ? "outgoing" : "incoming");
@@ -1443,11 +1450,10 @@ public class MainChatController implements Initializable {
             timeContainer.getChildren().add(statusLabel);
         }
 
-        bubble.getChildren().addAll(messageText, timeContainer);
+        bubble.getChildren().addAll(messageTextFlow, timeContainer);
 
         // Add click handler for message options
         bubble.setOnMouseClicked(this::handleMessageClick);
-
 
         return bubble;
     }
@@ -3001,14 +3007,14 @@ public class MainChatController implements Initializable {
     // ============ EVENT HANDLERS ============
 
     /**
-     * Shows the sidebar if the controller is initialized.
+     * Shows the sidebar using the SidebarUtil utility.
      */
     private void showSideBar() {
-        if (sidebarController != null) {
-            Stage parentStage = (Stage) menuButton.getScene().getWindow();
-            //SidebarUtil.showSidebarDialog(parentStage, "/Client/fxml/sidebarMenu.fxml", this);
+        Stage parentStage = (Stage) menuButton.getScene().getWindow();
+        if (parentStage != null) {
+            SidebarUtil.showSidebarDialog(parentStage, "/Client/fxml/sidebarMenu.fxml", this);
         } else {
-            System.out.println("SidebarController is not initialized!");
+            System.err.println("Could not find parent stage to show sidebar.");
         }
     }
 
@@ -3406,8 +3412,6 @@ public class MainChatController implements Initializable {
             }
         });
 
-        MenuItem copyItem = createIconMenuItem("Copy Text", "/Client/images/context-menu/copy.png");
-        copyItem.setOnAction(e -> copyMessageText(messageBubble));
 
         MenuItem deleteItem = createIconMenuItem("Delete", "/Client/images/context-menu/delete.png");
         deleteItem.setOnAction(e -> deleteMessage(messageBubble));
@@ -3429,6 +3433,8 @@ public class MainChatController implements Initializable {
             // MenuItem copyLinkItem = createIconMenuItem("Copy Link", ...);
             // newMenu.getItems().add(copyLinkItem);
         } else {
+            MenuItem copyItem = createIconMenuItem("Copy Text", "/Client/images/context-menu/copy.png");
+            copyItem.setOnAction(e -> copyMessageText(messageBubble));
             newMenu.getItems().add(copyItem);
         }
 
@@ -3554,18 +3560,27 @@ public class MainChatController implements Initializable {
     }
 
     /**
-     * Copies the text of a message to the clipboard.
+     * Copies the raw text content of a message bubble to the system clipboard,
+     * after stripping any formatting markers.
+     *
+     * @param messageBubble The VBox of the message from which to copy the text.
      */
     private void copyMessageText(VBox messageBubble) {
+        if (messageBubble == null) return;
+
         String rawText = (String) messageBubble.getProperties().get("raw_text");
 
         if (rawText != null && !rawText.isEmpty()) {
-            final javafx.scene.input.Clipboard clipboard = javafx.scene.input.Clipboard.getSystemClipboard();
-            final javafx.scene.input.ClipboardContent content = new javafx.scene.input.ClipboardContent();
-            String cleanText = TextUtil.stripFormattingForCopying(rawText);
-            content.putString(cleanText);
+            final Clipboard clipboard = Clipboard.getSystemClipboard();
+            final ClipboardContent content = new ClipboardContent();
+
+            content.putString(rawText);
             clipboard.setContent(content);
-            showTemporaryNotification("Text copied to clipboard.\n");
+
+            showTemporaryNotification("Text copied to clipboard.");
+            System.out.println("Text copied: " + rawText);
+        } else {
+            System.err.println("Could not find raw text on the message bubble to copy.");
         }
     }
 

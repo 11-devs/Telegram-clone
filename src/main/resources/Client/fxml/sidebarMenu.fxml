@@ -20,35 +20,29 @@
         <padding>
             <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
         </padding>
-          <!-- User Avatar -->
-          <StackPane alignment="CENTER_LEFT" prefHeight="71.0" prefWidth="258.0" styleClass="user-avatar-container">
-              <children>
-                  <ImageView fx:id="userAvatarImage" fitHeight="60.0" fitWidth="60.0" pickOnBounds="true" preserveRatio="true" styleClass="user-avatar">
-                      <image>
-                          <Image url="@../images/11Devs-white.png" />
-                      </image>
-                      <clip>
-                          <Circle centerX="30" centerY="30" radius="30" />
-                      </clip>
-               <StackPane.margin>
-                  <Insets left="7.0" />
-               </StackPane.margin>
-                  </ImageView>
-              </children>
-          </StackPane>
+        <StackPane alignment="CENTER_LEFT" prefHeight="71.0" prefWidth="258.0" styleClass="user-avatar-container">
+            <children>
+                <ImageView fx:id="userAvatarImage" fitHeight="60.0" fitWidth="60.0" pickOnBounds="true" preserveRatio="true" styleClass="user-avatar">
+                    <image>
+                        <Image url="@../images/11Devs-white.png" />
+                    </image>
+                    <clip>
+                        <Circle centerX="30" centerY="30" radius="30" />
+                    </clip>
+                    <StackPane.margin>
+                        <Insets left="7.0" />
+                    </StackPane.margin>
+                </ImageView>
+            </children>
+        </StackPane>
 
-        <!-- User Profile Section -->
         <HBox alignment="CENTER_LEFT" prefHeight="40.0" prefWidth="267.0" spacing="15.0" styleClass="user-profile-section">
             <children>
-
-                <!-- User Info -->
                 <VBox prefHeight="24.0" prefWidth="224.0" spacing="4.0" HBox.hgrow="ALWAYS">
                     <children>
                         <Label fx:id="userNameLabel" prefHeight="58.0" prefWidth="126.0" styleClass="user-name" text="User Name" />
                     </children>
                 </VBox>
-
-                <!-- Dropdown Arrow -->
                 <Button fx:id="profileDropdownButton" styleClass="profile-dropdown-button">
                     <graphic>
                         <ImageView fitHeight="20.0" fitWidth="30.0" pickOnBounds="true" preserveRatio="true">
@@ -71,23 +65,19 @@
                 <padding>
                     <Insets bottom="10.0" top="10.0" />
                 </padding>
-
                 <!-- My Profile -->
                 <Button fx:id="myProfileButton" alignment="CENTER_LEFT" prefWidth="311.0" styleClass="menu-item-button">
                     <graphic>
                         <HBox alignment="CENTER_LEFT" spacing="20.0">
                             <children>
                                 <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="menu-item-icon">
-                                    <image>
-                                        <Image url="@../images/profile-icon.png" />
-                                    </image>
+                                    <image><Image url="@../images/profile-icon.png" /></image>
                                 </ImageView>
                                 <Label styleClass="menu-item-text" text="My Profile" />
                             </children>
                         </HBox>
                     </graphic>
                 </Button>
-
                 <!-- New Group -->
                 <Button fx:id="newGroupButton" alignment="CENTER_LEFT" prefWidth="314.0" styleClass="menu-item-button">
                     <graphic>
@@ -103,7 +93,6 @@
                         </HBox>
                     </graphic>
                 </Button>
-
                 <!-- New Channel -->
                 <Button fx:id="newChannelButton" alignment="CENTER_LEFT" prefWidth="322.0" styleClass="menu-item-button">
                     <graphic>
@@ -119,7 +108,6 @@
                         </HBox>
                     </graphic>
                 </Button>
-
                 <!-- Contacts -->
                 <Button fx:id="contactsButton" alignment="CENTER_LEFT" prefWidth="321.0" styleClass="menu-item-button">
                     <graphic>
@@ -135,7 +123,6 @@
                         </HBox>
                     </graphic>
                 </Button>
-
                 <!-- Calls -->
                 <Button fx:id="callsButton" alignment="CENTER_LEFT" prefWidth="329.0" styleClass="menu-item-button">
                     <graphic>
@@ -151,7 +138,6 @@
                         </HBox>
                     </graphic>
                 </Button>
-
                 <!-- Saved Messages -->
                 <Button fx:id="savedMessagesButton" alignment="CENTER_LEFT" prefWidth="328.0" styleClass="menu-item-button">
                     <graphic>
@@ -167,7 +153,6 @@
                         </HBox>
                     </graphic>
                 </Button>
-
                 <!-- Settings -->
                 <Button fx:id="settingsButton" alignment="CENTER_LEFT" prefWidth="337.0" styleClass="menu-item-button">
                     <graphic>
@@ -183,7 +168,6 @@
                         </HBox>
                     </graphic>
                 </Button>
-
                 <!-- Night Mode -->
                 <HBox alignment="CENTER_LEFT" styleClass="menu-item-toggle">
                     <padding>
@@ -203,8 +187,6 @@
                         <Button fx:id="nightModeToggleButton" styleClass="toggle-button" />
                     </children>
                 </HBox>
-
-                <!-- Spacer to push footer to bottom -->
                 <Region VBox.vgrow="ALWAYS" />
             </VBox>
         </content>
