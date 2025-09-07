@@ -1348,13 +1348,57 @@ public class MainChatController implements Initializable {
      *
      * @return true if the user is an admin, false otherwise.
      */
-    private boolean isCurrentUserAdmin() {
+    boolean isCurrentUserAdmin() {
         if (currentSelectedUser == null) {
             return false;
         }
         // TODO:Server
         return "ADMIN".equalsIgnoreCase(currentSelectedUser.getUserRole());
     }
+
+    /**
+     * Opens the profile dialog for the currently selected user, group, or channel.
+     */
+    private void showProfileDialog() {
+        if (currentSelectedUser == null) return;
+        try {
+            Stage parentStage = (Stage) mainChatContainer.getScene().getWindow();
+            Stage dialogStage = SceneUtil.createDialog(
+                    "/Client/fxml/profileSection.fxml",
+                    parentStage,
+                    this,
+                    currentSelectedUser,
+                    "Profile Info"
+            );
+            dialogStage.initStyle(StageStyle.TRANSPARENT);
+            //dialogStage.getScene().setFill(Color.TRANSPARENT);
+            dialogStage.show();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // TODO
+    /**
+     * Checks if the provided UserViewModel represents the currently logged-in user's profile.
+     * This requires knowing the logged-in user's ID.
+     * @param user The UserViewModel to check.
+     * @return true if it's the current user's own profile.
+     */
+//    public boolean isMyOwnProfile(UserViewModel user) {
+//        if (user == null || connectionManager.getClient().getUserIdentity() == null) {
+//            return false;
+//        }
+//        return user.getUserId().equals(connectionManager.getClient().getUserIdentity().getUserId().toString());
+//    }
+//
+//    /**
+//     * Provides access to the ChatService for other controllers.
+//     * @return The instance of ChatService.
+//     */
+//    public ChatService getChatService() {
+//        return this.chatService;
+//    }
 
     // ============ MESSAGE HANDLING ============
 

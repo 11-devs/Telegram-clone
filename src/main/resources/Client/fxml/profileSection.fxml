@@ -13,6 +13,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.shape.Circle?>
 
+<?import javafx.scene.control.ListView?>
 <VBox fx:id="profileContainer" focusTraversable="true" maxWidth="400.0" minWidth="350.0" prefWidth="380.0" styleClass="profile-container" stylesheets="@../css/profileSection.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.Controllers.ProfileSectionController">
 
     <!-- Profile Header -->
@@ -89,10 +90,10 @@
                 <Separator styleClass="profile-separator" />
 
                 <!-- Profile Information Fields -->
-                <VBox prefHeight="218.0" prefWidth="375.0" styleClass="profile-fields-section">
+                <VBox fx:id="profileFieldsSection" styleClass="profile-fields-section">
 
                     <!-- Phone Number -->
-                    <HBox alignment="CENTER" styleClass="profile-field-row">
+                    <HBox fx:id="phoneFieldContainer" alignment="CENTER" styleClass="profile-field-row">
                         <padding>
                             <Insets bottom="15.0" left="20.0" right="20.0" top="15.0" />
                         </padding>
@@ -118,7 +119,7 @@
                     </HBox>
 
                     <!-- Bio -->
-                    <HBox alignment="TOP_LEFT" styleClass="profile-field-row">
+                    <HBox fx:id="bioFieldContainer" alignment="TOP_LEFT" styleClass="profile-field-row">
                         <padding>
                             <Insets bottom="15.0" left="20.0" right="20.0" top="15.0" />
                         </padding>
@@ -142,7 +143,7 @@
                     </HBox>
 
                     <!-- Username -->
-                    <HBox alignment="CENTER_LEFT" styleClass="profile-field-row">
+                    <HBox fx:id="usernameFieldContainer" alignment="CENTER_LEFT" styleClass="profile-field-row">
                         <padding>
                             <Insets bottom="15.0" left="20.0" right="20.0" top="15.0" />
                         </padding>
@@ -170,6 +171,20 @@
                             </Button>
                         </children>
                     </HBox>
+                </VBox>
+                <VBox fx:id="membersSection" managed="false" visible="false" styleClass="profile-fields-section">
+                    <children>
+                        <Separator styleClass="profile-separator" />
+                        <HBox alignment="CENTER_LEFT" styleClass="members-header">
+                            <padding><Insets bottom="10.0" left="20.0" right="20.0" top="15.0" /></padding>
+                            <children>
+                                <Label fx:id="membersHeaderLabel" styleClass="field-description" text="Members" />
+                                <Region HBox.hgrow="ALWAYS" />
+                                <Button fx:id="addMemberButton" styleClass="add-member-button" text="+ Add Member" visible="false" />
+                            </children>
+                        </HBox>
+                        <ListView fx:id="membersListView" prefHeight="200.0" styleClass="members-list" />
+                    </children>
                 </VBox>
             </VBox>
         </content>
