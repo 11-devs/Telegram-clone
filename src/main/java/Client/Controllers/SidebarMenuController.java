@@ -1,5 +1,6 @@
 package Client.Controllers;
 
+import Shared.Utils.AlertUtil;
 import Shared.Utils.DialogUtil;
 import Shared.Utils.SceneUtil;
 import javafx.animation.*;
@@ -245,7 +246,49 @@ public class SidebarMenuController implements Initializable {
     private void handleContacts() {
         System.out.println("Contacts clicked");
         close();
-        // TODO: Navigate to contacts view
+        Stage parentStage = primaryStage != null ? primaryStage : (Stage) sidebarMenuContainer.getScene().getWindow();
+
+        if (parentStage == null) {
+            System.err.println("Could not find a parent stage to open the contacts dialog.");
+            return;
+        }
+
+        try {
+            ColorAdjust dimEffect = new ColorAdjust();
+            if (parentStage.getScene() != null && parentStage.getScene().getRoot() != null) {
+                parentStage.getScene().getRoot().setEffect(dimEffect);
+            }
+
+            Timeline fadeIn = new Timeline(
+                    new KeyFrame(Duration.ZERO, new javafx.animation.KeyValue(dimEffect.brightnessProperty(), 0)),
+                    new KeyFrame(Duration.millis(300), new javafx.animation.KeyValue(dimEffect.brightnessProperty(), -0.3, Interpolator.EASE_BOTH))
+            );
+            fadeIn.play();
+
+            Stage contactsDialog = SceneUtil.createDialog(
+                    "/Client/fxml/contactsSection.fxml",
+                    parentStage,
+                    this,
+                    null,
+                    "Contacts"
+            );
+
+            contactsDialog.showAndWait();
+
+            Timeline fadeOut = new Timeline(
+                    new KeyFrame(Duration.ZERO, new javafx.animation.KeyValue(dimEffect.brightnessProperty(), -0.3, Interpolator.EASE_BOTH)),
+                    new KeyFrame(Duration.millis(150), new javafx.animation.KeyValue(dimEffect.brightnessProperty(), 0))
+            );
+            if (parentStage.getScene() != null && parentStage.getScene().getRoot() != null) {
+                fadeOut.setOnFinished(e -> parentStage.getScene().getRoot().setEffect(null));
+            }
+            fadeOut.play();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Error loading contacts dialog: " + e.getMessage());
+            AlertUtil.showError("Could not open the contacts window.");
+        }
     }
 
     /**
@@ -256,7 +299,7 @@ public class SidebarMenuController implements Initializable {
         System.out.println("Calls clicked");
         close();
         if (primaryStage != null) {
-            DialogUtil.showNotificationDialog(primaryStage, "Will be developed in future versions.\n");
+            DialogUtil.showNotificationDialog(primaryStage, "Will be developed in future versions.\\n");
         } else {
             System.out.println("primaryStage is null!");
         }
