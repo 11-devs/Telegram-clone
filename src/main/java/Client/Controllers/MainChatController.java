@@ -960,6 +960,11 @@ public ChatService getChatService() {
         searchField.textProperty().addListener((obs, oldText, newText) -> performSearch(newText));
 
         // Header buttons
+        headerAvatarImage.setOnMouseClicked(e -> {
+            if (currentSelectedUser != null) {
+                showProfileDialog();
+            }
+        });
         searchInChatButton.setOnAction(e -> showSearchInChat());
         callButton.setOnAction(e -> startVoiceCall());
         videoCallButton.setOnAction(e -> startVideoCall());
@@ -1413,22 +1418,38 @@ public ChatService getChatService() {
 
     /**
      * Opens the profile dialog for the currently selected user, group, or channel.
+     * The dialog's content and title are adjusted based on the chat type.
      */
     private void showProfileDialog() {
         if (currentSelectedUser == null) return;
         try {
+            String dialogTitle;
+            switch (currentSelectedUser.getType()) {
+                case GROUP:
+                    dialogTitle = "Group Info";
+                    break;
+                case CHANNEL:
+                case SUPERGROUP:
+                    dialogTitle = "Channel Info";
+                    break;
+                default:
+                    dialogTitle = "Profile Info";
+                    break;
+            }
+
             Stage parentStage = (Stage) mainChatContainer.getScene().getWindow();
             Stage dialogStage = SceneUtil.createDialog(
                     "/Client/fxml/profileSection.fxml",
                     parentStage,
                     this,
                     currentSelectedUser,
-                    "Profile Info"
+                    dialogTitle
             );
             dialogStage.initStyle(StageStyle.TRANSPARENT);
-            //dialogStage.getScene().setFill(Color.TRANSPARENT);
             dialogStage.show();
+
         } catch (IOException e) {
+            System.err.println("Failed to load the profile section dialog.");
             e.printStackTrace();
         }
     }
