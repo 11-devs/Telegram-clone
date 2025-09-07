@@ -834,8 +834,7 @@ public class MainChatController implements Initializable {
                 user.timeProperty(),
                 user.notificationsNumberProperty(),
                 user.isTypingProperty(),
-                user.messageStatusProperty(),
-                user.userMembershipTypeProperty()
+                user.messageStatusProperty()
         };
 
         allChatUsers = FXCollections.observableArrayList(extractor);
@@ -1211,13 +1210,9 @@ public class MainChatController implements Initializable {
         // Update badges and indicators
         mutedIcon.setVisible(user.isMuted());
         onlineIndicator.setVisible(user.isOnline() && user.getType() == UserType.USER);
-        if (user.getType() == UserType.CHANNEL) {
-            membersCountLabel.setText(user.getMembersCount() + " subscribers");
-            membersCountLabel.setVisible(true);
-            chatSubtitleLabel.setVisible(false); // Hide the "online/offline" status
-            onlineIndicator.setVisible(false);
-        }
-        else if (user.getType() == UserType.GROUP || user.getType() == UserType.SUPERGROUP) {
+
+        // Update members count for groups
+        if (user.getType() == UserType.GROUP || user.getType() == UserType.SUPERGROUP) {
             membersCountLabel.setText(user.getMembersCount() + " members");
             membersCountLabel.setVisible(true);
         } else {
