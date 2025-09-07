@@ -3223,8 +3223,8 @@ public ChatService getChatService() {
         // Update profile info
         profileNameLabel.setText(user.getDisplayName());
 
-        if (user.getDisplayName() != null && !user.getUserId().isEmpty()) {
-            profileUsernameLabel.setText("@" + user.getUserId());
+        if (user.getUsername() != null && !user.getUsername().isEmpty()) {
+            profileUsernameLabel.setText("@" + user.getUsername());
             profileUsernameLabel.setVisible(true);
         } else {
             profileUsernameLabel.setVisible(false);
