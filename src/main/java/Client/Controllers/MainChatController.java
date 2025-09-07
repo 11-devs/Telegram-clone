@@ -467,8 +467,8 @@ public class MainChatController implements Initializable {
                 DocumentInfo docInfo = new DocumentInfo(message);
                 docInfo.setSenderName(message.getSenderName());
                 // For media, the bubble needs reply/forward info too.
-                HBox messageNode = addDocumentMessageBubble(docInfo, false, formattedTime, "received");
-                // This part needs a way to add reply/forward info to document bubbles. For now, it's omitted for brevity.
+                HBox messageNode = addDocumentMessageBubble(docInfo, false, formattedTime, "received",
+                        message.getRepliedToSenderName(), message.getRepliedToMessageContent(), message.getForwardedFromSenderName());
             }
 
             if (messagesScrollPane.getVvalue() > 0.9) {
@@ -502,6 +502,7 @@ public class MainChatController implements Initializable {
                     reorderAndRefreshChatList(user);
                 });
     }
+
 
     private Label findStatusLabelInMessageNode(HBox messageNode) {
         if (messageNode == null || messageNode.getChildren().isEmpty() || !(messageNode.getChildren().getFirst() instanceof VBox bubble)) {
@@ -1226,9 +1227,9 @@ public class MainChatController implements Initializable {
                             DocumentInfo docInfo = new DocumentInfo(msg);
                             docInfo.setSenderName(senderName);
                             String status = msg.getOutgoing() ? msg.getMessageStatus() : "received";
-                            HBox messageNode = addDocumentMessageBubble(docInfo, msg.getOutgoing(), formattedTime, status);
+                            HBox messageNode = addDocumentMessageBubble(docInfo, msg.getOutgoing(), formattedTime, status,
+                                    msg.getRepliedToSenderName(), msg.getRepliedToMessageContent(), msg.getForwardedFromSenderName());
                             // Store messageId and timestamp for later updates
-                            // TODO: Add reply/forward rendering for document bubbles
                             ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageId", msg.getMessageId());
                             ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageTimestamp", timestamp);
                         }
@@ -1248,86 +1249,130 @@ public class MainChatController implements Initializable {
 
         new Thread(getMessagesTask).start();
     }
-
-    private void uploadFileAndSendMessage(File file, DocumentInfo docInfo) {
-        IProgressListener listener = (transferred, total) -> {
-            double progress = (total > 0) ? ((double) transferred / total) * 100 : 0;
-            System.out.printf("Upload Progress: %.2f%%\\n", progress);
-            // TODO: Update UI with progress indicator on the message bubble
-        };
-
-        var app = connectionManager.getClient();
-        ExecutorService backgroundExecutor = app.getBackgroundExecutor();
-        backgroundExecutor.submit(() -> {
-            try {
-                // Step 1: Initiate upload to get FileId. This is a custom protocol message, not RPC.
-                FileInfoModel info = app.getFileTransferManager().initiateUpload(file);
-                String fileId = info.FileId;
-
-                // Step 2: Create the Media DB entry via RPC.
-                CreateMediaInputModel createMediaInput = new CreateMediaInputModel(
-                        UUID.fromString(fileId),
-                        file.getName(),
-                        file.length(),
-                        getFileExtension(file)
-                );
-                RpcResponse<UUID> createMediaResponse = rpcCaller.createMediaEntry(createMediaInput);
-
-                if (createMediaResponse.getStatusCode() != StatusCode.OK) {
-                    System.err.println("Failed to create media entry on server: " + createMediaResponse.getMessage());
-                    Platform.runLater(() -> showTemporaryNotification("Error preparing upload.\n"));
-                    return; // Abort upload
-                }
-
-                // Step 3: Start the actual upload task
-                UploadTask uploadTask = new UploadTask(app.getFileTransferManager(), info, file, listener);
-                app.registerTask(fileId, uploadTask);
-
-                uploadTask.setOnSucceeded(e -> {
-                    app.unregisterTask(fileId);
-                    System.out.println("Upload successful. Media ID: " + fileId);
-
-                    // Step 4: Send the message pointing to the Media ID
-                    SendMessageInputModel messageInput = new SendMessageInputModel();
-                    messageInput.setChatId(UUID.fromString(currentSelectedUser.getUserId()));
-                    messageInput.setMessageType(MessageType.MEDIA);
-                    messageInput.setMediaId(createMediaResponse.getPayload());
-
-                    Task<RpcResponse<SendMessageOutputModel>> sendMessageTask = chatService.sendMessage(messageInput);
-                    sendMessageTask.setOnSucceeded(event -> {
-                        if (sendMessageTask.getValue().getStatusCode() == StatusCode.OK) {
-                            System.out.println("Media message sent successfully.");
-                            HBox messageNode = addDocumentMessageBubble(docInfo, true, getCurrentTime(), "delivered");
-                            // Store the actual messageId and timestamp from server for later event updates
-                            ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageId", sendMessageTask.getValue().getPayload().getMessageId());
-                            ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageTimestamp", LocalDateTime.parse(sendMessageTask.getValue().getPayload().getTimestamp()));
-
-                        } else {
-                            Platform.runLater(() -> showTemporaryNotification("Failed to send file message.\n"));
-                        }
-                    });
-                    sendMessageTask.setOnFailed(failEvent -> {
-                        sendMessageTask.getException().printStackTrace();
-                        Platform.runLater(() -> showTemporaryNotification("Error sending file message.\n"));
-                    });
-                    new Thread(sendMessageTask).start();
-                });
-
-                uploadTask.setOnFailed(failEvent -> {
-                    app.unregisterTask(fileId);
-                    uploadTask.getException().printStackTrace();
-                    Platform.runLater(() -> showTemporaryNotification("File upload failed.\n"));
-                });
-
-                backgroundExecutor.submit(uploadTask);
-
-            } catch (Exception ex) {
-                System.err.println("Error initiating file upload or creating media entry: " + ex.getMessage());
-                ex.printStackTrace();
-                Platform.runLater(() -> showTemporaryNotification("Error starting upload.\n"));
-            }
-        });
+    private void addReplyAndForwardHeaders(VBox bubble, String repliedToSenderName, String repliedToMessageContent, String forwardedFromName) {
+        // Handle Forwarded Info
+        if (forwardedFromName != null && !forwardedFromName.isEmpty()) {
+            VBox forwardInfoBox = new VBox();
+            forwardInfoBox.getStyleClass().add("forward-info-box");
+            forwardInfoBox.setPadding(new Insets(0, 0, 4, 0)); // Add some spacing
+            Label forwardedFromLabel = new Label("Forwarded from");
+            forwardedFromLabel.getStyleClass().add("forward-label");
+            Label forwarderNameLabel = new Label(forwardedFromName);
+            forwarderNameLabel.getStyleClass().add("forward-name-label");
+            forwardInfoBox.getChildren().addAll(forwardedFromLabel, forwarderNameLabel);
+            bubble.getChildren().add(forwardInfoBox);
         }
+
+        // Handle Reply Info
+        if (repliedToSenderName != null && repliedToMessageContent != null) {
+            HBox replyInfoBox = new HBox(5);
+            replyInfoBox.getStyleClass().add("reply-info-box");
+            replyInfoBox.setPadding(new Insets(4, 8, 4, 8));
+
+            Region replyBar = new Region();
+            replyBar.getStyleClass().add("reply-bar-in-bubble");
+
+            VBox replyContent = new VBox(2);
+            HBox.setHgrow(replyContent, Priority.ALWAYS);
+            Label replyToNameLabel = new Label(repliedToSenderName);
+            replyToNameLabel.getStyleClass().add("reply-to-name-label");
+
+            // Use a TextFlow for the preview to handle potential formatting and truncation.
+            TextFlow replyMessagePreview = createFormattedTextFlowForPreview(repliedToMessageContent);
+            replyMessagePreview.getStyleClass().add("reply-message-preview");
+
+            replyContent.getChildren().addAll(replyToNameLabel, replyMessagePreview);
+            replyInfoBox.getChildren().addAll(replyBar, replyContent);
+
+            // Add a click handler to jump to the replied message (future feature)
+            replyInfoBox.setOnMouseClicked(event -> {
+                // TODO: Implement jump to replied message logic
+                System.out.println("Jump to replied message clicked.");
+                event.consume();
+            });
+
+            bubble.getChildren().add(replyInfoBox);
+        }
+    }
+//    private void uploadFileAndSendMessage(File file, DocumentInfo docInfo) {
+//        IProgressListener listener = (transferred, total) -> {
+//            double progress = (total > 0) ? ((double) transferred / total) * 100 : 0;
+//            System.out.printf("Upload Progress: %.2f%%\\n", progress);
+//            // TODO: Update UI with progress indicator on the message bubble
+//        };
+//
+//        var app = connectionManager.getClient();
+//        ExecutorService backgroundExecutor = app.getBackgroundExecutor();
+//        backgroundExecutor.submit(() -> {
+//            try {
+//                // Step 1: Initiate upload to get FileId. This is a custom protocol message, not RPC.
+//                FileInfoModel info = app.getFileTransferManager().initiateUpload(file);
+//                String fileId = info.FileId;
+//
+//                // Step 2: Create the Media DB entry via RPC.
+//                CreateMediaInputModel createMediaInput = new CreateMediaInputModel(
+//                        UUID.fromString(fileId),
+//                        file.getName(),
+//                        file.length(),
+//                        getFileExtension(file)
+//                );
+//                RpcResponse<UUID> createMediaResponse = rpcCaller.createMediaEntry(createMediaInput);
+//
+//                if (createMediaResponse.getStatusCode() != StatusCode.OK) {
+//                    System.err.println("Failed to create media entry on server: " + createMediaResponse.getMessage());
+//                    Platform.runLater(() -> showTemporaryNotification("Error preparing upload.\n"));
+//                    return; // Abort upload
+//                }
+//
+//                // Step 3: Start the actual upload task
+//                UploadTask uploadTask = new UploadTask(app.getFileTransferManager(), info, file, listener);
+//                app.registerTask(fileId, uploadTask);
+//
+//                uploadTask.setOnSucceeded(e -> {
+//                    app.unregisterTask(fileId);
+//                    System.out.println("Upload successful. Media ID: " + fileId);
+//
+//                    // Step 4: Send the message pointing to the Media ID
+//                    SendMessageInputModel messageInput = new SendMessageInputModel();
+//                    messageInput.setChatId(UUID.fromString(currentSelectedUser.getUserId()));
+//                    messageInput.setMessageType(MessageType.MEDIA);
+//                    messageInput.setMediaId(createMediaResponse.getPayload());
+//
+//                    Task<RpcResponse<SendMessageOutputModel>> sendMessageTask = chatService.sendMessage(messageInput);
+//                    sendMessageTask.setOnSucceeded(event -> {
+//                        if (sendMessageTask.getValue().getStatusCode() == StatusCode.OK) {
+//                            System.out.println("Media message sent successfully.");
+//                            HBox messageNode = addDocumentMessageBubble(docInfo, true, getCurrentTime(), "delivered");
+//                            // Store the actual messageId and timestamp from server for later event updates
+//                            ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageId", sendMessageTask.getValue().getPayload().getMessageId());
+//                            ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageTimestamp", LocalDateTime.parse(sendMessageTask.getValue().getPayload().getTimestamp()));
+//
+//                        } else {
+//                            Platform.runLater(() -> showTemporaryNotification("Failed to send file message.\n"));
+//                        }
+//                    });
+//                    sendMessageTask.setOnFailed(failEvent -> {
+//                        sendMessageTask.getException().printStackTrace();
+//                        Platform.runLater(() -> showTemporaryNotification("Error sending file message.\n"));
+//                    });
+//                    new Thread(sendMessageTask).start();
+//                });
+//
+//                uploadTask.setOnFailed(failEvent -> {
+//                    app.unregisterTask(fileId);
+//                    uploadTask.getException().printStackTrace();
+//                    Platform.runLater(() -> showTemporaryNotification("File upload failed.\n"));
+//                });
+//
+//                backgroundExecutor.submit(uploadTask);
+//
+//            } catch (Exception ex) {
+//                System.err.println("Error initiating file upload or creating media entry: " + ex.getMessage());
+//                ex.printStackTrace();
+//                Platform.runLater(() -> showTemporaryNotification("Error starting upload.\n"));
+//            }
+//        });
+//        }
 
     /**
      * Checks if the current logged-in user is an admin in the currently selected chat.
@@ -1460,6 +1505,9 @@ public class MainChatController implements Initializable {
 
         bubble.getProperties().put("raw_text", text);
 
+        // NEW: Add headers for forwarded/replied messages
+        addReplyAndForwardHeaders(bubble, repliedToSenderName, repliedToMessageContent, forwardedFromName);
+
         // Add sender name for incoming group messages
         if (!isOutgoing && senderName != null && currentSelectedUser != null &&
                 (currentSelectedUser.getType() == UserType.GROUP || currentSelectedUser.getType() == UserType.SUPERGROUP)) {
@@ -1470,7 +1518,7 @@ public class MainChatController implements Initializable {
         }
 
         TextFlow messageTextFlow = createFormattedTextFlow(text, isOutgoing);
-        messageTextFlow.setMouseTransparent(true);
+        messageTextFlow.getStyleClass().add("message-text-flow");
 
         HBox timeContainer = new HBox();
         timeContainer.setSpacing(4);
@@ -1500,6 +1548,7 @@ public class MainChatController implements Initializable {
 
         return bubble;
     }
+
 
     public static TextFlow createFormattedTextFlowForPreview(String text) {
         TextFlow textFlow = new TextFlow();
@@ -1895,6 +1944,9 @@ public class MainChatController implements Initializable {
     /**
      * Processes the selected document and adds it to the chat
      */
+    /**
+     * Processes the selected document and adds it to the chat
+     */
     private void processDocumentAttachment(File file) {
         if (currentSelectedUser == null) return;
 
@@ -1907,10 +1959,16 @@ public class MainChatController implements Initializable {
 
         // Create a temporary ID to track the message bubble during upload
         String tempId = UUID.randomUUID().toString();
-        // Add a temporary bubble showing "sending" status
-        HBox messageNode = addDocumentMessageBubble(docInfo, true, getCurrentTime(), "sending");
+
+        // Get reply info for the temporary bubble if it exists
+        String repliedToSenderName = (activeReplyInfo != null) ? activeReplyInfo.senderName : null;
+        String repliedToMessageContent = (activeReplyInfo != null) ? activeReplyInfo.content : null;
+
+        // Add a temporary bubble showing "sending" status, now with potential reply headers
+        HBox messageNode = addDocumentMessageBubble(docInfo, true, getCurrentTime(), "sending", repliedToSenderName, repliedToMessageContent, null);
         VBox bubble = (VBox) messageNode.getChildren().getFirst();
         temporaryMessageNodes.put(tempId, messageNode);
+
 
         // Get the progress indicator from the bubble's properties
         ProgressIndicator progressIndicator = (ProgressIndicator) bubble.getProperties().get("progressIndicator");
@@ -1960,6 +2018,13 @@ public class MainChatController implements Initializable {
                     messageInput.setMessageType(MessageType.MEDIA);
                     messageInput.setMediaId(mediaId);
 
+                    // BUGFIX: Add reply information if present when attaching a file
+                    if (activeReplyInfo != null) {
+                        messageInput.setRepliedToMessageId(activeReplyInfo.messageId);
+                    }
+                    // BUGFIX: Close reply preview after sending the attachment
+                    closeReplyPreview();
+
                     Task<RpcResponse<SendMessageOutputModel>> sendMessageTask = chatService.sendMessage(messageInput);
                     sendMessageTask.setOnSucceeded(event -> {
                         RpcResponse<SendMessageOutputModel> smResponse = sendMessageTask.getValue();
@@ -1996,17 +2061,18 @@ public class MainChatController implements Initializable {
             }
         });
     }
-
     /**
      * Creates the document bubble UI with a dynamic action icon for downloading or opening,
      * and a progress indicator for uploads/downloads.
      */
-    private VBox createDocumentBubble(DocumentInfo docInfo, String time, String status, boolean isOutgoing) {
+    private VBox createDocumentBubble(DocumentInfo docInfo, String time, String status, boolean isOutgoing, String repliedToSenderName, String repliedToMessageContent, String forwardedFromName) {
         VBox bubble = new VBox();
         bubble.setSpacing(8);
         bubble.getStyleClass().addAll("message-bubble", "document-bubble", isOutgoing ? "outgoing" : "incoming");
         bubble.setMaxWidth(300);
         bubble.setPadding(new Insets(8));
+
+        addReplyAndForwardHeaders(bubble, repliedToSenderName, repliedToMessageContent, forwardedFromName);
 
         HBox docContainer = new HBox(12);
         docContainer.setAlignment(Pos.CENTER_LEFT);
@@ -2169,14 +2235,14 @@ public class MainChatController implements Initializable {
      * Creates a document message bubble with file info and controls
      */
     private HBox addDocumentMessageBubble(DocumentInfo docInfo, boolean isOutgoing,
-                                          String time, String status) {
+                                          String time, String status, String repliedToSenderName, String repliedToMessageContent, String forwardedFromName) {
         HBox messageContainer = new HBox();
         messageContainer.setSpacing(12);
         messageContainer.setPadding(new Insets(4, 0, 4, 0));
 
         if (isOutgoing) {
             messageContainer.setAlignment(Pos.CENTER_RIGHT);
-            VBox bubble = createDocumentBubble(docInfo, time, status, true);
+            VBox bubble = createDocumentBubble(docInfo, time, status, true, repliedToSenderName, repliedToMessageContent, forwardedFromName);
             messageContainer.getChildren().add(bubble);
         } else {
             messageContainer.setAlignment(Pos.CENTER_LEFT);
@@ -2189,7 +2255,7 @@ public class MainChatController implements Initializable {
                 messageContainer.getChildren().add(senderAvatar);
             }
 
-            VBox bubble = createDocumentBubble(docInfo, time, status, false);
+            VBox bubble = createDocumentBubble(docInfo, time, status, false, repliedToSenderName, repliedToMessageContent, forwardedFromName);
             messageContainer.getChildren().add(bubble);
         }
 
@@ -4042,20 +4108,50 @@ public class MainChatController implements Initializable {
      * @param recipientChatIds A list of chat IDs to forward the message to.
      */
     public void executeForwardMessage(UUID messageId, List<UUID> recipientChatIds) {
-//        Task<Void> forwardTask = chatService.forwardMessage(messageId, recipientChatIds); // TODO
-//
-//        forwardTask.setOnSucceeded(event -> {
-//            Platform.runLater(() -> showTemporaryNotification("Message forwarded successfully!\n"));
-//        });
-//
-//        forwardTask.setOnFailed(event -> {
-//            forwardTask.getException().printStackTrace();
-//            Platform.runLater(() -> showTemporaryNotification("Failed to forward message.\n"));
-//        });
-//
-//        new Thread(forwardTask).start();
-    }
+        if (messageId == null || recipientChatIds == null || recipientChatIds.isEmpty()) {
+            return;
+        }
 
+        Task<RpcResponse<Object>> forwardTask = chatService.forwardMessage(messageId, recipientChatIds);
+
+        forwardTask.setOnSucceeded(event -> {
+            Platform.runLater(() -> {
+                RpcResponse<Object> response = forwardTask.getValue();
+                if (response.getStatusCode() == StatusCode.OK) {
+                    showTemporaryNotification("Message forwarded successfully!\n");
+
+                    // Optimistically update the UI for the chats the message was forwarded to.
+                    String newTimestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+                    String lastMessagePreview = "Forwarded message"; // Use a generic placeholder
+
+                    UserViewModel lastUpdatedUser = null;
+
+                    List<UserViewModel> selectedUsers = allChatUsers.stream()
+                            .filter(u -> recipientChatIds.contains(UUID.fromString(u.getUserId())))
+                            .collect(Collectors.toList());
+
+                    for (UserViewModel user : selectedUsers) {
+                        user.setLastMessage(lastMessagePreview);
+                        user.setTime(newTimestamp);
+                        lastUpdatedUser = user;
+                    }
+
+                    if (lastUpdatedUser != null) {
+                        reorderAndRefreshChatList(lastUpdatedUser);
+                    }
+                } else {
+                    showTemporaryNotification("Failed to forward message: " + response.getMessage() + "\n");
+                }
+            });
+        });
+
+        forwardTask.setOnFailed(event -> {
+            forwardTask.getException().printStackTrace();
+            Platform.runLater(() -> showTemporaryNotification("Error forwarding message.\n"));
+        });
+
+        new Thread(forwardTask).start();
+    }
 
     /**
      * Puts the UI into editing mode. It resets any prior reply state and configures

@@ -1,0 +1,129 @@
+/* Client/css/createChannelDialog.css */
+
+.dialog-root {
+    -fx-background-color: #202B36;
+    -fx-font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    -fx-padding: 0;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 15, 0.5, 0, 0);
+}
+
+.dialog-title {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 20px;
+    -fx-font-weight: 600;
+}
+
+/* Profile Picture Section */
+.profile-picture-container {
+    -fx-padding: 10px 0;
+}
+
+.profile-picture-placeholder {
+    -fx-background-color: #3e4a57;
+    -fx-background-radius: 40px;
+}
+
+.profile-picture-svg {
+    -fx-fill: #92A3AF;
+    -fx-scale-x: 1.5;
+    -fx-scale-y: 1.5;
+}
+
+.change-photo-button {
+    -fx-background-color: #4FC3F7;
+    -fx-background-radius: 50%;
+    -fx-padding: 8px;
+    -fx-translate-x: 28;
+    -fx-translate-y: 28;
+    -fx-cursor: hand;
+    -fx-transition: -fx-background-color 0.15s ease-out;
+}
+
+.change-photo-button:hover {
+    -fx-background-color: #29B6F6;
+}
+
+.change-photo-svg {
+    -fx-fill: white;
+}
+
+/* Floating labels for text fields */
+.field-label-dialog {
+    -fx-text-fill: #92A3AF;
+    -fx-font-size: 13px;
+}
+
+/* TextField with bottom border */
+.dialog-text-field {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: 400;
+    -fx-padding: 2px 0px;
+    -fx-border-width: 0 0 1px 0;
+    -fx-border-color: #555555;
+    -fx-background-insets: 0;
+    -fx-prompt-text-fill: #72879B;
+}
+
+.dialog-text-field:focused {
+    -fx-border-color: transparent transparent #4FC3F7 transparent;
+    -fx-highlight-fill: #4FC3F7;
+}
+
+/* Special styling for TextArea */
+.dialog-text-area {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-prompt-text-fill: #72879B;
+    -fx-background-insets: 0;
+    -fx-background-radius: 5px;
+    -fx-border-color: #555555;
+    -fx-border-width: 1px;
+    -fx-border-radius: 5px;
+    -fx-padding: 5px;
+    -fx-wrap-text: true;
+}
+
+.dialog-text-area:focused {
+    -fx-border-color: #4FC3F7;
+    -fx-highlight-fill: #4FC3F7;
+    -fx-background-color: rgba(79, 195, 247, 0.05);
+}
+
+.dialog-text-area .scroll-pane {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.dialog-text-area .scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+
+.dialog-text-area .content {
+    -fx-background-color: transparent;
+}
+
+.char-count-label {
+    -fx-text-fill: #92A3AF;
+    -fx-font-size: 12px;
+}
+
+/* Action buttons at the bottom */
+.dialog-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #4FC3F7;
+    -fx-font-size: 14px;
+    -fx-font-weight: 600;
+    -fx-padding: 8px 15px;
+    -fx-cursor: hand;
+    -fx-text-transform: uppercase;
+}
+
+.dialog-button:hover {
+    -fx-background-color: rgba(79, 195, 247, 0.1);
+    -fx-background-radius: 5px;
+}
