@@ -1,0 +1,94 @@
+/* Client/css/setNewChannelUsername.css */
+
+.dialog-root {
+    -fx-background-color: #202B36;
+    -fx-font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    -fx-padding: 25px;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 15, 0.5, 0, 0);
+}
+
+.channel-radio-button {
+    -fx-text-fill: #EAEAEA;
+    -fx-font-size: 15px;
+    -fx-font-weight: 500;
+    -fx-padding: 5px 0;
+}
+
+.channel-radio-button .radio {
+    -fx-border-width: 1.5px;
+    -fx-border-color: #708090; /* Slate gray border for unselected */
+    -fx-background-color: transparent;
+    -fx-border-radius: 50%;
+    -fx-padding: 7px; 
+}
+
+.channel-radio-button:selected .radio {
+    -fx-border-color: #5288C1;
+}
+
+.channel-radio-button .dot {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 4px; 
+    -fx-shape: "M 0,0 a 1,1 0 1,1 0,2 a 1,1 0 1,1 0,-2";
+}
+
+.channel-radio-button:selected .radio .dot {
+    -fx-background-color: #5288C1;
+}
+
+.description-label {
+    -fx-text-fill: #92A3AF;
+    -fx-font-size: 14px;
+    -fx-padding: 0 0 0 28px; /* Indent to align with text */
+}
+
+.invite-link-header {
+    -fx-text-fill: #EAEAEA;
+    -fx-font-size: 15px;
+    -fx-font-weight: 500;
+}
+
+.invite-link-text {
+    -fx-text-fill: #4FC3F7;
+    -fx-font-size: 14px;
+    -fx-cursor: hand;
+}
+
+.link-prefix-label {
+    -fx-text-fill: #92A3AF;
+    -fx-font-size: 14px;
+    -fx-padding: 4px 0;
+}
+
+.link-text-field {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-padding: 2px 0px;
+    -fx-border-width: 0 0 1.5px 0;
+    -fx-border-color: #555555;
+    -fx-background-insets: 0;
+    -fx-prompt-text-fill: #72879B;
+}
+
+.link-text-field:focused {
+    -fx-border-color: transparent transparent #4FC3F7 transparent;
+    -fx-highlight-fill: #4FC3F7;
+}
+
+.dialog-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #4FC3F7;
+    -fx-font-size: 14px;
+    -fx-font-weight: 600;
+    -fx-padding: 8px 15px;
+    -fx-cursor: hand;
+}
+
+.dialog-button:hover {
+    -fx-background-color: rgba(79, 195, 247, 0.1);
+    -fx-background-radius: 5px;
+}
