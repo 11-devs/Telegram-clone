@@ -14,6 +14,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import com.jfoenix.controls.JFXToggleButton;
 
 import java.awt.Desktop;
 import java.io.IOException;
@@ -44,7 +45,7 @@ public class SidebarMenuController implements Initializable {
     @FXML private Button settingsButton;
 
     // Toggle Elements
-    @FXML private Button nightModeToggleButton;
+    @FXML private JFXToggleButton nightModeToggleButton;
 
     // Footer Elements
     @FXML private Label appNameLabel;
@@ -124,13 +125,14 @@ public class SidebarMenuController implements Initializable {
         settingsButton.setOnAction(event -> handleSettings());
     }
 
-    /**
-     * Setup night mode toggle
-     */
     private void setupNightModeToggle() {
-        // Initialize toggle button state
         updateNightModeToggleAppearance();
-        nightModeToggleButton.setOnAction(event -> handleNightModeToggle());
+    }
+
+    private void updateNightModeToggleAppearance() {
+        if (nightModeToggleButton != null) {
+            nightModeToggleButton.setSelected(isNightModeEnabled);
+        }
     }
 
     /**
@@ -167,19 +169,6 @@ public class SidebarMenuController implements Initializable {
             sidebarMenuContainer.getStyleClass().add("macos");
         } else {
             sidebarMenuContainer.getStyleClass().add("linux");
-        }
-    }
-
-    /**
-     * Update night mode toggle appearance
-     */
-    private void updateNightModeToggleAppearance() {
-        if (isNightModeEnabled) {
-            nightModeToggleButton.getStyleClass().removeAll("toggle-button");
-            nightModeToggleButton.getStyleClass().addAll("toggle-button", "toggle-button-on");
-        } else {
-            nightModeToggleButton.getStyleClass().removeAll("toggle-button-on");
-            nightModeToggleButton.getStyleClass().addAll("toggle-button", "toggle-button-off");
         }
     }
 
@@ -291,9 +280,8 @@ public class SidebarMenuController implements Initializable {
      */
     @FXML
     private void handleNightModeToggle() {
-        isNightModeEnabled = !isNightModeEnabled; // Toggle the state
+        isNightModeEnabled = !isNightModeEnabled;
         updateNightModeToggleAppearance();
-        applyTheme();
 
         // Animate theme change
         FadeTransition themeTransition = new FadeTransition(Duration.millis(300), sidebarMenuContainer);
@@ -352,7 +340,7 @@ public class SidebarMenuController implements Initializable {
         // Reverse dim effect when dialog is closed
         Timeline fadeOut = new Timeline(
                 new KeyFrame(Duration.ZERO, new javafx.animation.KeyValue(dimEffect.brightnessProperty(), -0.3, Interpolator.EASE_BOTH)),
-                new KeyFrame(Duration.millis(300), new javafx.animation.KeyValue(dimEffect.brightnessProperty(), 0))
+                new KeyFrame(Duration.millis(150), new javafx.animation.KeyValue(dimEffect.brightnessProperty(), 0))
         );
         fadeOut.setOnFinished(e -> parentStage.getScene().getRoot().setEffect(null));
         fadeOut.play();
