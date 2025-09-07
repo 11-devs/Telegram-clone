@@ -1,6 +1,13 @@
+// Path: java/Client/Controllers/SidebarMenuController.java
+
 package Client.Controllers;
 
+import Client.AppConnectionManager;
+import Client.RpcCaller;
+import Client.Services.FileDownloadService;
+import JSocket2.Protocol.Rpc.RpcResponse;
 import JSocket2.Protocol.StatusCode;
+import Shared.Api.Models.AccountController.GetAccountInfoOutputModel;
 import Shared.Models.UserType;
 import Shared.Models.UserViewModel;
 import Shared.Models.UserViewModelBuilder;
@@ -9,6 +16,7 @@ import Shared.Utils.DialogUtil;
 import Shared.Utils.SceneUtil;
 import javafx.animation.*;
 import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
@@ -63,7 +71,6 @@ public class SidebarMenuController implements Initializable {
     @FXML private Label versionLabel;
 
     // User data
-    private String currentUserName = "User Name";
     private boolean isNightModeEnabled = true;
 
     // Add primaryStage field
@@ -72,6 +79,10 @@ public class SidebarMenuController implements Initializable {
     private Object parentController;
 
     private Runnable closeHandler;
+
+    private RpcCaller rpcCaller;
+    private FileDownloadService fileDownloadService;
+
 
     // Constructor to inject primaryStage
     public void setPrimaryStage(Stage primaryStage) {
@@ -87,16 +98,18 @@ public class SidebarMenuController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        rpcCaller = AppConnectionManager.getInstance().getRpcCaller();
+        fileDownloadService = FileDownloadService.getInstance();
         setupUserProfile();
         setupMenuItems();
         setupNightModeToggle();
         setupFooter();
         applyTheme();
         detectPlatform();
+        loadUserProfile();
     }
 
     private void setupUserProfile() {
-        userNameLabel.setText(currentUserName);
 
         try {
             Image avatarImage = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Client/images/11Devs-white.png")));
@@ -160,6 +173,48 @@ public class SidebarMenuController implements Initializable {
         } else {
             sidebarMenuContainer.getStyleClass().add("linux");
         }
+    }
+
+    private void loadUserProfile() {
+        Task<RpcResponse<GetAccountInfoOutputModel>> getAccountInfoTask = new Task<>() {
+            @Override
+            protected RpcResponse<GetAccountInfoOutputModel> call() throws Exception {
+                return rpcCaller.getAccountInfo();
+            }
+        };
+
+        getAccountInfoTask.setOnSucceeded(event -> {
+            RpcResponse<GetAccountInfoOutputModel> response = getAccountInfoTask.getValue();
+            if (response.getStatusCode() == StatusCode.OK && response.getPayload() != null) {
+                GetAccountInfoOutputModel accountInfo = response.getPayload();
+                String displayName = accountInfo.getFirstName() + " " + accountInfo.getLastName();
+                String avatarId = accountInfo.getProfilePictureFileId();
+
+                if (avatarId != null && !avatarId.isBlank()) {
+                    fileDownloadService.getImage(avatarId).thenAccept(image -> {
+                        updateUserProfile(displayName, image);
+                    }).exceptionally(e -> {
+                        // If image download fails, still update name with default avatar
+                        System.err.println("Failed to download sidebar avatar: " + e.getMessage());
+                        updateUserProfile(displayName, null);
+                        return null;
+                    });
+                } else {
+                    updateUserProfile(displayName, null);
+                }
+            } else {
+                System.err.println("Failed to load user profile for sidebar: " + (response != null ? response.getMessage() : "No response"));
+            }
+        });
+
+        getAccountInfoTask.setOnFailed(event -> {
+            System.err.println("Task to get account info for sidebar failed.");
+            if (getAccountInfoTask.getException() != null) {
+                getAccountInfoTask.getException().printStackTrace();
+            }
+        });
+
+        new Thread(getAccountInfoTask).start();
     }
 
     @FXML
@@ -396,7 +451,7 @@ public class SidebarMenuController implements Initializable {
         System.out.println("Calls clicked");
         close();
         if (primaryStage != null) {
-            DialogUtil.showNotificationDialog(primaryStage, "Will be developed in future versions.\\\\n");
+            DialogUtil.showNotificationDialog(primaryStage, "Will be developed in future versions.\\\\\\\\n");
         } else {
             System.out.println("primaryStage is null!");
         }
@@ -434,6 +489,8 @@ public class SidebarMenuController implements Initializable {
             );
 
             settingsDialog.showAndWait();
+
+            loadUserProfile();
 
             Timeline fadeOut = new Timeline(
                     new KeyFrame(Duration.ZERO, new KeyValue(dimEffect.brightnessProperty(), -0.3, Interpolator.EASE_BOTH)),
@@ -546,12 +603,23 @@ public class SidebarMenuController implements Initializable {
 
     public void updateUserProfile(String name, Image avatar) {
         Platform.runLater(() -> {
-            userNameLabel.setText(name);
-            if (avatar != null) {
+            if (name != null && !name.trim().isEmpty()) {
+                userNameLabel.setText(name);
+            }
+            if (avatar != null && !avatar.isError()) {
                 userAvatarImage.setImage(avatar);
+            } else {
+                // Fallback to default if provided avatar is null or has an error
+                try {
+                    Image defaultAvatar = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Client/images/11Devs-white.png")));
+                    userAvatarImage.setImage(defaultAvatar);
+                } catch (Exception e) {
+                    System.err.println("Could not load default sidebar avatar: " + e.getMessage());
+                }
             }
         });
     }
+
 
     public void setCloseHandler(Runnable closeHandler) {
         this.closeHandler = closeHandler;
