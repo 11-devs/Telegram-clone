@@ -9,8 +9,10 @@ import Shared.Api.Models.MessageController.*;
 import Shared.Events.Models.*;
 import Shared.Models.Account.Account;
 import Shared.Models.Chat.Chat;
+import Shared.Models.Chat.ChatType;
 import Shared.Models.Media.Media;
 import Shared.Models.Membership.Membership;
+import Shared.Models.Membership.MembershipType;
 import Shared.Models.Message.MediaMessage;
 import Shared.Models.Message.Message;
 import Shared.Models.Message.TextMessage;
@@ -63,7 +65,13 @@ public class MessageRpcController extends RpcControllerBase {
         output.setForwardedFromSenderName(message.getForwardedFromSenderName());
 
 
-        boolean isOutgoing = Objects.equals(output.getSenderId().toString(), getCurrentUser().getUserId());
+
+        boolean isOutgoing;
+        if (message.getChat() != null && message.getChat().getType() == ChatType.CHANNEL) {
+            isOutgoing = false;
+        } else {
+            isOutgoing = Objects.equals(output.getSenderId().toString(), getCurrentUser().getUserId());
+        }
         output.setOutgoing(isOutgoing);
 
         if (isOutgoing) {
@@ -230,6 +238,21 @@ public class MessageRpcController extends RpcControllerBase {
             return BadRequest("Chat not found.");
         }
 
+        if (chat.getType() == ChatType.CHANNEL) {
+            Membership senderMembership = daoManager.getMembershipDAO().findOneByJpql(
+                    "SELECT m FROM Membership m WHERE m.chat.id = :chatId AND m.account.id = :accountId",
+                    query -> {
+                        query.setParameter("chatId", chat.getId());
+                        query.setParameter("accountId", sender.getId());
+                    }
+            );
+
+            if (senderMembership == null ||
+                    (senderMembership.getType() != MembershipType.OWNER && senderMembership.getType() != MembershipType.ADMIN)) {
+                return Forbidden("You do not have permission to send messages in this channel.");
+            }
+        }
+
         Message newMessage;
 
         switch (model.getMessageType()) {
@@ -357,6 +380,7 @@ public class MessageRpcController extends RpcControllerBase {
 
     public RpcResponse<Object> editMessage(EditMessageInputModel model) {
         Message message = daoManager.getMessageDAO().findById(model.getMessageId());
+        UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
         if (message == null) {
             return NotFound();
         }
@@ -366,7 +390,21 @@ public class MessageRpcController extends RpcControllerBase {
         if (!(message instanceof TextMessage textMessage)) {
             return BadRequest("Only text messages can be edited.");
         }
+        Chat chat = message.getChat();
+        if (chat.getType() == ChatType.CHANNEL) {
+            Membership senderMembership = daoManager.getMembershipDAO().findOneByJpql(
+                    "SELECT m FROM Membership m WHERE m.chat.id = :chatId AND m.account.id = :accountId",
+                    query -> {
+                        query.setParameter("chatId", chat.getId());
+                        query.setParameter("accountId", currentUserId);
+                    }
+            );
 
+            if (senderMembership == null ||
+                    (senderMembership.getType() != MembershipType.OWNER && senderMembership.getType() != MembershipType.ADMIN)) {
+                return Forbidden("You do not have permission to send messages in this channel.");
+            }
+        }
         textMessage.setTextContent(model.getNewContent());
         textMessage.setEdited(true);
         daoManager.getMessageDAO().update(textMessage);
@@ -402,7 +440,20 @@ public class MessageRpcController extends RpcControllerBase {
         }
 
         Chat chat = messageToDelete.getChat();
+        if (chat.getType() == ChatType.CHANNEL) {
+            Membership senderMembership = daoManager.getMembershipDAO().findOneByJpql(
+                    "SELECT m FROM Membership m WHERE m.chat.id = :chatId AND m.account.id = :accountId",
+                    query -> {
+                        query.setParameter("chatId", chat.getId());
+                        query.setParameter("accountId", currentUserId);
+                    }
+            );
 
+            if (senderMembership == null ||
+                    (senderMembership.getType() != MembershipType.OWNER && senderMembership.getType() != MembershipType.ADMIN)) {
+                return Forbidden("You do not have permission to send messages in this channel.");
+            }
+        }
         Message currentLastMessage = daoManager.getMessageDAO().findOneByJpql(
                 "SELECT m FROM Message m WHERE m.chat.id = :chatId AND m.isDeleted = false ORDER BY m.timestamp DESC",
                 query -> {

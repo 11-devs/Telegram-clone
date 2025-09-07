@@ -3,6 +3,7 @@ package Shared.Models.Membership;
 import Shared.Models.Account.Account;
 import Shared.Models.BaseEntity;
 import Shared.Models.Chat.Chat;
+import Shared.Models.Chat.GroupChat;
 import Shared.Models.Message.Message;
 import jakarta.persistence.*;
 import org.hibernate.annotations.SQLDelete;
@@ -49,6 +50,7 @@ public class Membership extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_read_message_id")
     private Message lastReadMessage;
+
 
     // --- Getters and Setters ---
 

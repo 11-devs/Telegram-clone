@@ -12,6 +12,10 @@ public class UserViewModelBuilder {
         user.setLastMessage(message);
         return this;
     }
+    public UserViewModelBuilder userMembershipType(String message) {
+        user.setUserMembershipType(message);
+        return this;
+    }
 
     public UserViewModelBuilder time(String time) {
         user.setTime(time);

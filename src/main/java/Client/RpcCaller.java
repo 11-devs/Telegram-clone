@@ -3,10 +3,10 @@ package Client;
 import JSocket2.Core.Client.ConnectionManager;
 import JSocket2.Protocol.Rpc.RpcCallerBase;
 import JSocket2.Protocol.Rpc.RpcResponse;
-import Shared.Api.Models.ChatController.GetChatInfoOutputModel;
-import Shared.Api.Models.ChatController.ToggleChatMuteInputModel;
-import Shared.Api.Models.ChatController.getChatsByUserInputModel;
+import Shared.Api.Models.ChatController.*;
 import Shared.Api.Models.MediaController.CreateMediaInputModel;
+import Shared.Api.Models.MembershipController.GetChatMembersOutputModel;
+import Shared.Api.Models.MembershipController.UpdateMemberRoleInputModel;
 import Shared.Api.Models.MessageController.*;
 import Shared.Models.Chat.Chat;
 import com.google.gson.Gson;
@@ -76,6 +76,30 @@ public class RpcCaller extends RpcCallerBase {
     }
     public RpcResponse<GetChatInfoOutputModel[]> getChatsByUser() throws IOException {
         return callRpcAndGetResponse("ChatRpcController", "getChatsByUser", GetChatInfoOutputModel[].class);
+    }
+
+    public RpcResponse<CreateGroupOutputModel> createGroup(CreateGroupInputModel model) throws IOException {
+        return callRpcAndGetResponse("ChatRpcController", "createGroup", CreateGroupOutputModel.class, model);
+    }
+
+    public RpcResponse<CreateChannelOutputModel> createChannel(CreateChannelInputModel model) throws IOException {
+        return callRpcAndGetResponse("ChatRpcController", "createChannel", CreateChannelOutputModel.class, model);
+    }
+
+    public RpcResponse<UpdateChatInfoOutputModel> updateChatInfo(UpdateChatInfoInputModel model) throws IOException {
+        return callRpcAndGetResponse("ChatRpcController", "updateChatInfo", UpdateChatInfoOutputModel.class, model);
+    }
+
+    public RpcResponse<Object> deleteChat(UUID chatId) throws IOException {
+        return callRpcAndGetResponse("ChatRpcController", "deleteChat", Object.class, chatId);
+    }
+
+    public RpcResponse<GetChatMembersOutputModel> getChatMembers(UUID chatId) throws IOException {
+        return callRpcAndGetResponse("MembershipRpcController", "getChatMembers", GetChatMembersOutputModel.class, chatId);
+    }
+
+    public RpcResponse<Object> updateMemberRole(UpdateMemberRoleInputModel model) throws IOException {
+        return callRpcAndGetResponse("MembershipRpcController", "updateMemberRole", Object.class, model);
     }
 
     public RpcResponse<GetMessageOutputModel[]> getMessagesByChat(GetMessageByChatInputModel model) throws IOException {
