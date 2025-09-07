@@ -2230,9 +2230,25 @@ public ChatService getChatService() {
         timeContainer.getChildren().add(timeLabel);
 
         if (isOutgoing && status != null) {
-            Label statusLabel = new Label(getStatusIcon(status));
-            statusLabel.getStyleClass().addAll("message-status", status);
-            timeContainer.getChildren().add(statusLabel);
+            String imagePath = switch (status.toLowerCase()) {
+                case "sending" -> "/Client/images/status/sending.png"; // Clock icon
+                case "sent", "delivered" -> "/Client/images/status/sent.png"; // One tick
+                case "read" -> "/Client/images/status/read.png"; // Blue double tick
+                default -> null;
+            };
+
+            if (imagePath != null) {
+                try {
+                    ImageView statusIcon = new ImageView(new Image(Objects.requireNonNull(getClass().getResource(imagePath)).toExternalForm()));
+                    statusIcon.setFitHeight(16);
+                    statusIcon.setPreserveRatio(true);
+                    statusIcon.getStyleClass().add("status-icon-image");
+
+                    timeContainer.getChildren().add(statusIcon);
+                } catch (Exception e) {
+                    System.err.println("Could not load status icon: " + imagePath);
+                }
+            }
         }
 
         bubble.getChildren().addAll(docContainer, timeContainer);
