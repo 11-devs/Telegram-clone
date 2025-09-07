@@ -126,4 +126,7 @@ public class RpcCaller extends RpcCallerBase {
     public RpcResponse<Object> updateName(UpdateNameInputModel model) throws IOException {
         return callRpcAndGetResponse("AccountRpcController", "updateName", Object.class, model);
     }
+    public RpcResponse<Object> forwardMessage(ForwardMessageInputModel model) throws IOException {
+        return callRpcAndGetResponse("MessageRpcController", "forwardMessage", Object.class, model);
+    }
 }

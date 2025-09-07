@@ -10,6 +10,15 @@ public class SendMessageInputModel {
     private String textContent;
     private UUID mediaId; // Added for Media Messages
 
+    public UUID getRepliedToMessageId() {
+        return repliedToMessageId;
+    }
+
+    public void setRepliedToMessageId(UUID repliedToMessageId) {
+        this.repliedToMessageId = repliedToMessageId;
+    }
+
+    private UUID repliedToMessageId;
     //<editor-fold desc="Getters and Setters">
     public UUID getSenderId() {
         return senderId;

@@ -8,6 +8,7 @@ import Shared.Api.Models.MessageController.*;
 import Shared.Models.Message.MessageType;
 import javafx.concurrent.Task;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -124,6 +125,18 @@ public class ChatService {
                 input.setChatId(chatId);
                 input.setMuted(isMuted);
                 return rpcCaller.toggleChatMute(input);
+            }
+        };
+    }
+
+    public Task<RpcResponse<Object>> forwardMessage(UUID messageId, List<UUID> targetChatIds) {
+        return new Task<>() {
+            @Override
+            protected RpcResponse<Object> call() throws Exception {
+                ForwardMessageInputModel input = new ForwardMessageInputModel();
+                input.setMessageToForwardId(messageId);
+                input.setTargetChatIds(targetChatIds);
+                return rpcCaller.forwardMessage(input);
             }
         };
     }

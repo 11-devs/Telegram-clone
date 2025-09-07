@@ -20,6 +20,11 @@ public class GetMessageOutputModel {
     private String fileName;
     private long fileSize;
     private String fileExtension;
+    private UUID repliedToMessageId;
+    private String repliedToSenderName;
+    private String repliedToMessageContent;
+    private String forwardedFromSenderName;
+
 
     public String getFileName() {
         return fileName;
@@ -140,6 +145,38 @@ public class GetMessageOutputModel {
 
     public void setMediaId(UUID mediaId) {
         this.mediaId = mediaId;
+    }
+
+    public UUID getRepliedToMessageId() {
+        return repliedToMessageId;
+    }
+
+    public void setRepliedToMessageId(UUID repliedToMessageId) {
+        this.repliedToMessageId = repliedToMessageId;
+    }
+
+    public String getRepliedToSenderName() {
+        return repliedToSenderName;
+    }
+
+    public void setRepliedToSenderName(String repliedToSenderName) {
+        this.repliedToSenderName = repliedToSenderName;
+    }
+
+    public String getRepliedToMessageContent() {
+        return repliedToMessageContent;
+    }
+
+    public void setRepliedToMessageContent(String repliedToMessageContent) {
+        this.repliedToMessageContent = repliedToMessageContent;
+    }
+
+    public String getForwardedFromSenderName() {
+        return forwardedFromSenderName;
+    }
+
+    public void setForwardedFromSenderName(String forwardedFromSenderName) {
+        this.forwardedFromSenderName = forwardedFromSenderName;
     }
     //</editor-fold>
 }

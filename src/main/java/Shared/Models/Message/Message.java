@@ -33,6 +33,14 @@ public abstract class Message extends BaseEntity {
     @Column(nullable = false)
     private MessageType type;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "replied_to_message_id")
+    private Message repliedToMessage;
+
+    @Column(name = "forwarded_from_sender_name")
+    private String forwardedFromSenderName;
+
+
     // --- Start of added setters ---
     public void setSender(Account sender) {
         this.sender = sender;
@@ -74,5 +82,21 @@ public abstract class Message extends BaseEntity {
 
     public MessageType getType() {
         return type;
+    }
+
+    public Message getRepliedToMessage() {
+        return repliedToMessage;
+    }
+
+    public void setRepliedToMessage(Message repliedToMessage) {
+        this.repliedToMessage = repliedToMessage;
+    }
+
+    public String getForwardedFromSenderName() {
+        return forwardedFromSenderName;
+    }
+
+    public void setForwardedFromSenderName(String forwardedFromSenderName) {
+        this.forwardedFromSenderName = forwardedFromSenderName;
     }
 }
