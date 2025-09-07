@@ -1,0 +1,87 @@
+/* Client/css/editContactDialog.css */
+
+.dialog-root {
+    -fx-background-color: #202B36;
+    -fx-font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 15, 0.5, 0, 0);
+}
+
+.dialog-title {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 20px;
+    -fx-font-weight: 600;
+}
+
+/* --- Profile Info Header --- */
+.profile-image {
+    /* clip is in fxml */
+}
+
+.change-photo-button {
+    -fx-background-color: #4FC3F7;
+    -fx-background-radius: 50%;
+    -fx-padding: 8px;
+    -fx-translate-x: 20;
+    -fx-translate-y: 20;
+    -fx-cursor: hand;
+    -fx-transition: -fx-background-color 0.15s ease-out;
+}
+
+.change-photo-button:hover {
+    -fx-background-color: #29B6F6;
+}
+
+.camera-icon-svg {
+    -fx-fill: white;
+}
+
+.phone-number-label {
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: 400;
+}
+
+.status-label {
+    -fx-text-fill: #92A3AF;
+    -fx-font-size: 14px;
+}
+
+/* --- Input Fields --- */
+.field-label-dialog {
+    -fx-text-fill: #92A3AF;
+    -fx-font-size: 13px;
+}
+
+.dialog-text-field {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: 400;
+    -fx-padding: 2px 0px;
+    -fx-border-width: 0 0 1.5px 0;
+    -fx-border-color: #555555;
+    -fx-background-insets: 0;
+}
+
+.dialog-text-field:focused {
+    -fx-border-color: transparent transparent #4FC3F7 transparent;
+    -fx-highlight-fill: #4FC3F7;
+}
+
+/* --- Action Buttons --- */
+.dialog-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #4FC3F7;
+    -fx-font-size: 14px;
+    -fx-font-weight: 600;
+    -fx-padding: 8px 15px;
+    -fx-cursor: hand;
+    -fx-text-transform: uppercase;
+}
+
+.dialog-button:hover {
+    -fx-background-color: rgba(79, 195, 247, 0.1);
+    -fx-background-radius: 5px;
+}

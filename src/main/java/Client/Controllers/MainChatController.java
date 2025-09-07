@@ -54,6 +54,7 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.shape.Circle;
+import javafx.scene.shape.SVGPath;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.stage.FileChooser;
@@ -1255,51 +1256,68 @@ public ChatService getChatService() {
 
         new Thread(getMessagesTask).start();
     }
+
+    /**
+     * Creates and prepends the reply/forward header to a message bubble if applicable.
+     *
+     * @param bubble                  The VBox of the message bubble.
+     * @param repliedToSenderName     The name of the original message's sender.
+     * @param repliedToMessageContent The content of the original message.
+     * @param forwardedFromName       The name of the user from whom the message was forwarded.
+     */
     private void addReplyAndForwardHeaders(VBox bubble, String repliedToSenderName, String repliedToMessageContent, String forwardedFromName) {
-        // Handle Forwarded Info
+        // --- Handle Forwarded Info ---
         if (forwardedFromName != null && !forwardedFromName.isEmpty()) {
             VBox forwardInfoBox = new VBox();
             forwardInfoBox.getStyleClass().add("forward-info-box");
-            forwardInfoBox.setPadding(new Insets(0, 0, 4, 0)); // Add some spacing
-            Label forwardedFromLabel = new Label("Forwarded from");
+            forwardInfoBox.setPadding(new Insets(0, 0, 4, 0)); // Add some spacing below
+
+            Label forwardedFromLabel = new Label("Forwarded from " + forwardedFromName);
             forwardedFromLabel.getStyleClass().add("forward-label");
-            Label forwarderNameLabel = new Label(forwardedFromName);
-            forwarderNameLabel.getStyleClass().add("forward-name-label");
-            forwardInfoBox.getChildren().addAll(forwardedFromLabel, forwarderNameLabel);
-            bubble.getChildren().add(forwardInfoBox);
+
+
+            forwardInfoBox.getChildren().addAll(forwardedFromLabel);
+            // Add forwarded info at the very top of the bubble
+            bubble.getChildren().add(0, forwardInfoBox);
         }
 
-        // Handle Reply Info
+        // --- Handle Reply Info ---
         if (repliedToSenderName != null && repliedToMessageContent != null) {
-            HBox replyInfoBox = new HBox(5);
+            HBox replyInfoBox = new HBox(8); // HBox with spacing
             replyInfoBox.getStyleClass().add("reply-info-box");
-            replyInfoBox.setPadding(new Insets(4, 8, 4, 8));
 
+            // This is the vertical colored bar
             Region replyBar = new Region();
             replyBar.getStyleClass().add("reply-bar-in-bubble");
 
-            VBox replyContent = new VBox(2);
+            // VBox for the name and message preview
+            VBox replyContent = new VBox(2); // VBox with small spacing
             HBox.setHgrow(replyContent, Priority.ALWAYS);
+
             Label replyToNameLabel = new Label(repliedToSenderName);
             replyToNameLabel.getStyleClass().add("reply-to-name-label");
 
-            // Use a TextFlow for the preview to handle potential formatting and truncation.
+            // Use the existing utility to create a formatted preview of the replied message
             TextFlow replyMessagePreview = createFormattedTextFlowForPreview(repliedToMessageContent);
             replyMessagePreview.getStyleClass().add("reply-message-preview");
+            // Limit the height of the preview to a few lines
+            replyMessagePreview.setMaxHeight(40);
 
             replyContent.getChildren().addAll(replyToNameLabel, replyMessagePreview);
             replyInfoBox.getChildren().addAll(replyBar, replyContent);
 
             // Add a click handler to jump to the replied message (future feature)
             replyInfoBox.setOnMouseClicked(event -> {
-                // TODO: Implement jump to replied message logic
                 System.out.println("Jump to replied message clicked.");
-                event.consume();
+                event.consume(); // Prevent click from bubbling up to the main bubble
             });
 
-            bubble.getChildren().add(replyInfoBox);
+            // Add reply info at the top (but after forward info if it exists)
+            int insertionIndex = bubble.getChildren().stream().anyMatch(n -> n.getStyleClass().contains("forward-info-box")) ? 1 : 0;
+            bubble.getChildren().add(insertionIndex, replyInfoBox);
         }
     }
+
 //    private void uploadFileAndSendMessage(File file, DocumentInfo docInfo) {
 //        IProgressListener listener = (transferred, total) -> {
 //            double progress = (total > 0) ? ((double) transferred / total) * 100 : 0;
@@ -1487,31 +1505,14 @@ public ChatService getChatService() {
         return messageContainer;
     }
 
-    /**
-     * Creates a message bubble VBox with text, time, and status.
-     *
-     * @param text       The message text.
-     * @param time       The time of the message.
-     * @param status     The delivery status.
-     * @param isOutgoing True if the message is outgoing.
-     * @param senderName The name of the sender (null for outgoing).
-     * @return The constructed VBox for the message bubble.
-     */
-    private VBox createMessageBubble(String text, String time, String status, boolean isOutgoing, String senderName, boolean isEdited) {
-        // Keep old signature for compatibility
-        return createMessageBubble(text, time, status, isOutgoing, senderName, isEdited, null, null, null);
-    }
-
     private VBox createMessageBubble(String text, String time, String status, boolean isOutgoing, String senderName, boolean isEdited,
                                      String repliedToSenderName, String repliedToMessageContent, String forwardedFromName) {
         VBox bubble = new VBox();
         bubble.setSpacing(4);
         bubble.getStyleClass().addAll("message-bubble", isOutgoing ? "outgoing" : "incoming");
         bubble.setMaxWidth(420);
-
         bubble.getProperties().put("raw_text", text);
 
-        // NEW: Add headers for forwarded/replied messages
         addReplyAndForwardHeaders(bubble, repliedToSenderName, repliedToMessageContent, forwardedFromName);
 
         // Add sender name for incoming group messages
@@ -1525,9 +1526,9 @@ public ChatService getChatService() {
 
         TextFlow messageTextFlow = createFormattedTextFlow(text, isOutgoing);
         messageTextFlow.getStyleClass().add("message-text-flow");
+        messageTextFlow.setMouseTransparent(true);
 
-        HBox timeContainer = new HBox();
-        timeContainer.setSpacing(4);
+        HBox timeContainer = new HBox(4);
         timeContainer.setAlignment(Pos.CENTER_RIGHT);
         timeContainer.setMouseTransparent(true);
 
@@ -1542,14 +1543,28 @@ public ChatService getChatService() {
         timeContainer.getChildren().add(timeLabel);
 
         if (isOutgoing && status != null) {
-            Label statusLabel = new Label(getStatusIcon(status));
-            statusLabel.getStyleClass().addAll("message-status", status);
-            timeContainer.getChildren().add(statusLabel);
+            String imagePath = switch (status.toLowerCase()) {
+                case "sending" -> "/Client/images/status/sending.png"; // Clock icon
+                case "sent", "delivered" -> "/Client/images/status/sent.png";       // One tick
+                case "read" -> "/Client/images/status/read.png";       // Blue double tick
+                default -> null;
+            };
+
+            if (imagePath != null) {
+                try {
+                    ImageView statusIcon = new ImageView(new Image(Objects.requireNonNull(getClass().getResource(imagePath)).toExternalForm()));
+                    statusIcon.setFitHeight(16);
+                    statusIcon.setPreserveRatio(true);
+                    statusIcon.getStyleClass().add("status-icon-image");
+
+                    timeContainer.getChildren().add(statusIcon);
+                } catch (Exception e) {
+                    System.err.println("Could not load status icon: " + imagePath);
+                }
+            }
         }
 
         bubble.getChildren().addAll(messageTextFlow, timeContainer);
-
-        // Add click handler for message options
         bubble.setOnMouseClicked(this::handleMessageClick);
 
         return bubble;
@@ -1819,32 +1834,51 @@ public ChatService getChatService() {
     private void showReplyPreview(VBox messageBubble) {
         if (replyPreviewContainer == null || messageBubble == null) return;
 
+        // 1. Reset any previous state (edit or reply)
         resetReplyEditState();
         if (replyPreviewAnimation != null) replyPreviewAnimation.stop();
 
+        // 2. Get the message ID
         UUID messageId = (UUID) messageBubble.getProperties().get("messageId");
-        if (messageId == null) return;
+        if (messageId == null) {
+            System.err.println("Cannot reply: Message ID not found on bubble.");
+            return;
+        }
 
+        // 3. Determine the name of the person being replied to
         boolean isOwnMessage = messageBubble.getStyleClass().contains("outgoing");
         String replyToName = isOwnMessage ? this.ownUsername : (currentSelectedUser != null ? currentSelectedUser.getUserName() : "User");
 
-        String originalMessageText;
-        if (messageBubble.getStyleClass().contains("document-bubble")) {
-            DocumentInfo docInfo = (DocumentInfo) messageBubble.getUserData();
-            originalMessageText = docInfo != null ? docInfo.getFileName() : "Attachment";
-        } else {
-            originalMessageText = (String) messageBubble.getProperties().get("raw_text");
+        // 4. Get the raw text of the original message
+        String originalMessageText = (String) messageBubble.getProperties().get("raw_text");
+        if (originalMessageText == null) {
+            // Fallback for document bubbles which store info in UserData
+            if (messageBubble.getUserData() instanceof DocumentInfo) {
+                originalMessageText = ((DocumentInfo) messageBubble.getUserData()).getFileName();
+            } else {
+                System.err.println("Could not find 'raw_text' property on message bubble for reply.");
+                return;
+            }
         }
 
-        if (originalMessageText == null) return;
+        // 5. Store the active reply information
         activeReplyInfo = new ReplyInfo(messageId, replyToName, originalMessageText);
 
-        replyToLabel.setText("Reply to " + replyToName);
-        replyMessageLabel.setText(originalMessageText.length() > 100 ?
-                originalMessageText.substring(0, 97) + "..." : originalMessageText);
-        messageInputField.clear();
 
-        // 5. If the panel was hidden, show it now with animation
+        // First, create a clean, unformatted version for the preview label
+        String cleanPreviewText = TextUtil.stripFormattingForCopying(originalMessageText);
+
+        // Then, truncate it if it's too long
+        String truncatedText = cleanPreviewText.length() > 45 ?
+                cleanPreviewText.substring(0, 42) + "..." :
+                cleanPreviewText;
+
+        // Update the UI labels
+        replyToLabel.setText("Reply to " + replyToName);
+        replyMessageLabel.setText(truncatedText); // Use the clean and truncated text
+        messageInputField.clear(); // Ensure input field is empty for the new reply
+
+        // 7. Show the preview panel with animation if it's hidden
         if (!replyPreviewContainer.isVisible()) {
             replyPreviewContainer.setVisible(true);
             replyPreviewContainer.setManaged(true);
@@ -1857,6 +1891,7 @@ public ChatService getChatService() {
             replyPreviewAnimation = new ParallelTransition(slideDown, fadeIn);
             replyPreviewAnimation.play();
         }
+
         messageInputField.requestFocus();
     }
 
@@ -3901,6 +3936,9 @@ public ChatService getChatService() {
         }
 
         replyToLabel.setText("Edit Message");
+        replyMessageLabel.setText(originalMessageText.length() > 45 ?
+                originalMessageText.substring(0, 42) + "..." : originalMessageText);
+        messageInputField.clear();
         replyMessageLabel.setText(originalMessageText);
         messageInputField.setText(originalMessageText);
 

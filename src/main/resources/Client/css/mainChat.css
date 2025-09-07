@@ -369,6 +369,51 @@
     -fx-min-height: 18px;
 }
 
+/* ============ REPLY & FORWARD HEADERS IN BUBBLE ============ */
+.reply-info-box {
+    -fx-background-color: #325E87;
+    -fx-cursor: hand;
+    -fx-padding: 4px 8px 4px 8px;
+    -fx-border-color: rgba(255, 255, 255, 0.05);
+    -fx-spacing: 8px;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+}
+
+.reply-bar-in-bubble {
+    -fx-background-color: #4FC3F7;
+    -fx-min-width: 3px;
+    -fx-pref-width: 3px;
+    -fx-background-radius: 2px;
+}
+
+.reply-to-name-label {
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #4FC3F7;
+}
+
+.reply-message-label {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 13px;
+}
+
+
+.forward-info-box {
+    -fx-padding: 0 0 4px 0;
+}
+
+.forward-label {
+    -fx-font-size: 13px;
+    -fx-font-weight: 400;
+    -fx-text-fill: #92A3AF;
+}
+.forward-name-label {
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #92A3AF;
+}
+
 /* ============ REPLY PREVIEW ============ */
 .reply-preview {
     -fx-background-color: #202B36;
