@@ -834,7 +834,8 @@ public class MainChatController implements Initializable {
                 user.timeProperty(),
                 user.notificationsNumberProperty(),
                 user.isTypingProperty(),
-                user.messageStatusProperty()
+                user.messageStatusProperty(),
+                user.userMembershipTypeProperty()
         };
 
         allChatUsers = FXCollections.observableArrayList(extractor);
@@ -1210,9 +1211,13 @@ public class MainChatController implements Initializable {
         // Update badges and indicators
         mutedIcon.setVisible(user.isMuted());
         onlineIndicator.setVisible(user.isOnline() && user.getType() == UserType.USER);
-
-        // Update members count for groups
-        if (user.getType() == UserType.GROUP || user.getType() == UserType.SUPERGROUP) {
+        if (user.getType() == UserType.CHANNEL) {
+            membersCountLabel.setText(user.getMembersCount() + " subscribers");
+            membersCountLabel.setVisible(true);
+            chatSubtitleLabel.setVisible(false); // Hide the "online/offline" status
+            onlineIndicator.setVisible(false);
+        }
+        else if (user.getType() == UserType.GROUP || user.getType() == UserType.SUPERGROUP) {
             membersCountLabel.setText(user.getMembersCount() + " members");
             membersCountLabel.setVisible(true);
         } else {
@@ -2714,12 +2719,51 @@ public class MainChatController implements Initializable {
     /**
      * Enables chat controls when a chat is selected.
      */
+// A conceptual rewrite of enableChatControls()
     private void enableChatControls() {
-        messageInputField.setDisable(false);
-        sendButton.setDisable(false);
-        attachmentButton.setDisable(false);
-        callButton.setDisable(false);
-        videoCallButton.setDisable(false);
+        if (currentSelectedUser == null) {
+            disableChatControls(); // Should not happen but good practice
+            return;
+        }
+
+        boolean isChannel = currentSelectedUser.getType() == UserType.CHANNEL;
+        Node inputBar = messageInputField.getParent();
+
+        if (isChannel) {
+            // --- Channel-Specific Logic ---
+            String role = currentSelectedUser.getUserMembershipType(); // e.g., "OWNER", "ADMIN", "MEMBER"
+
+            // Default channel state: no calls, input disabled
+            callButton.setDisable(true);
+            videoCallButton.setDisable(true);
+
+            boolean canPost = "OWNER".equals(role) || "ADMIN".equals(role);
+
+            // Show/hide the entire input bar based on posting rights
+            if (inputBar != null) {
+                inputBar.setVisible(canPost);
+                inputBar.setManaged(canPost);
+            }
+            messageInputField.setDisable(!canPost);
+            sendButton.setDisable(!canPost);
+            attachmentButton.setDisable(!canPost);
+
+        } else {
+            // --- Existing Logic for Groups and Private Chats ---
+            if (inputBar != null) {
+                inputBar.setVisible(true);
+                inputBar.setManaged(true);
+            }
+            messageInputField.setDisable(false);
+            sendButton.setDisable(false);
+            attachmentButton.setDisable(false);
+
+            boolean isUser = currentSelectedUser.getType() == UserType.USER;
+            callButton.setDisable(!isUser);
+            videoCallButton.setDisable(!isUser);
+        }
+
+        // These are generally always enabled when a chat is selected
         searchInChatButton.setDisable(false);
         moreOptionsButton.setDisable(false);
     }
@@ -3532,7 +3576,8 @@ public class MainChatController implements Initializable {
         if (activeMessageContextMenu != null && activeMessageContextMenu.isShowing()) {
             activeMessageContextMenu.hide();
         }
-
+        String role = currentSelectedUser.getUserMembershipType();
+        boolean isChannelAdmin = currentSelectedUser.getType() == UserType.CHANNEL && ("OWNER".equals(role) || "ADMIN".equals(role));
         ContextMenu newMenu = new ContextMenu();
         newMenu.setAutoHide(true);
 
@@ -3571,7 +3616,9 @@ public class MainChatController implements Initializable {
 
         MenuItem deleteItem = createIconMenuItem("Delete", "/Client/images/context-menu/delete.png");
         deleteItem.setOnAction(e -> deleteMessage(messageBubble));
-        newMenu.getItems().add(deleteItem);
+        if (isOutgoing || isChannelAdmin) {
+            newMenu.getItems().add(deleteItem);
+        }
 
         newMenu.show(messageBubble, event.getScreenX(), event.getScreenY());
         activeMessageContextMenu = newMenu;

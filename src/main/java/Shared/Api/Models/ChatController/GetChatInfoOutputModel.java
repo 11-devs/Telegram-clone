@@ -10,6 +10,15 @@ public class GetChatInfoOutputModel {
     private int unreadCount;
     private boolean isMuted;
 
+    public String getUserMembershipType() {
+        return userMembershipType;
+    }
+
+    public void setUserMembershipType(String userMembershipType) {
+        this.userMembershipType = userMembershipType;
+    }
+
+    private String userMembershipType;
     public boolean isMuted() {
         return isMuted;
     }

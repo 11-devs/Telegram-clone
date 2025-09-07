@@ -53,6 +53,10 @@ public class UserViewModel {
     public StringProperty phoneNumberProperty() { return phoneNumber; }
     public IntegerProperty membersCountProperty() { return membersCount; }
     public StringProperty typingUserNameProperty() { return typingUserName; }
+    private StringProperty userMembershipType = new SimpleStringProperty();;
+    public String getUserMembershipType() { return userMembershipType.get(); }
+    public StringProperty userMembershipTypeProperty() { return userMembershipType; }
+    public void setUserMembershipType(String type) { this.userMembershipType.set(type); }
     // Getters
     public String getUserName() { return userName.get(); }
     public String getLastMessage() { return lastMessage.get(); }
