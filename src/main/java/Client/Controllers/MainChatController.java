@@ -3989,7 +3989,7 @@ public class MainChatController implements Initializable {
     }
     public void handleUserStatusChanged(UserStatusChangedEventModel eventModel) {
         allChatUsers.stream()
-                .filter(user -> user.getUserId().equals(eventModel.getUserId().toString()))
+                .filter(user -> user.getUserId().equals(eventModel.getChatId().toString()))
                 .findFirst()
                 .ifPresent(user -> {
                     user.setOnline(eventModel.isOnline());

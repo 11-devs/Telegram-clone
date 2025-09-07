@@ -4,13 +4,20 @@ import java.util.UUID;
 
 public class UserStatusChangedEventModel {
     private UUID userId;
+
+    public UUID getChatId() {
+        return chatId;
+    }
+
+    public void setChatId(UUID chatId) {
+        this.chatId = chatId;
+    }
+
+    private UUID chatId;
     private boolean isOnline;
     private String lastSeenTimestamp; // ISO-8601 format
 
-    public UserStatusChangedEventModel() {
-    }
-
-    public UserStatusChangedEventModel(UUID userId, boolean isOnline, String lastSeenTimestamp) {
+    public UserStatusChangedEventModel(UUID userId,boolean isOnline, String lastSeenTimestamp) {
         this.userId = userId;
         this.isOnline = isOnline;
         this.lastSeenTimestamp = lastSeenTimestamp;
