@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 
+import static Shared.Utils.SceneUtil.changeScene;
 import static Shared.Utils.SceneUtil.changeSceneWithSameSize;
 
 public class CloudPasswordCheckController {
@@ -106,9 +107,7 @@ public class CloudPasswordCheckController {
                                 var resultCode = AccessKeyManager.LoginWithAccessKey(response.getPayload().getAccessKey(),connectionManager.getClient());
                                 if (resultCode == StatusCode.OK) {
                                     System.out.println("Successful login");
-                                    changeSceneWithSameSize(root, "/Client/fxml/mainChat.fxml", (MainChatController controller) -> {
-
-                                    });
+                                    changeScene(root, "/Client/fxml/mainChat.fxml", (MainChatController controller) -> {}, true);
                                 }
                                 break;
                         }

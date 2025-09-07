@@ -1,6 +1,14 @@
 package Shared.Models;
+import Client.Services.FileDownloadService;
+import JSocket2.Protocol.Transfer.TransferInfo;
+import Shared.Api.Models.MessageController.GetMessageOutputModel;
+import Shared.Events.Models.NewMessageEventModel;
+
+import java.io.File;
 
 public class DocumentInfo {
+    private String fileId;
+
     private String fileName;
     private long fileSize;
     private String fileExtension;
@@ -17,7 +25,33 @@ public class DocumentInfo {
         this.isUploaded = false;
     }
 
+    public DocumentInfo(TransferInfo transferInfo) {
+        this.fileId = transferInfo.getFileId();
+        this.fileName = transferInfo.getFileName() + "." + transferInfo.getFileExtension();
+        this.fileSize = transferInfo.getFileSize();
+        this.fileExtension = transferInfo.getFileExtension();
+        this.storedPath = new File(transferInfo.getDestinationPath(), this.fileName).getPath();
+        this.isUploaded = true;
+    }
+    public DocumentInfo(GetMessageOutputModel msg) {
+        this.fileId = msg.getFileId();
+        this.fileName = msg.getFileName() + "." + msg.getFileExtension();
+        this.fileSize = msg.getFileSize();
+        this.fileExtension = msg.getFileExtension();
+        this.storedPath = new File(FileDownloadService.getInstance().getDocumentCacheDir().toFile(), this.fileName).getPath();
+    }
+    public DocumentInfo(NewMessageEventModel msg) {
+        this.fileId = msg.getFileId();
+        this.fileName = msg.getFileName() + "." + msg.getFileExtension();
+        this.fileSize = msg.getFileSize();
+        this.fileExtension = msg.getFileExtension();
+        this.storedPath = new File(FileDownloadService.getInstance().getDocumentCacheDir().toFile(), this.fileName).getPath();
+    }
+
     // Getters and setters
+    public String getFileId() { return fileId; }
+    public void setFileId(String fileId) { this.fileId = fileId; }
+
     public String getFileName() { return fileName; }
     public void setFileName(String fileName) { this.fileName = fileName; }
 

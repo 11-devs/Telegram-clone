@@ -3,10 +3,8 @@
 <?import com.jfoenix.controls.JFXToggleButton?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
-<?import javafx.scene.control.ContextMenu?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
-<?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
@@ -21,80 +19,73 @@
 <?import javafx.scene.shape.SVGPath?>
 <?import javafx.scene.text.Text?>
 
-<BorderPane fx:id="mainChatContainer" prefHeight="800.0" prefWidth="1200.0" styleClass="main-chat-container" stylesheets="@../css/mainChat.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.Controllers.MainChatController">
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.ContextMenu?>
+<StackPane fx:id="rootStackPane" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.Controllers.MainChatController">
+    <children>
+        <BorderPane fx:id="mainChatContainer" prefHeight="800.0" prefWidth="1200.0" styleClass="main-chat-container" stylesheets="@../css/mainChat.css">
 
-    <!-- Left Sidebar - Chat List -->
-    <left>
-        <VBox fx:id="leftSidebar" maxWidth="420.0" minWidth="300.0" prefHeight="800.0" prefWidth="380.0" styleClass="sidebar">
-            <!-- Sidebar Header -->
-            <HBox alignment="CENTER_LEFT" spacing="0.0" styleClass="sidebar-header">
-                <padding>
-                    <Insets bottom="8.0" left="16.0" right="16.0" top="8.0" />
-                </padding>
-                <children>
-                    <!-- Hamburger Menu Button -->
-                    <Button fx:id="menuButton" styleClass="icon-button">
-                        <graphic>
-                            <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
-                                <image>
-                                    <Image url="@../images/menu-icon.png" />
-                                </image>
-                            </ImageView>
-                        </graphic>
-                    </Button>
-
-                    <!-- Search Field Container -->
-                    <HBox alignment="CENTER_LEFT" prefWidth="299.0" styleClass="search-container" HBox.hgrow="ALWAYS">
-                        <HBox.margin>
-                            <Insets left="8.0" />
-                        </HBox.margin>
+            <!-- ======================= LEFT SIDEBAR ======================= -->
+            <left>
+                <VBox fx:id="leftSidebar" maxWidth="420.0" minWidth="300.0" prefWidth="380.0" styleClass="sidebar">
+                    <!-- Sidebar Header -->
+                    <HBox alignment="CENTER_LEFT" spacing="0.0" styleClass="sidebar-header">
+                        <padding>
+                            <Insets bottom="8.0" left="16.0" right="16.0" top="8.0" />
+                        </padding>
                         <children>
-                            <TextField fx:id="searchField" prefWidth="266.0" promptText="Search" styleClass="search-field" HBox.hgrow="ALWAYS">
+                            <Button fx:id="menuButton" styleClass="icon-button">
+                                <graphic>
+                                    <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
+                                        <image>
+                                            <Image url="@../images/menu-icon.png" />
+                                        </image>
+                                    </ImageView>
+                                </graphic>
+                            </Button>
+                            <HBox alignment="CENTER_LEFT" styleClass="search-container" HBox.hgrow="ALWAYS">
+                                <children>
+                                    <TextField fx:id="searchField" promptText="Search" styleClass="search-field" HBox.hgrow="ALWAYS" />
+                                </children>
                                 <HBox.margin>
                                     <Insets left="8.0" />
                                 </HBox.margin>
-                            </TextField>
+                                <padding>
+                                    <Insets bottom="6.0" left="12.0" right="12.0" top="6.0" />
+                                </padding>
+                            </HBox>
                         </children>
+                    </HBox>
+
+                    <!-- Chat List -->
+                    <ListView fx:id="chatListView" styleClass="chat-list" VBox.vgrow="ALWAYS" />
+
+                    <!-- Sidebar Footer -->
+                    <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="sidebar-footer">
                         <padding>
-                            <Insets bottom="6.0" left="12.0" right="12.0" top="6.0" />
+                            <Insets bottom="12.0" left="16.0" right="16.0" top="12.0" />
                         </padding>
-                    </HBox>
-                </children>
-            </HBox>
-
-            <!-- Chat List -->
-            <ListView fx:id="chatListView" prefWidth="379.0" styleClass="chat-list" VBox.vgrow="ALWAYS" />
-
-            <!-- Sidebar Footer -->
-            <HBox alignment="CENTER_LEFT" minHeight="440.0" prefHeight="40.0" prefWidth="379.0" spacing="12.0" styleClass="sidebar-footer">
-                <padding>
-                    <Insets bottom="12.0" left="16.0" right="16.0" top="12.0" />
-                </padding>
-                <children>
-                    <!-- Settings Button -->
-                    <Button fx:id="settingsButton" styleClass="footer-button, icon-button">
-                        <graphic>
-                            <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
-                                <image>
-                                    <Image url="@../images/settings-icon.png" />
-                                </image>
-                            </ImageView>
-                        </graphic>
-                    </Button>
-
-                    <Region HBox.hgrow="ALWAYS" />
-
-                    <!-- Connection Status -->
-                    <HBox alignment="CENTER" spacing="6.0" styleClass="connection-status">
                         <children>
-                            <Circle fx:id="connectionIndicator" radius="4.0" styleClass="connection-dot" />
-                            <Label fx:id="connectionLabel" styleClass="connection-text" text="Connected" />
+                            <Button fx:id="settingsButton" styleClass="footer-button, icon-button">
+                                <graphic>
+                                    <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                                        <image>
+                                            <Image url="@../images/settings-icon.png" />
+                                        </image>
+                                    </ImageView>
+                                </graphic>
+                            </Button>
+                            <Region HBox.hgrow="ALWAYS" />
+                            <HBox alignment="CENTER" spacing="6.0" styleClass="connection-status">
+                                <children>
+                                    <Circle fx:id="connectionIndicator" radius="4.0" styleClass="connection-dot" />
+                                    <Label fx:id="connectionLabel" styleClass="connection-text" text="Connected" />
+                                </children>
+                            </HBox>
                         </children>
                     </HBox>
-                </children>
-            </HBox>
-        </VBox>
-    </left>
+                </VBox>
+            </left>
 
     <!-- Main Chat Area -->
     <center>
@@ -257,9 +248,9 @@
                     </VBox>
 
                     <!-- Scroll to Bottom Button -->
-                    <StackPane fx:id="scrollToBottomContainer" alignment="BOTTOM_RIGHT" prefWidth="330.0" styleClass="scroll-to-bottom-container" visible="false" StackPane.alignment="BOTTOM_RIGHT">
+                    <StackPane fx:id="scrollToBottomContainer" alignment="BOTTOM_RIGHT" maxHeight="40.0" maxWidth="40.0" minHeight="40.0" minWidth="40.0" prefHeight="40.0" prefWidth="40.0" styleClass="scroll-to-bottom-container" visible="false" StackPane.alignment="BOTTOM_RIGHT">
                         <StackPane.margin>
-                            <Insets bottom="80.0" right="24.0" />
+                            <Insets bottom="10.0" right="10.0" />
                         </StackPane.margin>
                         <children>
                             <Button fx:id="scrollToBottomButton" styleClass="scroll-to-bottom-button">
@@ -277,72 +268,78 @@
             </StackPane>
 
             <!-- Message Input Area -->
-            <VBox alignment="BOTTOM_CENTER" minHeight="59.0" prefHeight="59.0" prefWidth="569.0" styleClass="message-input-container">
-                <!-- Reply/Forward Preview -->
-                <HBox fx:id="replyPreviewContainer" alignment="CENTER_LEFT" managed="false" spacing="12.0" styleClass="reply-preview" visible="false">
-                    <padding>
-                        <Insets bottom="8.0" left="20.0" right="13.0" top="8.0" />
-                    </padding>
-                    <children>
-                        <VBox styleClass="reply-bar" />
-                        <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+            <StackPane fx:id="messageInputWrapper" alignment="CENTER" styleClass="message-input-container-wrapper">
+                <children>
+                    <VBox fx:id="messageInputContainer" alignment="BOTTOM_CENTER" minHeight="59.0" prefHeight="59.0" prefWidth="569.0" styleClass="message-input-container">
+                        <!-- Reply/Forward Preview -->
+                        <HBox fx:id="replyPreviewContainer" alignment="CENTER_LEFT" managed="false" spacing="12.0" styleClass="reply-preview" visible="false">
+                            <padding>
+                                <Insets bottom="8.0" left="20.0" right="13.0" top="8.0" />
+                            </padding>
                             <children>
-                                <Label fx:id="replyToLabel" styleClass="reply-to-label" text="Reply to User" />
-                                <Label fx:id="replyMessageLabel" prefHeight="18.0" prefWidth="483.0" styleClass="reply-message-label" text="Original message text..." />
+                                <VBox styleClass="reply-bar" />
+                                <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label fx:id="replyToLabel" styleClass="reply-to-label" text="Reply to User" />
+                                        <Label fx:id="replyMessageLabel" prefHeight="18.0" prefWidth="483.0" styleClass="reply-message-label" text="Original message text..." />
+                                    </children>
+                                </VBox>
+                                <Button fx:id="closeReplyButton" onAction="#closeReplyPreview" styleClass="close-reply-button">
+                                    <graphic>
+                                        <SVGPath content="M18 18L12 12M12 12L6 6M12 12L18 6M12 12L6 18" fill="#666666" stroke="#666666" strokeLineCap="ROUND" strokeLineJoin="ROUND" strokeWidth="2">
+                                            <StackPane.margin>
+                                                <Insets right="2" top="2" />
+                                            </StackPane.margin>
+                                        </SVGPath>
+                                    </graphic>
+                                </Button>
                             </children>
-                        </VBox>
-                        <Button fx:id="closeReplyButton" onAction="#closeReplyPreview" styleClass="close-reply-button">
-                            <graphic>
-                                <SVGPath content="M18 18L12 12M12 12L6 6M12 12L18 6M12 12L6 18" fill="#666666" stroke="#666666" strokeLineCap="ROUND" strokeLineJoin="ROUND" strokeWidth="2">
-                                    <StackPane.margin>
-                                        <Insets right="2" top="2" />
-                                    </StackPane.margin>
-                                </SVGPath>
-                            </graphic>
-                        </Button>
-                    </children>
-                </HBox>
+                        </HBox>
 
-                <!-- Main Input Row -->
-                <HBox alignment="CENTER" prefHeight="58.0" prefWidth="569.0" spacing="8.0" styleClass="message-input-area">
-                    <padding>
-                        <Insets bottom="9.0" left="4.0" right="4.0" top="9.0" />
-                    </padding>
-                    <children>
-                        <!-- Attachment Menu Button -->
-                        <Button fx:id="attachmentButton" alignment="CENTER" minHeight="23.0" prefHeight="23.0" prefWidth="27.0" styleClass="attachment-button, icon-button">
-                            <graphic>
-                                <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
-                                    <image>
-                                        <Image url="@../images/attachment-icon.png" />
-                                    </image>
-                                </ImageView>
-                            </graphic>
-                        </Button>
-
-                        <!-- Message Input Field Container -->
-                        <VBox prefWidth="433.0" styleClass="input-field-container" HBox.hgrow="ALWAYS">
+                        <!-- Main Input Row -->
+                        <HBox fx:id="messageInputArea" alignment="CENTER" prefHeight="58.0" prefWidth="569.0" spacing="8.0" styleClass="message-input-area">
+                            <padding>
+                                <Insets bottom="9.0" left="4.0" right="4.0" top="9.0" />
+                            </padding>
                             <children>
-                                <TextArea fx:id="messageInputField" prefRowCount="1" prefWidth="433.0" promptText="Write a message..." styleClass="message-input-field" wrapText="true">
-                                    <padding>
-                                        <Insets top="3.0" />
-                                    </padding></TextArea>
-                            </children>
-                        </VBox>
+                                <!-- Attachment Menu Button -->
+                                <Button fx:id="attachmentButton" alignment="CENTER" minHeight="23.0" prefHeight="23.0" prefWidth="27.0" styleClass="attachment-button, icon-button">
+                                    <graphic>
+                                        <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
+                                            <image>
+                                                <Image url="@../images/attachment-icon.png" />
+                                            </image>
+                                        </ImageView>
+                                    </graphic>
+                                </Button>
 
-                        <!-- Voice/Send Button -->
-                        <Button fx:id="sendButton" styleClass="send-button">
-                            <graphic>
-                                <ImageView fx:id="sendButtonIcon" fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
-                                    <image>
-                                        <Image url="@../images/microphone-icon.png" />
-                                    </image>
-                                </ImageView>
-                            </graphic>
-                        </Button>
-                    </children>
-                </HBox>
-            </VBox>
+                                <!-- Message Input Field Container -->
+                                <VBox prefWidth="433.0" styleClass="input-field-container" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <TextArea fx:id="messageInputField" prefRowCount="1" prefWidth="433.0" promptText="Write a message..." styleClass="message-input-field" wrapText="true">
+                                            <padding>
+                                                <Insets top="3.0" />
+                                            </padding>
+                                        </TextArea>
+                                    </children>
+                                </VBox>
+
+                                <!-- Voice/Send Button -->
+                                <Button fx:id="sendButton" styleClass="send-button">
+                                    <graphic>
+                                        <ImageView fx:id="sendButtonIcon" fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
+                                            <image>
+                                                <Image url="@../images/microphone-icon.png" />
+                                            </image>
+                                        </ImageView>
+                                    </graphic>
+                                </Button>
+                            </children>
+                        </HBox>
+                    </VBox>
+                    <Button fx:id="channelMuteToggleButton" onAction="#toggleMuteState" managed="false" maxWidth="Infinity" styleClass="channel-mute-button" text="Mute" visible="false"/>
+                </children>
+            </StackPane>
         </VBox>
     </center>
 
@@ -514,5 +511,6 @@
             <VBox styleClass="media-files-section" VBox.vgrow="ALWAYS" />
         </VBox>
     </right>
-
-</BorderPane>
+        </BorderPane>
+    </children>
+</StackPane>

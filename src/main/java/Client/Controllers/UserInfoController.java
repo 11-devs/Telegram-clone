@@ -40,6 +40,7 @@ import java.util.ResourceBundle;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 
+import static Shared.Utils.SceneUtil.changeScene;
 import static Shared.Utils.SceneUtil.changeSceneWithSameSize;
 
 public class UserInfoController implements Initializable {
@@ -121,9 +122,7 @@ public class UserInfoController implements Initializable {
                         var resultCode = AccessKeyManager.LoginWithAccessKey(response.getPayload().getAccessKey(),connectionManager.getClient());
                         if (resultCode == StatusCode.OK) {
                             System.out.println("Successful login");
-                            changeSceneWithSameSize(root, "/Client/fxml/mainChat.fxml", (MainChatController controller) -> {
-
-                            });
+                            changeScene(root, "/Client/fxml/mainChat.fxml", (MainChatController controller) -> {}, true);
                         }
                     }
                 } catch (Exception e) {
