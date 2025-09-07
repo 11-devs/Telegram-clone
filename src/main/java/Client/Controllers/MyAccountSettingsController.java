@@ -1,3 +1,5 @@
+// Path: java/Client/Controllers/MyAccountSettingsController.java
+
 package Client.Controllers;
 import Client.AppConnectionManager;
 import Client.RpcCaller;
@@ -71,6 +73,9 @@ public class MyAccountSettingsController {
 
     public void setParentController(SettingsController parentController) {
         this.parentController = parentController;
+        if (this.parentController != null) {
+            this.parentController.setCurrentSubController(this);
+        }
     }
 
     public void setDialogStage(Stage dialogStage) {
@@ -93,15 +98,18 @@ public class MyAccountSettingsController {
         });
     }
 
-    public void setUserData(GetAccountInfoOutputModel data) {
-        originalFirstName = data.getFirstName();
-        originalLastName = data.getLastName();
-        originalUsername = data.getUsername() != null ? "@" + data.getUsername() : "";
-        originalBio = data.getBio() != null ? data.getBio() : "Any details such as age, occupation or city.\\\\nExample: 23 y.o. designer from San Francisco";
-        phoneValueLabel.setText(data.getPhoneNumber());
-        updateUIFields();
+    public void setData(Object data) {
+        if (data instanceof GetAccountInfoOutputModel) {
+            GetAccountInfoOutputModel model = (GetAccountInfoOutputModel) data;
+            originalFirstName = model.getFirstName();
+            originalLastName = model.getLastName();
+            originalUsername = model.getUsername() != null ? "@" + model.getUsername() : "";
+            originalBio = model.getBio() != null && !model.getBio().isEmpty() ? model.getBio() : "Any details such as age, occupation or city.\\nExample: 23 y.o. designer from San Francisco.";
+            phoneValueLabel.setText(model.getPhoneNumber());
+            updateUIFields();
 
-        loadProfilePicture(data.getProfilePictureFileId());
+            loadProfilePicture(model.getProfilePictureFileId());
+        }
     }
     private void loadProfilePicture(String pictureId) {
         // Set default first.
@@ -371,8 +379,10 @@ public class MyAccountSettingsController {
                 });
             } else {
                 System.err.println("Failed to update username: " + response.getMessage());
+                Platform.runLater(() -> AlertUtil.showError("Failed to update username: " + response.getMessage()));
             }
         });
+
 
         setUsernameTask.setOnFailed(event -> {
             System.err.println("Task failed to update username.");

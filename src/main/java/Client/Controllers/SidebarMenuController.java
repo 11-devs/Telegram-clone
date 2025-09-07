@@ -1,8 +1,14 @@
+// Path: java/Client/Controllers/SidebarMenuController.java
+
 package Client.Controllers;
 
+import Client.AppConnectionManager;
+import Client.RpcCaller;
+import Client.Services.FileDownloadService;
 import JSocket2.Protocol.Rpc.RpcResponse;
 import JSocket2.Protocol.StatusCode;
-import Shared.Api.Models.ChatController.GetChatInfoOutputModel;
+import Shared.Api.Models.AccountController.GetAccountInfoOutputModel;
+import Shared.Models.UserType;
 import Shared.Models.UserViewModel;
 import Shared.Models.UserViewModelBuilder;
 import Shared.Utils.AlertUtil;
@@ -10,6 +16,7 @@ import Shared.Utils.DialogUtil;
 import Shared.Utils.SceneUtil;
 import javafx.animation.*;
 import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
@@ -31,7 +38,6 @@ import java.awt.Desktop;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
-import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -65,7 +71,6 @@ public class SidebarMenuController implements Initializable {
     @FXML private Label versionLabel;
 
     // User data
-    private String currentUserName = "User Name";
     private boolean isNightModeEnabled = true;
 
     // Add primaryStage field
@@ -74,6 +79,10 @@ public class SidebarMenuController implements Initializable {
     private Object parentController;
 
     private Runnable closeHandler;
+
+    private RpcCaller rpcCaller;
+    private FileDownloadService fileDownloadService;
+
 
     // Constructor to inject primaryStage
     public void setPrimaryStage(Stage primaryStage) {
@@ -89,16 +98,18 @@ public class SidebarMenuController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        rpcCaller = AppConnectionManager.getInstance().getRpcCaller();
+        fileDownloadService = FileDownloadService.getInstance();
         setupUserProfile();
         setupMenuItems();
         setupNightModeToggle();
         setupFooter();
         applyTheme();
         detectPlatform();
+        loadUserProfile();
     }
 
     private void setupUserProfile() {
-        userNameLabel.setText(currentUserName);
 
         try {
             Image avatarImage = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Client/images/11Devs-white.png")));
@@ -164,6 +175,48 @@ public class SidebarMenuController implements Initializable {
         }
     }
 
+    private void loadUserProfile() {
+        Task<RpcResponse<GetAccountInfoOutputModel>> getAccountInfoTask = new Task<>() {
+            @Override
+            protected RpcResponse<GetAccountInfoOutputModel> call() throws Exception {
+                return rpcCaller.getAccountInfo();
+            }
+        };
+
+        getAccountInfoTask.setOnSucceeded(event -> {
+            RpcResponse<GetAccountInfoOutputModel> response = getAccountInfoTask.getValue();
+            if (response.getStatusCode() == StatusCode.OK && response.getPayload() != null) {
+                GetAccountInfoOutputModel accountInfo = response.getPayload();
+                String displayName = accountInfo.getFirstName() + " " + accountInfo.getLastName();
+                String avatarId = accountInfo.getProfilePictureFileId();
+
+                if (avatarId != null && !avatarId.isBlank()) {
+                    fileDownloadService.getImage(avatarId).thenAccept(image -> {
+                        updateUserProfile(displayName, image);
+                    }).exceptionally(e -> {
+                        // If image download fails, still update name with default avatar
+                        System.err.println("Failed to download sidebar avatar: " + e.getMessage());
+                        updateUserProfile(displayName, null);
+                        return null;
+                    });
+                } else {
+                    updateUserProfile(displayName, null);
+                }
+            } else {
+                System.err.println("Failed to load user profile for sidebar: " + (response != null ? response.getMessage() : "No response"));
+            }
+        });
+
+        getAccountInfoTask.setOnFailed(event -> {
+            System.err.println("Task to get account info for sidebar failed.");
+            if (getAccountInfoTask.getException() != null) {
+                getAccountInfoTask.getException().printStackTrace();
+            }
+        });
+
+        new Thread(getAccountInfoTask).start();
+    }
+
     @FXML
     private void handleProfileDropdown() {
         System.out.println("Profile dropdown clicked");
@@ -174,23 +227,56 @@ public class SidebarMenuController implements Initializable {
     private void handleMyProfile() {
         System.out.println("My Profile clicked");
         close();
-        Stage currentPrimaryStage = primaryStage != null ? primaryStage : (Stage) sidebarMenuContainer.getScene().getWindow();
-        try {
-            Stage dialogStage = applyDialogAnimation(currentPrimaryStage, this);
-            dialogStage.setResizable(false);
-            dialogStage.sizeToScene();
 
-            Platform.runLater(() -> {
-                double centerX = currentPrimaryStage.getX() + (currentPrimaryStage.getWidth() - dialogStage.getWidth()) / 2;
-                double centerY = currentPrimaryStage.getY() + (currentPrimaryStage.getHeight() - dialogStage.getHeight()) / 2;
-                dialogStage.setX(centerX);
-                dialogStage.setY(centerY);
-            });
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.err.println("Error loading profile dialog: " + e.getMessage());
-            AlertUtil.showError("Could not open profile settings.");
+        if (!(parentController instanceof MainChatController mainChatController)) {
+            AlertUtil.showError("Cannot open profile. Internal controller error.");
+            return;
         }
+
+        // Start a task to get account info
+        var getAccountInfoTask = mainChatController.getChatService().getAccountInfo();
+
+        getAccountInfoTask.setOnSucceeded(workerStateEvent -> {
+            var response = getAccountInfoTask.getValue();
+            if (response.getStatusCode() == StatusCode.OK && response.getPayload() != null) {
+                var accountInfo = response.getPayload();
+                // This is important for the "Edit Profile" button logic
+                mainChatController.setCurrentUserId(accountInfo.getId().toString());
+
+                UserViewModel myProfileViewModel = new UserViewModelBuilder()
+                        .userId(accountInfo.getId().toString())
+                        .displayName(accountInfo.getFirstName() + " " + accountInfo.getLastName())
+                        .username(accountInfo.getUsername())
+                        .bio(accountInfo.getBio())
+                        .phoneNumber(accountInfo.getPhoneNumber())
+                        .avatarId(accountInfo.getProfilePictureFileId())
+                        .isOnline(true)
+                        .type(UserType.USER.toString())
+                        .build();
+
+                // Open the dialog on the JavaFX thread
+                Platform.runLater(() -> {
+                    try {
+                        Stage currentPrimaryStage = primaryStage != null ? primaryStage : (Stage) sidebarMenuContainer.getScene().getWindow();
+                        applyDialogAnimation(currentPrimaryStage, mainChatController, myProfileViewModel);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        AlertUtil.showError("Could not open profile settings.");
+                    }
+                });
+            } else {
+                Platform.runLater(() -> AlertUtil.showError("Failed to load profile: " + response.getMessage()));
+            }
+        });
+
+        getAccountInfoTask.setOnFailed(workerStateEvent -> {
+            Platform.runLater(() -> {
+                getAccountInfoTask.getException().printStackTrace();
+                AlertUtil.showError("Error fetching profile information.");
+            });
+        });
+
+        new Thread(getAccountInfoTask).start();
     }
 
     @FXML
@@ -365,7 +451,7 @@ public class SidebarMenuController implements Initializable {
         System.out.println("Calls clicked");
         close();
         if (primaryStage != null) {
-            DialogUtil.showNotificationDialog(primaryStage, "Will be developed in future versions.\\n");
+            DialogUtil.showNotificationDialog(primaryStage, "Will be developed in future versions.\\\\\\\\n");
         } else {
             System.out.println("primaryStage is null!");
         }
@@ -375,13 +461,62 @@ public class SidebarMenuController implements Initializable {
     private void handleSettings() {
         System.out.println("Settings clicked");
         close();
+        Stage currentPrimaryStage = primaryStage != null ? primaryStage : (Stage) sidebarMenuContainer.getScene().getWindow();
+
+        if (currentPrimaryStage == null) {
+            System.err.println("Could not find a parent stage to open the settings dialog.");
+            return;
+        }
+
+        try {
+            ColorAdjust dimEffect = new ColorAdjust();
+            if (currentPrimaryStage.getScene() != null && currentPrimaryStage.getScene().getRoot() != null) {
+                currentPrimaryStage.getScene().getRoot().setEffect(dimEffect);
+            }
+
+            Timeline fadeIn = new Timeline(
+                    new KeyFrame(Duration.ZERO, new KeyValue(dimEffect.brightnessProperty(), 0)),
+                    new KeyFrame(Duration.millis(300), new KeyValue(dimEffect.brightnessProperty(), -0.3, Interpolator.EASE_BOTH))
+            );
+            fadeIn.play();
+
+            Stage settingsDialog = SceneUtil.createDialog(
+                    "/Client/fxml/settings.fxml",
+                    currentPrimaryStage,
+                    this.parentController, // This should be MainChatController
+                    null,
+                    "Settings"
+            );
+
+            settingsDialog.showAndWait();
+
+            loadUserProfile();
+
+            Timeline fadeOut = new Timeline(
+                    new KeyFrame(Duration.ZERO, new KeyValue(dimEffect.brightnessProperty(), -0.3, Interpolator.EASE_BOTH)),
+                    new KeyFrame(Duration.millis(150), new KeyValue(dimEffect.brightnessProperty(), 0))
+            );
+            if (currentPrimaryStage.getScene() != null && currentPrimaryStage.getScene().getRoot() != null) {
+                fadeOut.setOnFinished(e -> currentPrimaryStage.getScene().getRoot().setEffect(null));
+            }
+            fadeOut.play();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Error loading settings dialog: " + e.getMessage());
+            AlertUtil.showError("Could not open the settings window.");
+            // Clean up on error
+            if (currentPrimaryStage.getScene() != null && currentPrimaryStage.getScene().getRoot() != null) {
+                currentPrimaryStage.getScene().getRoot().setEffect(null);
+            }
+        }
     }
 
     @FXML
     private void handleSavedMessages() {
         System.out.println("Saved Messages clicked");
         if(parentController instanceof MainChatController mainChatController){
-          var getChatsTask =  mainChatController.getChatService().getSavedMessage();
+            var getChatsTask =  mainChatController.getChatService().getSavedMessage();
             getChatsTask.setOnSucceeded(event -> {
                 var response = getChatsTask.getValue();
                 if (response.getStatusCode() == StatusCode.OK && response.getPayload() != null) {
@@ -397,7 +532,7 @@ public class SidebarMenuController implements Initializable {
                         UserViewModel uvm = new UserViewModelBuilder()
                                 .userId(response.getPayload().getId().toString())
                                 .avatarId(response.getPayload().getProfilePictureId())
-                                .userName(response.getPayload().getTitle())
+                                .displayName(response.getPayload().getTitle())
                                 .lastMessage(response.getPayload().getLastMessage())
                                 .time(response.getPayload().getLastMessageTimestamp())
                                 .type(response.getPayload().getType())
@@ -439,6 +574,10 @@ public class SidebarMenuController implements Initializable {
     }
 
     private Stage applyDialogAnimation(Stage parentStage, Object controller) throws IOException {
+        return applyDialogAnimation(parentStage, controller, null);
+    }
+
+    private Stage applyDialogAnimation(Stage parentStage, Object controller, Object data) throws IOException {
         ColorAdjust dimEffect = new ColorAdjust();
         parentStage.getScene().getRoot().setEffect(dimEffect);
 
@@ -448,7 +587,7 @@ public class SidebarMenuController implements Initializable {
         );
         fadeIn.play();
 
-        Stage dialogStage = SceneUtil.createDialog("/Client/fxml/profileSection.fxml", parentStage, controller, null, "My Profile");
+        Stage dialogStage = SceneUtil.createDialog("/Client/fxml/profileSection.fxml", parentStage, controller, data, "My Profile");
 
         dialogStage.showAndWait();
 
@@ -464,12 +603,23 @@ public class SidebarMenuController implements Initializable {
 
     public void updateUserProfile(String name, Image avatar) {
         Platform.runLater(() -> {
-            userNameLabel.setText(name);
-            if (avatar != null) {
+            if (name != null && !name.trim().isEmpty()) {
+                userNameLabel.setText(name);
+            }
+            if (avatar != null && !avatar.isError()) {
                 userAvatarImage.setImage(avatar);
+            } else {
+                // Fallback to default if provided avatar is null or has an error
+                try {
+                    Image defaultAvatar = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Client/images/11Devs-white.png")));
+                    userAvatarImage.setImage(defaultAvatar);
+                } catch (Exception e) {
+                    System.err.println("Could not load default sidebar avatar: " + e.getMessage());
+                }
             }
         });
     }
+
 
     public void setCloseHandler(Runnable closeHandler) {
         this.closeHandler = closeHandler;

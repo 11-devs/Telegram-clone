@@ -1,3 +1,5 @@
+// Path: java/Client/Controllers/SettingsController.java
+
 package Client.Controllers;
 
 import Client.AppConnectionManager;
@@ -67,6 +69,10 @@ public class SettingsController {
 
     public void setParentController(Object parentController) {
         this.parentController = parentController;
+    }
+
+    public void setCurrentSubController(Object subController) {
+        this.currentSubController = subController;
     }
 
     @FXML
@@ -166,19 +172,6 @@ public class SettingsController {
         }
     }
 
-    @FXML
-    private void handleProfilePictureClick() {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Select Profile Picture");
-        fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg", "*.gif")
-        );
-        File selectedFile = fileChooser.showOpenDialog(dialogStage);
-        if (selectedFile != null) {
-            Image newImage = new Image(selectedFile.toURI().toString());
-            profilePictureImage.setImage(newImage);
-        }
-    }
 
     @FXML
     private void handleMyAccount() {

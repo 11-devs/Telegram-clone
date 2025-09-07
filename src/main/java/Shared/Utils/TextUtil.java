@@ -1,5 +1,9 @@
 package Shared.Utils;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
+
 public class TextUtil {
     public static String stripFormattingForPreview(String text) {
         if (text == null || text.isEmpty()) {
@@ -32,6 +36,26 @@ public class TextUtil {
                 .replaceAll("__(.*?)__", "$1")
                 .replaceAll("\\+\\+(.*?)\\+\\+", "$1")
                 .replaceAll("\\|\\|(.*?)\\|\\|", "$1");
+    }
+    public static String formatLastSeen(String isoTimestamp) {
+        if (isoTimestamp == null || isoTimestamp.isBlank()) {
+            return "last seen a long time ago";
+        }
+        try {
+            LocalDateTime lastSeenTime = LocalDateTime.parse(isoTimestamp);
+            LocalDateTime now = LocalDateTime.now();
+
+            if (lastSeenTime.toLocalDate().isEqual(now.toLocalDate())) {
+                return "last seen today at " + lastSeenTime.format(DateTimeFormatter.ofPattern("HH:mm"));
+            } else if (lastSeenTime.toLocalDate().isEqual(now.toLocalDate().minusDays(1))) {
+                return "last seen yesterday at " + lastSeenTime.format(DateTimeFormatter.ofPattern("HH:mm"));
+            } else {
+                return "last seen on " + lastSeenTime.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM));
+            }
+        } catch (Exception e) {
+            System.err.println("Could not parse last seen timestamp: " + isoTimestamp);
+            return "last seen a long time ago";
+        }
     }
 }
 

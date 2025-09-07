@@ -3,6 +3,7 @@ package Client.Services;
 
 import Client.RpcCaller;
 import JSocket2.Protocol.Rpc.RpcResponse;
+import Shared.Api.Models.AccountController.GetAccountInfoOutputModel;
 import Shared.Api.Models.ChatController.*;
 import Shared.Api.Models.ContactController.AddContactInputModel;
 import Shared.Api.Models.ContactController.AddContactOutputModel;
@@ -225,6 +226,15 @@ public class ChatService {
                 input.setPhoneNumber(phoneNumber);
                 input.setSavedName(firstName + " " + lastName);
                 return rpcCaller.addContact(input);
+            }
+        };
+    }
+
+    public Task<RpcResponse<GetAccountInfoOutputModel>> getAccountInfo() {
+        return new Task<>() {
+            @Override
+            protected RpcResponse<GetAccountInfoOutputModel> call() throws Exception {
+                return rpcCaller.getAccountInfo();
             }
         };
     }

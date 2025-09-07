@@ -90,7 +90,7 @@ public class UserCustomCellController {
 
     private void bindUserName() {
         if (userNameLabel != null) {
-            userNameLabel.textProperty().bind(currentUser.userNameProperty());
+            userNameLabel.textProperty().bind(currentUser.displayNameProperty());
         }
     }
 

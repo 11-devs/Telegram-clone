@@ -1,17 +1,30 @@
 package Client.Controllers;
 
-import Shared.Models.UserType;
+import Client.Services.ChatService;
+import Client.Services.FileDownloadService;
 import Shared.Models.UserViewModel;
+import Shared.Utils.AlertUtil;
+import Shared.Utils.SceneUtil;
+import Shared.Utils.TextUtil;
+import javafx.animation.Interpolator;
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.effect.ColorAdjust;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
+import java.io.IOException;
 import java.util.Objects;
 
 public class ProfileSectionController {
@@ -19,7 +32,7 @@ public class ProfileSectionController {
     // FXML Fields
     @FXML private Label profileHeaderTitle;
     @FXML private ImageView profilePictureImage;
-    @FXML private Label userNameLabel;
+    @FXML private Label displayNameLabel;
     @FXML private Label statusLabel;
 
     @FXML private VBox profileFieldsSection;
@@ -28,12 +41,12 @@ public class ProfileSectionController {
     @FXML private HBox bioFieldContainer;
     @FXML private Label bioLabel;
     @FXML private HBox usernameFieldContainer;
-    @FXML private Label usernameLabel;
+    @FXML private Label usernameValueLabel;
 
     @FXML private VBox membersSection;
     @FXML private Label membersHeaderLabel;
     @FXML private Button addMemberButton;
-    @FXML private ListView<String> membersListView; // Placeholder, should be ListView<UserViewModel>
+    @FXML private ListView<UserViewModel> membersListView; // Changed from <String>
 
     @FXML private Button closeButton;
     @FXML private Button editButton;
@@ -42,6 +55,8 @@ public class ProfileSectionController {
     private Stage dialogStage;
     private UserViewModel userData;
     private MainChatController parentController;
+    private ChatService chatService;
+    private FileDownloadService fileDownloadService;
 
     public void initialize() {
         closeButton.setOnAction(e -> handleClose());
@@ -49,6 +64,21 @@ public class ProfileSectionController {
         // Initially hide sections that depend on data
         membersSection.setVisible(false);
         membersSection.setManaged(false);
+
+        // Setup ListView CellFactory to display user info
+        membersListView.setCellFactory(param -> new ListCell<>() {
+            @Override
+            protected void updateItem(UserViewModel user, boolean empty) {
+                super.updateItem(user, empty);
+                if (empty || user == null) {
+                    setText(null);
+                    setGraphic(null);
+                } else {
+                    // For now, just display the name. A custom cell with avatar can be added later.
+                    setText(user.getDisplayName() + (user.getType() != null ? " (" + user.getType() + ")" : ""));
+                }
+            }
+        });
     }
 
     public void setDialogStage(Stage dialogStage) {
@@ -58,6 +88,9 @@ public class ProfileSectionController {
     public void setParentController(Object parentController) {
         if (parentController instanceof MainChatController) {
             this.parentController = (MainChatController) parentController;
+            // Get services from the parent controller and singleton
+            this.chatService = this.parentController.getChatService();
+            this.fileDownloadService = FileDownloadService.getInstance();
         }
     }
 
@@ -73,11 +106,26 @@ public class ProfileSectionController {
         if (userData == null) return;
 
         // 1. Update common fields
-        userNameLabel.setText(userData.getUserName());
+        usernameValueLabel.setText(userData.getUsername());
+        displayNameLabel.setText(userData.getDisplayName());
         bioLabel.setText(userData.getBio() != null && !userData.getBio().isEmpty() ? userData.getBio() : "No bio yet.");
 
-        // TODO: Load real profile picture using userData.getAvatarId()
-        loadDefaultProfilePicture();
+        // Load real profile picture
+        if (userData.getAvatarId() != null && !userData.getAvatarId().isBlank()) {
+            fileDownloadService.getImage(userData.getAvatarId()).thenAccept(image -> {
+                if (image != null) {
+                    Platform.runLater(() -> profilePictureImage.setImage(image));
+                } else {
+                    loadDefaultProfilePicture();
+                }
+            }).exceptionally(e -> {
+                e.printStackTrace();
+                loadDefaultProfilePicture();
+                return null;
+            });
+        } else {
+            loadDefaultProfilePicture();
+        }
 
         // 2. Hide all specific fields initially
         phoneFieldContainer.setVisible(false);
@@ -92,7 +140,7 @@ public class ProfileSectionController {
         switch (userData.getType()) {
             case USER:
                 profileHeaderTitle.setText("User Info");
-                statusLabel.setText(userData.isOnline() ? "online" : userData.getLastSeen());
+                statusLabel.setText(userData.isOnline() ? "online" : TextUtil.formatLastSeen(userData.getLastSeen()));
 
                 phoneFieldContainer.setVisible(true);
                 phoneFieldContainer.setManaged(true);
@@ -100,14 +148,12 @@ public class ProfileSectionController {
 
                 usernameFieldContainer.setVisible(true);
                 usernameFieldContainer.setManaged(true);
-                usernameLabel.setText("@" + userData.getUserId());
+                //usernameLabel.setText("@" + userData.getUserIdForUsername());
 
-                // TODO
                 // Show edit button only if it's "My Profile"
-                // This logic needs to be based on the actual logged-in user's ID
-                // if (parentController != null && parentController.isMyProfile(userData)) {
-                //     editButton.setVisible(true);
-                // }
+                if (parentController != null && parentController.isMyProfile(userData)) {
+                    editButton.setVisible(true);
+                }
                 break;
 
             case GROUP:
@@ -115,40 +161,71 @@ public class ProfileSectionController {
                 profileHeaderTitle.setText("Group Info");
                 statusLabel.setText(userData.getMembersCount() + " members");
 
-                // Show members section
                 membersSection.setVisible(true);
                 membersSection.setManaged(true);
                 membersHeaderLabel.setText("Members");
-
-                // TODO: Load actual members from server
-                membersListView.getItems().addAll("Member 1", "Member 2", "Member 3");
-
-                // If current user is admin, show "Add Member" button
-                if (parentController != null && parentController.isCurrentUserAdmin()) {
-                    addMemberButton.setVisible(true);
-                }
+                loadMembers();
                 break;
 
             case CHANNEL:
                 profileHeaderTitle.setText("Channel Info");
                 statusLabel.setText(userData.getMembersCount() + " subscribers");
 
-                // Show members section for admins
-                if (parentController != null && parentController.isCurrentUserAdmin()) {
-                    membersSection.setVisible(true);
-                    membersSection.setManaged(true);
-                    membersHeaderLabel.setText("Subscribers");
-                    // TODO: Load actual subscribers from server
-                    membersListView.getItems().addAll("Subscriber 1", "Subscriber 2");
-                }
+                membersSection.setVisible(true);
+                membersSection.setManaged(true);
+                membersHeaderLabel.setText("Subscribers");
+                loadMembers();
                 break;
         }
+    }
+
+    private void loadMembers() {
+//        if (chatService == null || userData == null || userData.getUserId() == null) return;
+//
+//        membersListView.getItems().clear();
+//        var getMembersTask = chatService.getChatMembers(UUID.fromString(userData.getUserId()));
+//
+//        getMembersTask.setOnSucceeded(event -> {
+//            var response = getMembersTask.getValue();
+//            if (response.getStatusCode() == StatusCode.OK && response.getPayload() != null) {
+//                var members = response.getPayload().getMembers();
+//                String currentUserId = parentController.getCurrentUserId();
+//
+//                Platform.runLater(() -> {
+//                    for (GetChatMembersOutputModel.MemberInfo memberInfo : members) {
+//                        UserViewModel memberViewModel = new UserViewModelBuilder()
+//                                .userId(memberInfo.getUserId().toString())
+//                                .userName(memberInfo.getUserName())
+//                                .avatarId(memberInfo.getAvatarFileId())
+//                                .role(memberInfo.getRole()) // Store the role
+//                                .build();
+//                        membersListView.getItems().add(memberViewModel);
+//
+//                        // Check if the current user is an admin to show the "Add Member" button
+//                        if (currentUserId != null && currentUserId.equals(memberInfo.getUserId().toString())) {
+//                            if ("OWNER".equals(memberInfo.getRole()) || "ADMIN".equals(memberInfo.getRole())) {
+//                                addMemberButton.setVisible(true);
+//                            }
+//                        }
+//                    }
+//                });
+//            } else {
+//                System.err.println("Failed to load members: " + response.getMessage());
+//            }
+//        });
+//
+//        getMembersTask.setOnFailed(event -> {
+//            System.err.println("Error while fetching members.");
+//            getMembersTask.getException().printStackTrace();
+//        });
+//
+//        new Thread(getMembersTask).start();
     }
 
     private void loadDefaultProfilePicture() {
         try {
             Image profileImage = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Client/images/11Devs-white.png")));
-            profilePictureImage.setImage(profileImage);
+            Platform.runLater(() -> profilePictureImage.setImage(profileImage));
         } catch (Exception e) {
             System.err.println("Could not load default profile picture: " + e.getMessage());
         }
@@ -163,7 +240,61 @@ public class ProfileSectionController {
 
     @FXML
     private void handleEditProfile() {
-        // TODO: Implement logic to open an "Edit Profile" dialog
         System.out.println("Edit Profile clicked");
+
+        Stage primaryStage = (Stage) dialogStage.getOwner();
+        if (primaryStage == null) {
+            System.err.println("Could not find a parent stage to open the settings dialog.");
+            AlertUtil.showError("Could not open settings.");
+            return;
+        }
+
+        // Close the current profile dialog.
+        handleClose();
+
+        // Use Platform.runLater to open the new dialog after the current one has closed.
+        Platform.runLater(() -> {
+            try {
+                // Apply dimming effect
+                ColorAdjust dimEffect = new ColorAdjust();
+                if (primaryStage.getScene() != null && primaryStage.getScene().getRoot() != null) {
+                    primaryStage.getScene().getRoot().setEffect(dimEffect);
+                }
+
+                Timeline fadeIn = new Timeline(
+                        new KeyFrame(Duration.ZERO, new KeyValue(dimEffect.brightnessProperty(), 0)),
+                        new KeyFrame(Duration.millis(300), new KeyValue(dimEffect.brightnessProperty(), -0.3, Interpolator.EASE_BOTH))
+                );
+                fadeIn.play();
+
+                // Create and show settings dialog
+                Stage settingsDialog = SceneUtil.createDialog(
+                        "/Client/fxml/settings.fxml",
+                        primaryStage,
+                        this.parentController,
+                        null,
+                        "Settings"
+                );
+                settingsDialog.showAndWait();
+
+                // Remove dimming effect
+                Timeline fadeOut = new Timeline(
+                        new KeyFrame(Duration.ZERO, new KeyValue(dimEffect.brightnessProperty(), -0.3, Interpolator.EASE_BOTH)),
+                        new KeyFrame(Duration.millis(150), new KeyValue(dimEffect.brightnessProperty(), 0))
+                );
+                if (primaryStage.getScene() != null && primaryStage.getScene().getRoot() != null) {
+                    fadeOut.setOnFinished(e -> primaryStage.getScene().getRoot().setEffect(null));
+                }
+                fadeOut.play();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+                AlertUtil.showError("Could not open the settings window.");
+                // Ensure dim effect is removed on error
+                if (primaryStage.getScene() != null && primaryStage.getScene().getRoot() != null) {
+                    primaryStage.getScene().getRoot().setEffect(null);
+                }
+            }
+        });
     }
 }
