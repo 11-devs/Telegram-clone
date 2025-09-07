@@ -5,6 +5,7 @@ import Client.RpcCaller;
 import Client.Services.ContactService;
 import JSocket2.Protocol.Rpc.RpcResponse;
 import JSocket2.Protocol.StatusCode;
+import Shared.Api.Models.AccountController.GetAccountInfoOutputModel;
 import Shared.Api.Models.ContactController.AddContactOutputModel;
 import Shared.Api.Models.ContactController.ContactInfo;
 import Shared.Api.Models.ContactController.GetContactsOutputModel;
@@ -48,10 +49,19 @@ public class ContactsSectionController {
 
     @FXML
     private void initialize() {
-        // This is a placeholder. You should get the actual logged-in user's ID.
-        UUID currentUserId = UUID.fromString("00000000-0000-0000-0000-000000000000"); // FIXME
+        GetAccountInfoOutputModel currentUser = AppConnectionManager.getInstance().getCurrentUserInfo();
+        if (currentUser == null) {
+            Platform.runLater(() -> {
+                AlertUtil.showError("Could not identify the current user. Please try again.");
+                if (dialogStage != null) {
+                    dialogStage.close();
+                }
+            });
+            return;
+        }
+
         RpcCaller rpcCaller = AppConnectionManager.getInstance().getRpcCaller();
-        contactService = new ContactService(rpcCaller, currentUserId);
+        contactService = new ContactService(rpcCaller);
 
         filteredContacts = new FilteredList<>(allContacts, p -> true);
         contactsListView.setItems(filteredContacts);

@@ -6,10 +6,8 @@ import Client.RpcCaller;
 import JSocket2.Core.Client.ConnectionManager;
 import JSocket2.Protocol.Rpc.RpcResponse;
 import JSocket2.Protocol.StatusCode;
-import Shared.Api.Models.AccountController.LoginInputModel;
-import Shared.Api.Models.AccountController.LoginOutputModel;
-import Shared.Api.Models.AccountController.RequestCodeEmailOutputModel;
-import Shared.Api.Models.AccountController.RequestCodePhoneNumberInputModel;
+import Shared.Api.Models.AccountController.*;
+import Shared.Utils.AlertUtil;
 import Shared.Utils.DeviceUtil;
 import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
@@ -107,7 +105,7 @@ public class CloudPasswordCheckController {
                                 var resultCode = AccessKeyManager.LoginWithAccessKey(response.getPayload().getAccessKey(),connectionManager.getClient());
                                 if (resultCode == StatusCode.OK) {
                                     System.out.println("Successful login");
-                                    changeScene(root, "/Client/fxml/mainChat.fxml", (MainChatController controller) -> {}, true);
+                                    fetchUserInfoAndProceedToMainChat();
                                 }
                                 break;
                         }
@@ -208,5 +206,37 @@ public class CloudPasswordCheckController {
         });
 
         new Thread(resetTask).start();
+    }
+
+    private void fetchUserInfoAndProceedToMainChat() {
+        Task<RpcResponse<GetAccountInfoOutputModel>> getAccountInfoTask = new Task<>() {
+            @Override
+            protected RpcResponse<GetAccountInfoOutputModel> call() throws Exception {
+                return rpcCaller.getAccountInfo();
+            }
+        };
+
+        getAccountInfoTask.setOnSucceeded(event -> {
+            RpcResponse<GetAccountInfoOutputModel> response = getAccountInfoTask.getValue();
+            if (response.getStatusCode() == StatusCode.OK) {
+                AppConnectionManager.getInstance().setCurrentUserInfo(response.getPayload());
+                Platform.runLater(() -> changeScene(root, "/Client/fxml/mainChat.fxml", (MainChatController controller) -> {}, true));
+            } else {
+                Platform.runLater(() -> {
+                    AlertUtil.showError("Failed to load user profile. Please try logging in again. Reason: " + response.getMessage());
+                    changeSceneWithSameSize(root, "/Client/fxml/phoneNumber.fxml");
+                });
+            }
+        });
+
+        getAccountInfoTask.setOnFailed(event -> {
+            getAccountInfoTask.getException().printStackTrace();
+            Platform.runLater(() -> {
+                AlertUtil.showError("An unexpected error occurred while fetching your profile. Please check your connection.");
+                changeSceneWithSameSize(root, "/Client/fxml/phoneNumber.fxml");
+            });
+        });
+
+        new Thread(getAccountInfoTask).start();
     }
 }

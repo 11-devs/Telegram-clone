@@ -12,9 +12,11 @@ import JSocket2.Protocol.Transfer.IProgressListener;
 import JSocket2.Utils.FileUtil;
 import Shared.Api.Models.AccountController.BasicRegisterInputModel;
 import Shared.Api.Models.AccountController.BasicRegisterOutputModel;
+import Shared.Api.Models.AccountController.GetAccountInfoOutputModel;
 import Shared.Api.Models.AccountController.VerifyCodeInputModel;
 import Shared.Api.Models.AccountController.VerifyCodeOutputModel;
 import Shared.Api.Models.MediaController.CreateMediaInputModel;
+import Shared.Utils.AlertUtil;
 import Shared.Utils.DeviceUtil;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -122,7 +124,7 @@ public class UserInfoController implements Initializable {
                         var resultCode = AccessKeyManager.LoginWithAccessKey(response.getPayload().getAccessKey(),connectionManager.getClient());
                         if (resultCode == StatusCode.OK) {
                             System.out.println("Successful login");
-                            changeScene(root, "/Client/fxml/mainChat.fxml", (MainChatController controller) -> {}, true);
+                            fetchUserInfoAndProceedToMainChat();
                         }
                     }
                 } catch (Exception e) {
@@ -140,6 +142,38 @@ public class UserInfoController implements Initializable {
         } else {
             System.out.println("Please fill all fields.");
         }
+    }
+
+    private void fetchUserInfoAndProceedToMainChat() {
+        Task<RpcResponse<GetAccountInfoOutputModel>> getAccountInfoTask = new Task<>() {
+            @Override
+            protected RpcResponse<GetAccountInfoOutputModel> call() throws Exception {
+                return rpcCaller.getAccountInfo();
+            }
+        };
+
+        getAccountInfoTask.setOnSucceeded(event -> {
+            RpcResponse<GetAccountInfoOutputModel> response = getAccountInfoTask.getValue();
+            if (response.getStatusCode() == StatusCode.OK) {
+                AppConnectionManager.getInstance().setCurrentUserInfo(response.getPayload());
+                Platform.runLater(() -> changeScene(root, "/Client/fxml/mainChat.fxml", (MainChatController controller) -> {}, true));
+            } else {
+                Platform.runLater(() -> {
+                    AlertUtil.showError("Failed to load user profile. Please try logging in again. Reason: " + response.getMessage());
+                    changeSceneWithSameSize(root, "/Client/fxml/phoneNumber.fxml");
+                });
+            }
+        });
+
+        getAccountInfoTask.setOnFailed(event -> {
+            getAccountInfoTask.getException().printStackTrace();
+            Platform.runLater(() -> {
+                AlertUtil.showError("An unexpected error occurred while fetching your profile. Please check your connection.");
+                changeSceneWithSameSize(root, "/Client/fxml/phoneNumber.fxml");
+            });
+        });
+
+        new Thread(getAccountInfoTask).start();
     }
 
     @FXML

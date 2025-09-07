@@ -461,6 +461,7 @@ public RpcResponse<Boolean> isPhoneNumberRegistered(String phoneNumber){
         }
 
         GetAccountInfoOutputModel output = new GetAccountInfoOutputModel();
+        output.setId(account.getId());
         output.setFirstName(account.getFirstName());
         output.setLastName(account.getLastName());
         output.setUsername(account.getUsername());

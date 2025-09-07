@@ -4,6 +4,7 @@ import Client.Services.UI.ChatUIService;
 import Client.Subscribers.*;
 import JSocket2.Core.Client.ClientApplicationBuilder;
 import JSocket2.Core.Client.ConnectionManager;
+import Shared.Api.Models.AccountController.GetAccountInfoOutputModel;
 
 public class AppConnectionManager {
 
@@ -11,6 +12,15 @@ public class AppConnectionManager {
 
     private final ConnectionManager connectionManager;
     private final RpcCaller rpcCaller;
+    private GetAccountInfoOutputModel currentUserInfo;
+
+    public GetAccountInfoOutputModel getCurrentUserInfo() {
+        return currentUserInfo;
+    }
+
+    public void setCurrentUserInfo(GetAccountInfoOutputModel currentUserInfo) {
+        this.currentUserInfo = currentUserInfo;
+    }
 
     public RpcCaller getRpcCaller() {
         return rpcCaller;
