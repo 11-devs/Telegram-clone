@@ -1,0 +1,51 @@
+/* Client/css/deleteContactDialog.css */
+
+.dialog-root {
+    -fx-background-color: #202B36;
+    -fx-font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 15, 0.5, 0, 0);
+}
+
+.avatar-image {
+    /* clip is defined in the FXML file */
+}
+
+.dialog-title {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 18px;
+    -fx-font-weight: 600;
+}
+
+.content-label {
+    -fx-text-fill: #EAEAEA;
+    -fx-font-size: 15px;
+    -fx-line-spacing: 4px;
+}
+
+.dialog-button {
+    -fx-background-color: transparent;
+    -fx-font-size: 14px;
+    -fx-font-weight: 600;
+    -fx-padding: 8px 15px;
+    -fx-cursor: hand;
+    -fx-text-transform: uppercase;
+    -fx-background-radius: 5px;
+}
+
+.cancel-button {
+    -fx-text-fill: #4FC3F7;
+}
+
+.cancel-button:hover {
+    -fx-background-color: rgba(79, 195, 247, 0.1);
+}
+
+.delete-button {
+    -fx-text-fill: #E53935; /* A standard error red color */
+}
+
+.delete-button:hover {
+    -fx-background-color: rgba(229, 57, 53, 0.1);
+}

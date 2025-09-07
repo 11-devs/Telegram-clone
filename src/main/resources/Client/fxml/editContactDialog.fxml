@@ -55,13 +55,13 @@
                 <VBox spacing="5.0">
                     <children>
                         <Label fx:id="firstNameLabel" styleClass="field-label-dialog" text="First name" />
-                        <TextField fx:id="firstNameField" styleClass="dialog-text-field" text="Mohammad" />
+                        <TextField fx:id="firstNameField" styleClass="dialog-text-field" text="Alex " />
                     </children>
                 </VBox>
                 <VBox spacing="5.0">
                     <children>
                         <Label fx:id="lastNameLabel" styleClass="field-label-dialog" text="Last name" />
-                        <TextField fx:id="lastNameField" styleClass="dialog-text-field" text="Habbibi" />
+                        <TextField fx:id="lastNameField" styleClass="dialog-text-field" text="Jones" />
                     </children>
                 </VBox>
             </children>
