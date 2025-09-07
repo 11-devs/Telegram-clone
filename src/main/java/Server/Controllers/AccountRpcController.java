@@ -437,11 +437,13 @@ public RpcResponse<Boolean> isPhoneNumberRegistered(String phoneNumber){
         output.setUsername(account.getUsername());
         output.setBio(account.getBio());
         output.setPhoneNumber(account.getPhoneNumber());
-        Media media = daoManager.getEntityManager().find(Media.class, UUID.fromString(account.getProfilePictureId()));
+        if(account.getProfilePictureId() != null && !account.getProfilePictureId().trim().isEmpty()) {
+            Media media = daoManager.getEntityManager().find(Media.class, UUID.fromString(account.getProfilePictureId()));
             if (media != null) {
                 output.setProfilePictureMediaId(media.getId().toString());
                 output.setProfilePictureFileId(media.getFileId());
             }
+        }
         output.setStatus(account.getStatus());
 
         return Ok(output);
