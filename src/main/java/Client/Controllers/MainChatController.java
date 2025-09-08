@@ -1198,13 +1198,26 @@ public ChatService getChatService() {
         chatTitleLabel.setText(user.getDisplayName());
 
         // Update subtitle based on user state
-        updateChatSubtitle(user);
+        if (user.getType() == UserType.GROUP || user.getType() == UserType.SUPERGROUP || user.getType() == UserType.CHANNEL) {
+            // For groups/channels, the subtitle shows member/subscriber count, not status.
+            // We handle this separately, so we clear the main subtitle label.
+            chatSubtitleLabel.setText("");
+            chatSubtitleLabel.setVisible(false);
+            chatSubtitleLabel.setManaged(false);
+        } else {
+            // For regular users, show the online/last seen status.
+            chatSubtitleLabel.setVisible(true);
+            chatSubtitleLabel.setManaged(true);
+            updateChatSubtitle(user);
+        }
+        // --------------------------------------------------
 
         // Update avatar
         updateHeaderAvatar(user);
 
         // Update badges and indicators
         mutedIcon.setVisible(user.isMuted());
+        // Online indicator should only be visible for personal user chats
         onlineIndicator.setVisible(user.isOnline() && user.getType() == UserType.USER);
 
         // Update members count for groups
@@ -1216,7 +1229,7 @@ public ChatService getChatService() {
         }
 
         // Start online status animation if user is online
-        if (user.isOnline() && onlineStatusTimeline != null) {
+        if (user.isOnline() && user.getType() == UserType.USER && onlineStatusTimeline != null) {
             onlineStatusTimeline.play();
         }
     }
@@ -1615,7 +1628,6 @@ public ChatService getChatService() {
 
         TextFlow messageTextFlow = createFormattedTextFlow(text, isOutgoing);
         messageTextFlow.getStyleClass().add("message-text-flow");
-        messageTextFlow.setMouseTransparent(true);
 
         HBox timeContainer = new HBox(4);
         timeContainer.setAlignment(Pos.CENTER_RIGHT);
@@ -1717,7 +1729,6 @@ public ChatService getChatService() {
 
         int lastMatchEnd = 0;
         while (matcher.find()) {
-            // Add the plain text part before the match
             if (matcher.start() > lastMatchEnd) {
                 addPlainText(textFlow, text.substring(lastMatchEnd, matcher.start()), isOutgoing);
             }
@@ -1726,21 +1737,31 @@ public ChatService getChatService() {
             if (match.startsWith(BOLD_MARKER_PREFIX) && match.endsWith(BOLD_MARKER_SUFFIX)) {
                 Text formattedText = new Text(match.substring(2, match.length() - 2));
                 formattedText.getStyleClass().addAll("message-text", "text-bold", isOutgoing ? "outgoing" : "incoming");
+
+                formattedText.setMouseTransparent(true);
+
                 textFlow.getChildren().add(formattedText);
             } else if (match.startsWith(ITALIC_MARKER_PREFIX) && match.endsWith(ITALIC_MARKER_SUFFIX)) {
                 Text formattedText = new Text(match.substring(2, match.length() - 2));
                 formattedText.getStyleClass().addAll("message-text", "text-italic", isOutgoing ? "outgoing" : "incoming");
+
+                formattedText.setMouseTransparent(true);
+
                 textFlow.getChildren().add(formattedText);
             } else if (match.startsWith(UNDERLINE_MARKER_PREFIX) && match.endsWith(UNDERLINE_MARKER_SUFFIX)) {
                 Text formattedText = new Text(match.substring(2, match.length() - 2));
                 formattedText.setUnderline(true);
                 formattedText.getStyleClass().addAll("message-text", isOutgoing ? "outgoing" : "incoming");
+
+                formattedText.setMouseTransparent(true);
+
                 textFlow.getChildren().add(formattedText);
             } else if (match.startsWith(SPOILER_MARKER_PREFIX) && match.endsWith(SPOILER_MARKER_SUFFIX)) {
+                // Spoiler node should NOT be transparent, so it can receive clicks.
                 Node spoilerNode = createSpoilerNode(match.substring(2, match.length() - 2), isOutgoing);
                 textFlow.getChildren().add(spoilerNode);
             } else if (match.startsWith("@")) {
-                // Existing mention logic
+                // Hyperlink should NOT be transparent, so it can be clicked.
                 String username = match.substring(1);
                 Hyperlink mentionLink = new Hyperlink(match);
                 mentionLink.setOnAction(e -> handleMentionClick(username));
@@ -1751,12 +1772,10 @@ public ChatService getChatService() {
             lastMatchEnd = matcher.end();
         }
 
-        // Add any remaining text after the last match
         if (lastMatchEnd < text.length()) {
             addPlainText(textFlow, text.substring(lastMatchEnd), isOutgoing);
         }
 
-        // If no formats were found, just add the full text as a single styled Text node.
         if (textFlow.getChildren().isEmpty()) {
             addPlainText(textFlow, text, isOutgoing);
         }
@@ -1766,6 +1785,7 @@ public ChatService getChatService() {
     private void addPlainText(TextFlow textFlow, String content, boolean isOutgoing) {
         Text plainText = new Text(content);
         plainText.getStyleClass().addAll("message-text", isOutgoing ? "outgoing" : "incoming");
+        plainText.setMouseTransparent(true);
         textFlow.getChildren().add(plainText);
     }
     private TextFlow createTextFlowWithMentions(String text, boolean isOutgoing) {
@@ -3365,11 +3385,21 @@ public ChatService getChatService() {
             profileUsernameLabel.setVisible(false);
         }
 
-        if (user.isOnline()) {
-            profileStatusLabel.setText("online");
+        if (user.getType() == UserType.GROUP || user.getType() == UserType.SUPERGROUP || user.getType() == UserType.CHANNEL) {
+            // Hide the status label as it's not applicable
+            profileStatusLabel.setVisible(false);
+            profileStatusLabel.setManaged(false);
         } else {
-            profileStatusLabel.setText(TextUtil.formatLastSeen(user.getLastSeen()));
+            // For regular users, show the status
+            profileStatusLabel.setVisible(true);
+            profileStatusLabel.setManaged(true);
+            if (user.isOnline()) {
+                profileStatusLabel.setText("online");
+            } else {
+                profileStatusLabel.setText(TextUtil.formatLastSeen(user.getLastSeen()));
+            }
         }
+        // ------------------------------------------------------
 
         if (user.getPhoneNumber() != null && !user.getPhoneNumber().isEmpty()) {
             profilePhoneLabel.setText(user.getPhoneNumber());
