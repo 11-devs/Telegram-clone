@@ -1050,6 +1050,59 @@
     -fx-background-color: #232E3C;
 }
 
+.voice-play-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 5, 0.3, 0, 2);
+}
+
+.voice-play-button:hover {
+    -fx-effect: dropshadow(gaussian, rgba(0, 136, 204, 0.4), 8, 0.3, 0, 3);
+}
+
+.voice-progress-bar .track {
+    -fx-background-color:
+        linear-gradient(to right, #0088cc, #00aaff),
+        linear-gradient(to right, #d3d3d3, #e0e0e0);
+    -fx-background-repeat: no-repeat;
+    -fx-background-radius: 5px;
+    -fx-border-color: #b0b0b0;
+    -fx-border-width: 1px;
+    -fx-border-radius: 5px;
+    -fx-padding: 1px;
+}
+
+.voice-progress-bar .thumb {
+    -fx-background-color: linear-gradient(to top, #0088cc, #00aaff);
+    -fx-padding: 5px;
+    -fx-background-radius: 10px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 136, 204, 0.3), 5, 0.2, 0, 1);
+}
+
+.voice-progress-bar .thumb:hover {
+    -fx-background-color: linear-gradient(to top, #0077b3, #0099e6);
+}
+
+.send-button.recording {
+    -fx-background-color: linear-gradient(to bottom, #e53935, #c62828);
+    -fx-background-radius: 5px;
+    -fx-effect: dropshadow(gaussian, rgba(229, 57, 53, 0.4), 6, 0.3, 0, 2);
+    -fx-padding: 8px 15px;
+    -fx-cursor: hand;
+}
+
+.send-button.recording:hover {
+    -fx-background-color: linear-gradient(to bottom, #c62828, #b71c1c);
+    -fx-effect: dropshadow(gaussian, rgba(229, 57, 53, 0.6), 8, 0.3, 0, 3);
+}
+
+.button {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
 /* ============ TELEGRAM CONTEXT MENU STYLE Sp ============ */
 .telegram-context-menu {
     -fx-background-color: #17212B;
