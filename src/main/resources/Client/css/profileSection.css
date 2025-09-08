@@ -156,23 +156,99 @@
 }
 
 /* ============ MEMBERS LIST ============ */
+/* ============ ENHANCED & THEME-ALIGNED MEMBERS LIST ============ */
+
+/* 1. Main ListView Container
+ * We keep the background transparent to inherit the container's dark color.
+ * Adding top/bottom padding creates breathing room from the header/footer. */
 .members-list {
     -fx-background-color: transparent;
+    -fx-padding: 8px 0; /* Vertical padding */
 }
 
+
+/* 2. Base Style for List Cells
+ * Defines the default look for each row in the list. */
 .members-list .list-cell {
+    -fx-background-color: transparent; /* No background by default */
+    -fx-text-fill: #FFFFFF; /* Ensures text is white, overriding JavaFX defaults */
+    -fx-padding: 10px 20px; /* Comfortable padding inside each cell */
+    -fx-border-color: rgba(255, 255, 255, 0.08); /* Subtle separator line */
+    -fx-border-width: 0 0 1px 0; /* Border only on the bottom */
+    -fx-background-radius: 6px; /* Slightly rounded corners for hover/selection */
+    -fx-background-insets: 0 4px; /* Inset the background slightly for a floating effect */
+}
+
+/* Remove the bottom border from the very last cell to avoid a double line */
+.members-list .list-cell:last-visible {
+    -fx-border-width: 0;
+}
+
+
+/* 3. Interaction States (Hover & Selected)
+ * Provides visual feedback to the user. These rules are placed after the
+ * base style to ensure they have priority. */
+
+/* Style for a cell when the mouse hovers over it */
+.members-list .list-cell:filled:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.06); /* Subtle white overlay */
+    -fx-cursor: hand;
+}
+
+/* Style for a cell when it is selected */
+.members-list .list-cell:filled:selected {
+    -fx-background-color: rgba(79, 195, 247, 0.15); /* Brand blue selection color */
+}
+
+/* Ensure text inside a selected cell remains white and readable */
+.members-list .list-cell:filled:selected .text {
+    -fx-fill: #FFFFFF;
+}
+
+
+/* 4. Empty List Placeholder
+ * This styles the message that appears when the ListView has no items. */
+.members-list .placeholder .label {
+    -fx-text-fill: #92A3AF; /* Use the secondary text color */
+    -fx-font-size: 14px;
+}
+
+/* Ensure empty cells at the end of the list don't show hover effects */
+.members-list .list-cell:empty {
     -fx-background-color: transparent;
-    -fx-padding: 8px 16px;
+    -fx-border-width: 0;
 }
 
-.members-list .list-cell:hover {
+
+/* 5. ScrollBar Styling
+ * Ensures the scrollbar matches the rest of the application's theme.
+ * This is consistent with your .profile-scroll-pane style. */
+.members-list .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-padding: 0 0 0 5px; /* Give it a little space from the content */
+}
+
+.members-list .scroll-bar:vertical .track {
     -fx-background-color: rgba(255, 255, 255, 0.05);
+    -fx-background-radius: 4px;
+    -fx-border-radius: 4px;
 }
 
-.members-list .list-cell:selected {
-    -fx-background-color: rgba(79, 195, 247, 0.15);
+.members-list .scroll-bar:vertical .thumb {
+    -fx-background-color: rgba(146, 163, 175, 0.4);
+    -fx-background-radius: 4px;
 }
 
+.members-list .scroll-bar:vertical .thumb:hover {
+    -fx-background-color: rgba(146, 163, 175, 0.6);
+}
+
+/* Hide the scrollbar arrows for a cleaner, modern look */
+.members-list .scroll-bar .increment-button,
+.members-list .scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
 .member-name {
     -fx-text-fill: #ffffff;
     -fx-font-size: 15px;
