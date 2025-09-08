@@ -2,7 +2,10 @@ package Client.Controllers;
 
 import Client.Services.ChatService;
 import Client.Services.FileDownloadService;
+import JSocket2.Protocol.StatusCode;
+import Shared.Api.Models.MembershipController.GetChatMembersOutputModel;
 import Shared.Models.ChatViewModel;
+import Shared.Models.ChatViewModelBuilder;
 import Shared.Utils.AlertUtil;
 import Shared.Utils.SceneUtil;
 import Shared.Utils.TextUtil;
@@ -40,13 +43,14 @@ public class ProfileSectionController {
     @FXML private Label phoneNumberLabel;
     @FXML private HBox bioFieldContainer;
     @FXML private Label bioLabel;
+    @FXML private Label bioLabelText;
     @FXML private HBox usernameFieldContainer;
     @FXML private Label usernameValueLabel;
 
     @FXML private VBox membersSection;
     @FXML private Label membersHeaderLabel;
     @FXML private Button addMemberButton;
-    @FXML private ListView<ChatViewModel> membersListView; // Changed from <String>
+    @FXML private ListView<ChatViewModel> membersListView;
 
     @FXML private Button closeButton;
     @FXML private Button editButton;
@@ -75,7 +79,7 @@ public class ProfileSectionController {
                     setGraphic(null);
                 } else {
                     // For now, just display the name. A custom cell with avatar can be added later.
-                    setText(user.getDisplayName() + (user.getType() != null ? " (" + user.getType() + ")" : ""));
+                    setText(user.getDisplayName());
                 }
             }
         });
@@ -105,7 +109,7 @@ public class ProfileSectionController {
     private void updateUI() {
         if (userData == null) return;
 
-        // 1. Update common fields
+
         usernameValueLabel.setText(userData.getUsername());
         displayNameLabel.setText(userData.getDisplayName());
         bioLabel.setText(userData.getBio() != null && !userData.getBio().isEmpty() ? userData.getBio() : "No bio yet.");
@@ -135,7 +139,7 @@ public class ProfileSectionController {
         membersSection.setVisible(false);
         membersSection.setManaged(false);
         editButton.setVisible(false); // Hide edit button by default
-
+        bioLabelText.setText("Description");
         // 3. Show fields and set labels based on chat type
         switch (userData.getType()) {
             case USER:
@@ -154,6 +158,7 @@ public class ProfileSectionController {
                 if (parentController != null && parentController.isMyProfile(userData)) {
                     editButton.setVisible(true);
                 }
+                bioLabelText.setText("Bio");
                 break;
 
             case GROUP:
@@ -180,46 +185,43 @@ public class ProfileSectionController {
     }
 
     private void loadMembers() {
-//        if (chatService == null || userData == null || userData.getUserId() == null) return;
-//
-//        membersListView.getItems().clear();
-//        var getMembersTask = chatService.getChatMembers(UUID.fromString(userData.getUserId()));
-//
-//        getMembersTask.setOnSucceeded(event -> {
-//            var response = getMembersTask.getValue();
-//            if (response.getStatusCode() == StatusCode.OK && response.getPayload() != null) {
-//                var members = response.getPayload().getMembers();
-//                String currentUserId = parentController.getCurrentUserId();
-//
-//                Platform.runLater(() -> {
-//                    for (GetChatMembersOutputModel.MemberInfo memberInfo : members) {
-//                        ChatViewModel memberViewModel = new ChatViewModelBuilder()
-//                                .userId(memberInfo.getUserId().toString())
-//                                .userName(memberInfo.getUserName())
-//                                .avatarId(memberInfo.getAvatarFileId())
-//                                .role(memberInfo.getRole()) // Store the role
-//                                .build();
-//                        membersListView.getItems().add(memberViewModel);
-//
-//                        // Check if the current user is an admin to show the "Add Member" button
+        if (chatService == null || userData == null || userData.getChatId() == null) return;
+
+        membersListView.getItems().clear();
+        var getMembersTask = chatService.getChatMembers(userData.getChatId());
+
+        getMembersTask.setOnSucceeded(event -> {
+            var response = getMembersTask.getValue();
+            if (response.getStatusCode() == StatusCode.OK && response.getPayload() != null) {
+                var members = response.getPayload().getMembers();
+                Platform.runLater(() -> {
+                    for (var memberInfo : members) {
+                        ChatViewModel memberViewModel = new ChatViewModelBuilder()
+                                .userId(memberInfo.getUserId().toString())
+                                .displayName(memberInfo.getFirstName() + memberInfo.getLastName())
+                                .avatarId(memberInfo.getProfilePictureFileId())
+                                .build();
+                        membersListView.getItems().add(memberViewModel);
+
+                        // Check if the current user is an admin to show the "Add Member" button
 //                        if (currentUserId != null && currentUserId.equals(memberInfo.getUserId().toString())) {
 //                            if ("OWNER".equals(memberInfo.getRole()) || "ADMIN".equals(memberInfo.getRole())) {
 //                                addMemberButton.setVisible(true);
 //                            }
 //                        }
-//                    }
-//                });
-//            } else {
-//                System.err.println("Failed to load members: " + response.getMessage());
-//            }
-//        });
-//
-//        getMembersTask.setOnFailed(event -> {
-//            System.err.println("Error while fetching members.");
-//            getMembersTask.getException().printStackTrace();
-//        });
-//
-//        new Thread(getMembersTask).start();
+                    }
+                });
+            } else {
+                System.err.println("Failed to load members: " + response.getMessage());
+            }
+        });
+
+        getMembersTask.setOnFailed(event -> {
+            System.err.println("Error while fetching members.");
+            getMembersTask.getException().printStackTrace();
+        });
+
+        new Thread(getMembersTask).start();
     }
 
     private void loadDefaultProfilePicture() {

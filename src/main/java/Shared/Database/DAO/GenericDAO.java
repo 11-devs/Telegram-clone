@@ -33,6 +33,8 @@ public class GenericDAO<T> {
     public void insert(T obj) {
         // todo : handle dublicates
         executeTransaction(em -> em.persist(obj));
+//        executeTransaction(em -> em.merge(obj)); // CORRECTED LINE
+
     }
 
     public T findById(Object id) {

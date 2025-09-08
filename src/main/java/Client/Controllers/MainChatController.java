@@ -849,6 +849,8 @@ public ChatService getChatService() {
                             .userId(chat.getUserId().toString())
                             .avatarId(chat.getProfilePictureId())
                             .username(chat.getUsername())
+                            .membersCount(chat.getMemberCount())
+                            .phoneNumber(chat.getPhoneNumber())
                             .bio(chat.getBio())
                             .displayName(chat.getTitle() != null ? chat.getTitle() : "Private Chat")
                             .lastMessage(chat.getLastMessage())

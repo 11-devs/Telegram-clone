@@ -107,12 +107,13 @@ public class ContactRpcController extends RpcControllerBase {
     public RpcResponse<Object> removeContact(UUID userId) {
 
         UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
-        List<Contact> contacts = daoManager.getContactDAO().findAllByField("owner.id", currentUserId);
-        Contact contactToRemove = contacts.stream()
-                .filter(c -> c.getContact().getId().equals(userId))
-                .findFirst()
-                .orElse(null);
-
+        Contact contactToRemove = daoManager.getContactDAO().findOneByJpql(
+                "SELECT m FROM Contact m WHERE m.contact.id = :contactId AND m.owner.id = :ownerId",
+                query -> {
+                    query.setParameter("contactId", userId);
+                    query.setParameter("ownerId", currentUserId);
+                }
+        );
         if (contactToRemove == null) {
             return BadRequest("not found.");
         }

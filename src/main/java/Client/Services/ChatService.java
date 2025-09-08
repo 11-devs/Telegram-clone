@@ -215,11 +215,11 @@ public class ChatService {
         };
     }
 
-    public Task<RpcResponse<GetChatMembersOutputModel>> getChatMembers(UUID chatId) {
+    public Task<RpcResponse<GetChatMembersOutputModel>> getChatMembers(String chatId) {
         return new Task<>() {
             @Override
             protected RpcResponse<GetChatMembersOutputModel> call() throws Exception {
-                return rpcCaller.getChatMembers(chatId);
+                return rpcCaller.getChatMembers(UUID.fromString(chatId));
             }
         };
     }

@@ -120,7 +120,7 @@
                                         <VBox.margin>
                                             <Insets left="1.0" />
                                         </VBox.margin></Label>
-                                    <Label styleClass="field-description" text="Bio">
+                                    <Label fx:id="bioLabelText" styleClass="field-description" text="Bio">
                                         <VBox.margin>
                                             <Insets left="1.0" />
                                         </VBox.margin></Label>
