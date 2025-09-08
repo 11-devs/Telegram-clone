@@ -32,7 +32,7 @@ public class AppConnectionManager {
 
         // 2. Configure the client builder
         ClientApplicationBuilder builder = new ClientApplicationBuilder();
-        builder.setEndpoint("localhost", 8586);
+        builder.setEndpoint("localhost", 8587);
         builder.addEventSubscriber(NewMessageSubscriber.class);
         builder.addEventSubscriber(MessageEditedSubscriber.class);
         builder.addEventSubscriber(MessageDeletedSubscriber.class);

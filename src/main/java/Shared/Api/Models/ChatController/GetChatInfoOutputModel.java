@@ -17,6 +17,16 @@ public class GetChatInfoOutputModel {
     private String type;
     private String title;
     private String profilePictureId;
+
+    public int getMemberCount() {
+        return memberCount;
+    }
+
+    public void setMemberCount(int memberCount) {
+        this.memberCount = memberCount;
+    }
+
+    private int memberCount = 0;
     private int unreadCount;
 
     public boolean isContact() {

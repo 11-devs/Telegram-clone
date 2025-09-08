@@ -344,6 +344,17 @@ public class ChatRpcController extends RpcControllerBase {
      */
     private void populateGroupOrChannelInfo(GetChatInfoOutputModel output, Chat chat) {
         output.setTitle(chat.getTitle());
+        if(chat.getType() == ChatType.CHANNEL){
+            var channel = daoManager.getEntityManager().find(Channel.class,chat.getId());
+            output.setBio(channel.getDescription());
+        }
+        else if(chat.getType() == ChatType.GROUP){
+            var groupChat = daoManager.getEntityManager().find(GroupChat.class,chat.getId());
+            output.setBio(groupChat.getDescription());
+        }
+        List<Membership> memberships = daoManager.getMembershipDAO().findAllByField("chat.id",chat.getId());
+        if(memberships != null)
+        output.setMemberCount(memberships.size());
         output.setProfilePictureId(getFileIdFromMediaId(chat.getProfilePictureId()));
     }
 

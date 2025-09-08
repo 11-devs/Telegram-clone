@@ -12,7 +12,7 @@ import java.io.IOException;
 public class Server {
     public static void main(String[] args) throws IOException {
         ServerApplicationBuilder builder = new ServerApplicationBuilder();
-        builder.setPort(8586)
+        builder.setPort(8587)
                 .setClientLifecycleListener(ClientLifecycleManager.class)
                 .setAuthService(AuthService.class);
         Database database = new Database();

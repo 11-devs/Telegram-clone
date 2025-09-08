@@ -40,13 +40,14 @@ public class ProfileSectionController {
     @FXML private Label phoneNumberLabel;
     @FXML private HBox bioFieldContainer;
     @FXML private Label bioLabel;
+    @FXML private Label bioLabelText;
     @FXML private HBox usernameFieldContainer;
     @FXML private Label usernameValueLabel;
 
     @FXML private VBox membersSection;
     @FXML private Label membersHeaderLabel;
     @FXML private Button addMemberButton;
-    @FXML private ListView<ChatViewModel> membersListView; // Changed from <String>
+    @FXML private ListView<ChatViewModel> membersListView;
 
     @FXML private Button closeButton;
     @FXML private Button editButton;
@@ -105,7 +106,7 @@ public class ProfileSectionController {
     private void updateUI() {
         if (userData == null) return;
 
-        // 1. Update common fields
+
         usernameValueLabel.setText(userData.getUsername());
         displayNameLabel.setText(userData.getDisplayName());
         bioLabel.setText(userData.getBio() != null && !userData.getBio().isEmpty() ? userData.getBio() : "No bio yet.");
@@ -135,7 +136,7 @@ public class ProfileSectionController {
         membersSection.setVisible(false);
         membersSection.setManaged(false);
         editButton.setVisible(false); // Hide edit button by default
-
+        bioLabelText.setText("Description");
         // 3. Show fields and set labels based on chat type
         switch (userData.getType()) {
             case USER:
@@ -154,6 +155,7 @@ public class ProfileSectionController {
                 if (parentController != null && parentController.isMyProfile(userData)) {
                     editButton.setVisible(true);
                 }
+                bioLabelText.setText("Bio");
                 break;
 
             case GROUP:
