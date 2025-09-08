@@ -202,6 +202,10 @@ public class SettingsController {
     private void handleAdvanced() {
         showSubSection("/Client/fxml/advancedSettings.fxml", "Advanced");
     }
+    @FXML
+    private void handleAppearance() {
+        showSubSection("/Client/fxml/appearanceSettings.fxml", "Appearance");
+    }
 
     public void updateUserInfoOnHeader(GetAccountInfoOutputModel model) {
         String name = model.getFirstName() + " " + model.getLastName();
