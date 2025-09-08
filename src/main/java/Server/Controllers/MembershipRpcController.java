@@ -24,11 +24,22 @@ public class MembershipRpcController extends RpcControllerBase {
     }
 
     private Membership findMembership(UUID chatId, UUID accountId) {
-        List<Membership> membershipsInChat = daoManager.getMembershipDAO().findAllByField("chat.id", chatId);
-        return membershipsInChat.stream()
-                .filter(m -> m.getAccount().getId().equals(accountId))
-                .findFirst()
-                .orElse(null);
+        // This version is more robust as it eagerly fetches the related entities
+        return daoManager.getMembershipDAO().findOneByJpql(
+                "SELECT m FROM Membership m JOIN FETCH m.account JOIN FETCH m.chat WHERE m.chat.id = :chatId AND m.account.id = :accountId",
+                query -> {
+                    query.setParameter("chatId", chatId);
+                    query.setParameter("accountId", accountId);
+                }
+        );
+    }
+    private Membership findMembership(UUID chatId) {
+        return daoManager.getMembershipDAO().findOneByJpql(
+                "SELECT m FROM Membership m WHERE m.chat.id = :chatId",
+                query -> {
+                    query.setParameter("chatId", chatId);
+                }
+        );
     }
 
     public RpcResponse<Object> addMember(AddMemberInputModel model) {
@@ -96,11 +107,6 @@ public class MembershipRpcController extends RpcControllerBase {
     }
 
     public RpcResponse<Object> getChatMembers(UUID chatId) {
-        UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
-        if (findMembership(chatId, currentUserId) == null) {
-            return Forbidden("You are not a member of this chat.");
-        }
-
         List<Membership> memberships = daoManager.getMembershipDAO().findAllByField("chat.id",chatId);
         List<MemberInfo> memberInfos = memberships.stream().map(m -> {
             Account acc = m.getAccount();
