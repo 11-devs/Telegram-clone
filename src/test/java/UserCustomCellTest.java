@@ -1,6 +1,6 @@
 import Client.Controllers.UserCustomCell;
-import Shared.Models.UserViewModel;
-import Shared.Models.UserViewModelBuilder;
+import Shared.Models.ChatViewModel;
+import Shared.Models.ChatViewModelBuilder;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -19,8 +19,8 @@ public class UserCustomCellTest extends Application {
     @Override
     public void start(Stage primaryStage) {
         try {
-            ObservableList<UserViewModel> users = createSampleUsers();
-            ListView<UserViewModel> chatListView = new ListView<>(users);
+            ObservableList<ChatViewModel> users = createSampleUsers();
+            ListView<ChatViewModel> chatListView = new ListView<>(users);
             chatListView.setCellFactory(listView -> new UserCustomCell());
             chatListView.setPrefWidth(400);
             chatListView.setPrefHeight(600);
@@ -45,10 +45,10 @@ public class UserCustomCellTest extends Application {
         }
     }
 
-    private ObservableList<UserViewModel> createSampleUsers() {
-        ObservableList<UserViewModel> users = FXCollections.observableArrayList();
+    private ObservableList<ChatViewModel> createSampleUsers() {
+        ObservableList<ChatViewModel> users = FXCollections.observableArrayList();
 
-        users.add(new UserViewModelBuilder()
+        users.add(new ChatViewModelBuilder()
                 .displayName("John Doe")
                 .lastMessage("Hey there! How are you doing?")
                 .time(getCurrentTime())
@@ -57,10 +57,10 @@ public class UserCustomCellTest extends Application {
                 .isVerified(true)
                 .messageStatus("read")
                 .type("user")
-                .userId("user1")
+                .chatId("user1")
                 .build());
 
-        users.add(new UserViewModelBuilder()
+        users.add(new ChatViewModelBuilder()
                 .displayName("Alice Smith")
                 .lastMessage("Can we meet tomorrow?")
                 .time(getYesterdayTime())
@@ -69,10 +69,10 @@ public class UserCustomCellTest extends Application {
                 .lastSeen("last seen 2 hours ago")
                 .messageStatus("delivered")
                 .type("group")
-                .userId("user2")
+                .chatId("user2")
                 .build());
 
-        users.add(new UserViewModelBuilder()
+        users.add(new ChatViewModelBuilder()
                 .displayName("Tech Community")
                 .lastMessage("New announcement posted!")
                 .time(getTimeHoursAgo(1))
@@ -80,10 +80,10 @@ public class UserCustomCellTest extends Application {
                 .isOnline(true)
                 .messageStatus("read")
                 .type("supergroup")
-                .userId("user3")
+                .chatId("user3")
                 .build());
 
-        users.add(new UserViewModelBuilder()
+        users.add(new ChatViewModelBuilder()
                 .displayName("News Channel")
                 .lastMessage("Breaking news: Major update released")
                 .time(getTimeHoursAgo(2))
@@ -91,10 +91,10 @@ public class UserCustomCellTest extends Application {
                 .isOnline(false)
                 .messageStatus("read")
                 .type("channel")
-                .userId("user4")
+                .chatId("user4")
                 .build());
 
-        users.add(new UserViewModelBuilder()
+        users.add(new ChatViewModelBuilder()
                 .displayName("Admin User")
                 .lastMessage("I'm an admin of this group")
                 .time(getTimeHoursAgo(4))
@@ -102,10 +102,10 @@ public class UserCustomCellTest extends Application {
                 .isOnline(true)
                 .messageStatus("read")
                 .type("admin")
-                .userId("user7")
+                .chatId("user7")
                 .build());
 
-        users.add(new UserViewModelBuilder()
+        users.add(new ChatViewModelBuilder()
                 .displayName("Muted ContactViewModel")
                 .lastMessage("This contact is muted")
                 .time(getTimeHoursAgo(5))
@@ -114,10 +114,10 @@ public class UserCustomCellTest extends Application {
                 .isMuted(true)
                 .messageStatus("sent")
                 .type("user")
-                .userId("user8")
+                .chatId("user8")
                 .build());
 
-        users.add(new UserViewModelBuilder()
+        users.add(new ChatViewModelBuilder()
                 .displayName("Pinned Chat")
                 .lastMessage("This chat is pinned")
                 .time(getTimeHoursAgo(6))
@@ -126,10 +126,10 @@ public class UserCustomCellTest extends Application {
                 .isPinned(true)
                 .messageStatus("read")
                 .type("group")
-                .userId("user9")
+                .chatId("user9")
                 .build());
 
-        users.add(new UserViewModelBuilder()
+        users.add(new ChatViewModelBuilder()
                 .displayName("Long Message User")
                 .lastMessage("This is a very long message that should be truncated in the UI to prevent layout issues and maintain consistent appearance across all chat items")
                 .time(getTimeHoursAgo(7))
@@ -137,19 +137,19 @@ public class UserCustomCellTest extends Application {
                 .isOnline(false)
                 .messageStatus("read")
                 .type("user")
-                .userId("user10")
+                .chatId("user10")
                 .build());
 
         return users;
     }
 
-    private void setupDynamicUpdates(ObservableList<UserViewModel> users, ListView<UserViewModel> chatListView) {
+    private void setupDynamicUpdates(ObservableList<ChatViewModel> users, ListView<ChatViewModel> chatListView) {
         new Thread(() -> {
             try {
                 Thread.sleep(3000);
                 Platform.runLater(() -> {
                     if (!users.isEmpty()) {
-                        UserViewModel firstUser = users.get(0);
+                        ChatViewModel firstUser = users.get(0);
                         firstUser.setLastMessage("Just sent a new message!");
                         firstUser.setTime(getCurrentTime());
                         firstUser.incrementUnreadCount();
@@ -158,14 +158,14 @@ public class UserCustomCellTest extends Application {
 
                 Thread.sleep(2000);
                 Platform.runLater(() -> {
-                    UserViewModel newUser = new UserViewModelBuilder()
+                    ChatViewModel newUser = new ChatViewModelBuilder()
                             .displayName("New ContactViewModel")
                             .lastMessage("Hello! I'm new here")
                             .time(getCurrentTime())
                             .isOnline(true)
                             .notificationsNumber("1")
                             .type("user")
-                            .userId("newUser")
+                            .chatId("newUser")
                             .build();
                     users.add(0, newUser);
                 });
@@ -179,7 +179,7 @@ public class UserCustomCellTest extends Application {
         }).start();
     }
 
-    private void simulateTyping(UserViewModel user, long durationMillis, ListView<UserViewModel> chatListView) {
+    private void simulateTyping(ChatViewModel user, long durationMillis, ListView<ChatViewModel> chatListView) {
         new Thread(() -> {
             try {
                 System.out.println("Starting typing simulation for: " + user.getDisplayName());

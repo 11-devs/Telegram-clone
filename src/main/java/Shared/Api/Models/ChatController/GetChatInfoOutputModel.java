@@ -3,11 +3,31 @@ package Shared.Api.Models.ChatController;
 import java.util.UUID;
 
 public class GetChatInfoOutputModel {
-    private UUID id;
+    private UUID chatId;
+
+    public UUID getUserId() {
+        return userId;
+    }
+
+    public void setUserId(UUID userId) {
+        this.userId = userId;
+    }
+
+    private UUID userId;
     private String type;
     private String title;
     private String profilePictureId;
     private int unreadCount;
+
+    public boolean isContact() {
+        return isContact;
+    }
+
+    public void setContact(boolean contact) {
+        isContact = contact;
+    }
+
+    private boolean isContact = false;
     private boolean isMuted;
 
     public String getPhoneNumber() {
@@ -84,12 +104,12 @@ public class GetChatInfoOutputModel {
         this.lastSeen = lastSeen;
     }
     //<editor-fold desc="Getters and Setters">
-    public UUID getId() {
-        return id;
+    public UUID getChatId() {
+        return chatId;
     }
 
-    public void setId(UUID id) {
-        this.id = id;
+    public void setChatId(UUID chatId) {
+        this.chatId = chatId;
     }
 
     public String getType() {

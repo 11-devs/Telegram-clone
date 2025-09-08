@@ -9,6 +9,7 @@ import Shared.Api.Models.AccountController.*;
 import Shared.Events.Models.ChatInfoChangedEventModel;
 import Shared.Models.Account.Account;
 import Shared.Models.Chat.SavedMessages;
+import Shared.Models.Contact.Contact;
 import Shared.Models.Media.Media;
 import Shared.Models.Membership.Membership;
 import Shared.Models.PendingAuth.PendingAuth;
@@ -434,15 +435,23 @@ public RpcResponse<Boolean> isPhoneNumberRegistered(String phoneNumber){
         broadcastChatInfoUpdate(currentUserId,eventModel);
         return Ok();
     }
+    private List<Contact> findContacts(UUID ownerId) {
+        String jpql = "SELECT c FROM Contact c WHERE c.owner.id = :ownerId";
+        var contacts = daoManager.getContactDAO().findByJpql(jpql, query -> {
+            query.setParameter("ownerId", ownerId);
+        });
+        return contacts;
+    }
+    // This method should be placed in your MembershipDAO or a suitable generic repository.
+// It assumes your base findByJpql method returns a List<?> which can be cas
 
     private void broadcastChatInfoUpdate(UUID currentUserId,ChatInfoChangedEventModel eventModel) {
-
         List<Membership> userMemberships = daoManager.getMembershipDAO().findAllByField("account.id", currentUserId);
         for (Membership userMembership : userMemberships) {
             List<Membership> chatPeers = daoManager.getMembershipDAO().findAllByField("chat.id", userMembership.getChat().getId());
             for (Membership peer : chatPeers) {
-                // Don't send the notification to the user themselves
                 if (!peer.getAccount().getId().equals(currentUserId)) {
+
                     eventModel.setChatId(userMembership.getChat().getId());
                     try {
                         chatInfoChangedEvent.Invoke(

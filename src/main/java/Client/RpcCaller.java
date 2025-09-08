@@ -180,6 +180,10 @@ public class RpcCaller extends RpcCallerBase {
         return callRpcAndGetResponse("ChatRpcController", "searchPublic", GetChatInfoOutputModel[].class,query);
 
     }
+    public RpcResponse<String> removeContact(UUID UserId) throws IOException {
+        return callRpcAndGetResponse("ContactRpcController", "removeContact", String.class,UserId);
+
+    }
 
 
 }

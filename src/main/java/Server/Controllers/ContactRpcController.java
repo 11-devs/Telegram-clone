@@ -5,11 +5,14 @@ import JSocket2.Protocol.Rpc.RpcResponse;
 import Server.DaoManager;
 import Shared.Api.Models.ContactController.*;
 import Shared.Models.Account.Account;
+import Shared.Models.Chat.PrivateChat;
 import Shared.Models.Contact.Contact;
 import Shared.Models.Media.Media;
+import Shared.Models.Membership.Membership;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -101,22 +104,21 @@ public class ContactRpcController extends RpcControllerBase {
         return Ok(new GetContactsOutputModel(contactInfos));
     }
 
-    public RpcResponse<Object> removeContact(RemoveContactInputModel model) {
+    public RpcResponse<Object> removeContact(UUID userId) {
+
         UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
         List<Contact> contacts = daoManager.getContactDAO().findAllByField("owner.id", currentUserId);
-
         Contact contactToRemove = contacts.stream()
-                .filter(c -> c.getContact().getId().equals(model.getContactId()))
+                .filter(c -> c.getContact().getId().equals(userId))
                 .findFirst()
                 .orElse(null);
 
         if (contactToRemove == null) {
-            return BadRequest("ContactViewModel not found.");
+            return BadRequest("not found.");
         }
-
+        var accountFullName = contactToRemove.getContact().getFirstName() + " " + contactToRemove.getContact().getLastName();
         daoManager.getContactDAO().delete(contactToRemove);
-
-        return Ok(new RemoveContactOutputModel("ContactViewModel removed successfully."));
+        return Ok(accountFullName);
     }
     public RpcResponse<Object> getContact(GetContactInputModel model) {
         UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());

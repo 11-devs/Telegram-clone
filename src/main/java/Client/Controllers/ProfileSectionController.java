@@ -2,7 +2,7 @@ package Client.Controllers;
 
 import Client.Services.ChatService;
 import Client.Services.FileDownloadService;
-import Shared.Models.UserViewModel;
+import Shared.Models.ChatViewModel;
 import Shared.Utils.AlertUtil;
 import Shared.Utils.SceneUtil;
 import Shared.Utils.TextUtil;
@@ -46,14 +46,14 @@ public class ProfileSectionController {
     @FXML private VBox membersSection;
     @FXML private Label membersHeaderLabel;
     @FXML private Button addMemberButton;
-    @FXML private ListView<UserViewModel> membersListView; // Changed from <String>
+    @FXML private ListView<ChatViewModel> membersListView; // Changed from <String>
 
     @FXML private Button closeButton;
     @FXML private Button editButton;
 
     // State
     private Stage dialogStage;
-    private UserViewModel userData;
+    private ChatViewModel userData;
     private MainChatController parentController;
     private ChatService chatService;
     private FileDownloadService fileDownloadService;
@@ -68,7 +68,7 @@ public class ProfileSectionController {
         // Setup ListView CellFactory to display user info
         membersListView.setCellFactory(param -> new ListCell<>() {
             @Override
-            protected void updateItem(UserViewModel user, boolean empty) {
+            protected void updateItem(ChatViewModel user, boolean empty) {
                 super.updateItem(user, empty);
                 if (empty || user == null) {
                     setText(null);
@@ -96,8 +96,8 @@ public class ProfileSectionController {
 
     // Main method to receive data
     public void setData(Object data) {
-        if (data instanceof UserViewModel) {
-            this.userData = (UserViewModel) data;
+        if (data instanceof ChatViewModel) {
+            this.userData = (ChatViewModel) data;
             updateUI();
         }
     }
@@ -193,7 +193,7 @@ public class ProfileSectionController {
 //
 //                Platform.runLater(() -> {
 //                    for (GetChatMembersOutputModel.MemberInfo memberInfo : members) {
-//                        UserViewModel memberViewModel = new UserViewModelBuilder()
+//                        ChatViewModel memberViewModel = new ChatViewModelBuilder()
 //                                .userId(memberInfo.getUserId().toString())
 //                                .userName(memberInfo.getUserName())
 //                                .avatarId(memberInfo.getAvatarFileId())

@@ -206,6 +206,14 @@ public class ChatService {
             }
         };
     }
+    public Task<RpcResponse<String>> removeContact(UUID chatId) {
+        return new Task<>() {
+            @Override
+            protected RpcResponse<String> call() throws Exception {
+                return rpcCaller.removeContact(chatId);
+            }
+        };
+    }
 
     public Task<RpcResponse<GetChatMembersOutputModel>> getChatMembers(UUID chatId) {
         return new Task<>() {

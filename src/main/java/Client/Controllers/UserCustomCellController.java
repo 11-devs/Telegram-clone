@@ -1,7 +1,7 @@
 package Client.Controllers;
 
 import Client.Services.FileDownloadService;
-import Shared.Models.UserViewModel;
+import Shared.Models.ChatViewModel;
 import Shared.Models.UserType;
 import Shared.Utils.TextUtil;
 import javafx.application.Platform;
@@ -60,7 +60,7 @@ public class UserCustomCellController {
     @FXML
     private StackPane notificationPanel;
 
-    private UserViewModel currentUser;
+    private ChatViewModel currentUser;
     private boolean isSelected = false;
     private ChangeListener<String> messageStatusListener;
     private ChangeListener<Boolean> mutedPropertyListener;
@@ -69,7 +69,7 @@ public class UserCustomCellController {
         setupClickHandlers();
     }
 
-    public void setCurrentUser(UserViewModel user) {
+    public void setCurrentUser(ChatViewModel user) {
         this.currentUser = user;
     }
 
@@ -269,7 +269,7 @@ public class UserCustomCellController {
 
     // Main cell update method
 
-    public void updateCell(UserViewModel item) {
+    public void updateCell(ChatViewModel item) {
         if (item == null) return;
 
         unbindAll();  // Cancel previous bindings
