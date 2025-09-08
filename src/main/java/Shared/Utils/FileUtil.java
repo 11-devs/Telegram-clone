@@ -1,5 +1,6 @@
 package Shared.Utils;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,4 +41,25 @@ public class FileUtil {
         String pre = "KMGTPE".charAt(exp - 1) + "";
         return String.format("%.1f %sB", bytes / Math.pow(1024, exp), pre);
     }
+
+    public static String getFileNameWithoutExtension(String sourceFileName) {
+        if (sourceFileName == null || sourceFileName.isEmpty()) {
+            return sourceFileName;
+        }
+
+        // If a full path is provided, extract just the file name part.
+        String fileName = new File(sourceFileName).getName();
+
+        int dotIndex = fileName.lastIndexOf('.');
+
+        // A dot index of 0 means it's a dotfile (e.g., ".bashrc").
+        // A dot index of -1 means there is no extension.
+        // In both cases, the original file name should be returned.
+        if (dotIndex > 0) {
+            return fileName.substring(0, dotIndex);
+        } else {
+            return fileName;
+        }
+    }
+
 }

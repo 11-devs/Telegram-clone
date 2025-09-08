@@ -1,5 +1,7 @@
 package Server;
 
+import JSocket2.Protocol.Transfer.TransferInfo;
+import JSocket2.Protocol.Transfer.TransferState;
 import Shared.Database.Database;
 import Shared.Models.Account.Account;
 import Shared.Models.Account.AccountStatus;
@@ -14,8 +16,16 @@ import Shared.Models.Message.MessageType;
 import Shared.Models.Message.TextMessage;
 import Shared.Utils.Console;
 import Shared.Utils.PasswordUtil;
+import com.google.gson.Gson;
 import jakarta.persistence.EntityManager;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -85,30 +95,90 @@ public class DataSeeder {
     }
 
     /**
-     * Helper method to create and save a Media entity, returning its UUID (the media entity's primary key ID).
-     * This ID will be used as `profilePictureId` in `Account` and `Chat` entities.
-     * The `fileId` within the `Media` entity is a separate UUID that clients request for actual file transfer.
-     * @param fileName The original file name (e.g., "my_avatar.png").
+     * Helper method to create and save a Media entity. It also copies the physical file
+     * from resources to the server's file storage and creates the necessary .info file
+     * to simulate a completed file transfer, making it downloadable by clients.
+     *
+     * @param sourceFileName The name of the file in the /seed_media/ resource folder (e.g., "my_avatar.png").
      * @param mediaType The type of media (e.g., IMAGE, DOCUMENT).
-     * @param size The size of the file in bytes.
-     * @return The UUID string of the created Media entity.
+     * @return The UUID string of the created Media entity to be used as profilePictureId.
      */
-    private String createAndSaveMedia(String fileName, MediaType mediaType, long size) {
-        Media media = new Media();
-        UUID mediaEntityId = UUID.randomUUID(); // This is the ID for the Media entity
-        UUID fileTransferId = UUID.randomUUID();  // This is the fileId clients will request for transfer
+    private String createAndSaveMedia(String sourceFileName, MediaType mediaType) {
+        // 1. Setup paths
+        final String SEED_MEDIA_SOURCE_PATH = "/images/files/"; // Corrected classpath resource path
+        final String FINAL_SAVE_PATH = "src/files/"; // Consistent with ServerFileTransferManager
+        final String systemTempDir = System.getProperty("java.io.tmpdir");
+        final String JTELEGRAM_TEMP_PATH = Paths.get(systemTempDir, "JTelegram").toString();
 
-        media.setId(mediaEntityId); // Set the entity ID
-        media.setFileId(fileTransferId.toString()); // Set the file ID for actual download
-        media.setFileName(fileName);
-        media.setFileExtension(Shared.Utils.FileUtil.getFileExtension(fileName));
-        media.setSize(size);
+        // 2. Prepare file objects and directories
+        File destinationDir = new File(FINAL_SAVE_PATH);
+        if (!destinationDir.exists()) {
+            destinationDir.mkdirs();
+        }
+        File tempDir = new File(JTELEGRAM_TEMP_PATH);
+        if (!tempDir.exists()) {
+            tempDir.mkdirs();
+        }
+
+        File finalFile = new File(destinationDir, sourceFileName);
+        long fileSize;
+
+        // 3. Copy file from resources to final destination
+        try (InputStream sourceStream = getClass().getResourceAsStream(SEED_MEDIA_SOURCE_PATH + sourceFileName)) {
+            if (sourceStream == null) {
+                Console.error("Seed media file not found in resources: " + SEED_MEDIA_SOURCE_PATH + sourceFileName);
+                return null;
+            }
+            Files.copy(sourceStream, finalFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            fileSize = finalFile.length();
+        } catch (IOException e) {
+            Console.error("Failed to copy seed media file: " + sourceFileName);
+            e.printStackTrace();
+            return null;
+        }
+
+        // 4. Create Media DB entity
+        Media media = new Media();
+        UUID fileTransferId = UUID.randomUUID();
+
+        media.setFileId(fileTransferId.toString());
+        String baseName = Shared.Utils.FileUtil.getFileNameWithoutExtension(sourceFileName);
+        String extension = Shared.Utils.FileUtil.getFileExtension(sourceFileName);
+        media.setFileName(baseName);
+        media.setFileExtension(extension);
+        media.setSize(fileSize);
         media.setType(mediaType);
         media.setMimeType(getMimeTypeForExtension(media.getFileExtension()));
-
         daoManager.getMediaDAO().insert(media);
-        Console.log("  - Created Media entry: " + fileName + " (Media ID: " + media.getId() + ", File ID: " + media.getFileId() + ")");
-        return media.getId().toString(); // Return the Media entity ID to be used as profilePictureId
+
+        // 5. Create and save the .info file, simulating a completed transfer for the ServerFileTransferManager
+        int chunkSize = 65536; // Standard chunk size
+        int totalChunksCount = (int) Math.ceil((double) fileSize / chunkSize);
+        int lastChunkIndex = (totalChunksCount > 0) ? totalChunksCount - 1 : -1;
+
+        TransferInfo transferInfo = new TransferInfo(
+                fileTransferId.toString(),
+                baseName,
+                extension,
+                FINAL_SAVE_PATH,
+                fileSize, // lastWrittenOffset for a complete file is the total size
+                lastChunkIndex,
+                totalChunksCount,
+                fileSize
+        );
+        transferInfo.setTransferState(TransferState.Complete);
+
+        File infoFile = new File(tempDir, fileTransferId.toString() + ".info");
+        try (FileWriter writer = new FileWriter(infoFile)) {
+            new Gson().toJson(transferInfo, writer);
+        } catch (IOException e) {
+            Console.error("Failed to write .info file for seed media: " + sourceFileName);
+            e.printStackTrace();
+            // In a real app, might need to roll back the DB transaction
+        }
+
+        Console.log("  - Seeded Media and file: " + sourceFileName + " (Media ID: " + media.getId() + ", File ID: " + media.getFileId() + ")");
+        return media.getId().toString();
     }
 
     /**
@@ -153,7 +223,7 @@ public class DataSeeder {
             account.setEmail(userData.get("username") + "@example.com"); // Unique email
 
             // Create and assign profile picture Media entity ID
-            String profilePictureMediaId = createAndSaveMedia(userData.get("avatar"), MediaType.IMAGE, 50 * 1024); // 50KB dummy size
+            String profilePictureMediaId = createAndSaveMedia(userData.get("avatar"), MediaType.IMAGE);
             account.setProfilePictureId(profilePictureMediaId);
 
             daoManager.getAccountDAO().insert(account);
@@ -164,7 +234,7 @@ public class DataSeeder {
             SavedMessages savedMessages = new SavedMessages(account);
             savedMessages.setTitle("Saved Messages");
             // Saved messages usually have a generic icon.
-            String savedMessagesIconId = createAndSaveMedia("saved_messages_icon.png", MediaType.IMAGE, 10 * 1024);
+            String savedMessagesIconId = createAndSaveMedia("saved_messages_icon.png", MediaType.IMAGE);
             savedMessages.setProfilePictureId(savedMessagesIconId);
 
             daoManager.getSavedMessagesDAO().insert(savedMessages);
@@ -227,7 +297,7 @@ public class DataSeeder {
         Account myAccount = seededAccounts.stream().filter(a -> "me".equals(a.getUsername())).findFirst().orElseThrow();
 
         // Group 1: Justice League
-        String jlGroupPicId = createAndSaveMedia("justice_league_group.png", MediaType.IMAGE, 100 * 1024);
+        String jlGroupPicId = createAndSaveMedia("justice_league_group.png", MediaType.IMAGE);
         createGroupChat("🛡️ Justice League", "United for justice.", batman, List.of(superman, flash, arrow), jlGroupPicId);
 
         // Group 2: The Council of Ricks
@@ -236,17 +306,17 @@ public class DataSeeder {
                 .limit(2).collect(Collectors.toList());
         otherRicksAndMorty.add(mortySmith);
 
-        String ricksCouncilPicId = createAndSaveMedia("ricks_council_group.png", MediaType.IMAGE, 80 * 1024);
+        String ricksCouncilPicId = createAndSaveMedia("ricks_council_group.png", MediaType.IMAGE);
         createGroupChat("🌌 Council of Ricks", "For Ricks, by Ricks, of Ricks.", rickC137, otherRicksAndMorty, ricksCouncilPicId);
 
         // Group 3: Invincible's Friends
         List<Account> invincibleFriends = List.of(myAccount, superman, flash); // Mix with other characters
 
-        String invincibleGroupPicId = createAndSaveMedia("invincible_friends_group.png", MediaType.IMAGE, 70 * 1024);
+        String invincibleGroupPicId = createAndSaveMedia("invincible_friends_group.png", MediaType.IMAGE);
         createGroupChat("🦸‍♂️ Invincible & Co.", "Keeping the city safe, one villain at a time.", nolanGrayson, invincibleFriends, invincibleGroupPicId);
 
         // Group 4: Gotham Vigilantes (Smaller, focused group)
-        String gothamVigilantesPicId = createAndSaveMedia("gotham_vigilantes_group.png", MediaType.IMAGE, 65 * 1024);
+        String gothamVigilantesPicId = createAndSaveMedia("gotham_vigilantes_group.png", MediaType.IMAGE);
         createGroupChat("🦇 Gotham Vigilantes", "Protecting Gotham's streets. Keep comms secure.", batman, List.of(arrow), gothamVigilantesPicId);
     }
 
@@ -266,7 +336,7 @@ public class DataSeeder {
                 .limit(3)
                 .collect(Collectors.toList());
 
-        String dailyPlanetChannelPicId = createAndSaveMedia("daily_planet_channel.png", MediaType.IMAGE, 60 * 1024);
+        String dailyPlanetChannelPicId = createAndSaveMedia("daily_planet_channel.png", MediaType.IMAGE);
         createChannel("Daily Planet 🌎", "All the news that's fit to print!", superman, dailyPlanetSubscribers, true, dailyPlanetChannelPicId);
 
         // Channel 2: Wayne Enterprises Announcements (Private)
@@ -275,7 +345,7 @@ public class DataSeeder {
                 .limit(2)
                 .collect(Collectors.toList());
 
-        String wayneEnterprisesChannelPicId = createAndSaveMedia("wayne_enterprises_channel.png", MediaType.IMAGE, 90 * 1024);
+        String wayneEnterprisesChannelPicId = createAndSaveMedia("wayne_enterprises_channel.png", MediaType.IMAGE);
         createChannel("💰 Wayne Enterprises", "Official announcements for WE employees.", batman, wayneEnterprisesStaff, false, wayneEnterprisesChannelPicId);
 
         // Channel 3: Speed Force Updates (Public)
@@ -285,7 +355,7 @@ public class DataSeeder {
                 .limit(2)
                 .collect(Collectors.toList());
 
-        String speedForceChannelPicId = createAndSaveMedia("speed_force_channel.png", MediaType.IMAGE, 55 * 1024);
+        String speedForceChannelPicId = createAndSaveMedia("speed_force_channel.png", MediaType.IMAGE);
         createChannel("⚡ Speed Force News", "Faster than a speeding bullet! Updates from the Speed Force.", flash, speedsterFans, true, speedForceChannelPicId);
 
         // Channel 4: Citadel of Ricks Broadcast (Public)
@@ -294,7 +364,7 @@ public class DataSeeder {
                 .limit(4)
                 .collect(Collectors.toList());
 
-        String citadelChannelPicId = createAndSaveMedia("citadel_of_ricks_channel.png", MediaType.IMAGE, 75 * 1024);
+        String citadelChannelPicId = createAndSaveMedia("citadel_of_ricks_channel.png", MediaType.IMAGE);
         createChannel("🏛️ Citadel of Ricks", "Official broadcasts from the Council of Ricks. Wubba lubba dub dub!", rickC137, citadelSubscribers, true, citadelChannelPicId);
     }
 
