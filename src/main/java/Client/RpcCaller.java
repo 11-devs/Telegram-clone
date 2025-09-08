@@ -95,6 +95,9 @@ public class RpcCaller extends RpcCallerBase {
     public RpcResponse<Object> deleteChat(UUID chatId) throws IOException {
         return callRpcAndGetResponse("ChatRpcController", "deleteChat", Object.class, chatId);
     }
+    public RpcResponse<GetChatInfoOutputModel> getChatByUserId(UUID chatId) throws IOException {
+        return callRpcAndGetResponse("ChatRpcController", "getChatByUserId", GetChatInfoOutputModel.class, chatId);
+    }
 
     public RpcResponse<GetChatMembersOutputModel> getChatMembers(UUID chatId) throws IOException {
         return callRpcAndGetResponse("MembershipRpcController", "getChatMembers", GetChatMembersOutputModel.class, chatId);

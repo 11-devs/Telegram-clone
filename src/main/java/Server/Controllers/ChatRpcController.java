@@ -242,7 +242,55 @@ public class ChatRpcController extends RpcControllerBase {
         output.setProfilePictureId(chat.getProfilePictureId());
         return Ok(output);
     }
+    public RpcResponse<Object> getChatByUserId(UUID userId){
+        UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
+        Account targetUser = daoManager.getEntityManager().find(Account.class,userId);
+        if (targetUser == null) {
+            return NotFound();
+        }
+            String jpql = "SELECT pc FROM PrivateChat pc WHERE " +
+                    "(pc.user1.id = :user1Id AND pc.user2.id = :user2Id) OR " +
+                    "(pc.user1.id = :user2Id AND pc.user2.id = :user1Id)";
+            PrivateChat privateChat = daoManager.getPrivateChatDAO().findOneByJpql(jpql, query -> {
+                query.setParameter("user1Id", currentUserId);
+                query.setParameter("user2Id", targetUser.getId());
+            });
 
+            if (privateChat == null) {
+                Account currentUser = daoManager.getAccountDAO().findById(currentUserId);
+                if (currentUser == null) {
+                    return BadRequest("Could not find current user account.");
+                }
+                privateChat = new PrivateChat(currentUser, targetUser);
+                daoManager.getPrivateChatDAO().insert(privateChat);
+
+                Membership currentUserMembership = new Membership();
+                currentUserMembership.setAccount(currentUser);
+                currentUserMembership.setChat(privateChat);
+                currentUserMembership.setType(MembershipType.MEMBER);
+                currentUserMembership.setJoinDate(LocalDateTime.now());
+                daoManager.getMembershipDAO().insert(currentUserMembership);
+
+                Membership targetUserMembership = new Membership();
+                targetUserMembership.setAccount(targetUser);
+                targetUserMembership.setChat(privateChat);
+                targetUserMembership.setType(MembershipType.MEMBER);
+                targetUserMembership.setJoinDate(LocalDateTime.now());
+                daoManager.getMembershipDAO().insert(targetUserMembership);
+            }
+
+        GetChatInfoOutputModel output = new GetChatInfoOutputModel();
+        output.setId(privateChat.getId());
+        output.setType(privateChat.getType().toString());
+
+        String otherUserName = targetUser.getFirstName() + (targetUser.getLastName() != null ? " " + targetUser.getLastName() : "");
+        output.setTitle(otherUserName.trim());
+        output.setProfilePictureId(targetUser.getProfilePictureId());
+        output.setLastMessage("");
+        output.setUnreadCount(0);
+
+        return Ok(output);
+    }
     public RpcResponse<Object> deleteChat(UUID chatId) {
         UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
         Membership membership = daoManager.getMembershipDAO().findOneByJpql("SELECT m FROM Membership m WHERE m.chat.id = :chatId AND m.account.id = :accountId", q -> {

@@ -4768,40 +4768,57 @@ public ChatService getChatService() {
     }
     public void openChatWithContact(ContactInfo contactInfo) {
         if (contactInfo == null) return;
+        Task<RpcResponse<GetChatInfoOutputModel>> findChatTask = chatService.getChatByUserId(contactInfo.getUserId());
 
-        Platform.runLater(() -> {
-            // Find if this user is already in the local chat list
-            Optional<UserViewModel> existingUser = allChatUsers.stream()
-                    .filter(uvm -> uvm.getUserId().equals(contactInfo.getUserId().toString()))
-                    .findFirst();
+        findChatTask.setOnSucceeded(event -> {
+            RpcResponse<GetChatInfoOutputModel> response = findChatTask.getValue();
+            if (response.getStatusCode() == StatusCode.OK && response.getPayload() != null) {
+                GetChatInfoOutputModel chatInfo = response.getPayload();
+                Platform.runLater(() -> {
+                    // Check if this user is already in the local chat list
+                    Optional<UserViewModel> existingUser = allChatUsers.stream()
+                            .filter(uvm -> uvm.getUserId().equals(chatInfo.getId().toString()))
+                            .findFirst();
 
-            UserViewModel userToSelect;
-            if (existingUser.isPresent()) {
-                userToSelect = existingUser.get();
+                    UserViewModel userToSelect;
+                    if (existingUser.isPresent()) {
+                        userToSelect = existingUser.get();
+                    } else {
+                        // If not present, create a new UserViewModel and add it to the list
+                        UserViewModel uvm = new UserViewModelBuilder()
+                                .userId(chatInfo.getId().toString())
+                                .avatarId(chatInfo.getProfilePictureId())
+                                .displayName(chatInfo.getTitle())
+                                .lastMessage(chatInfo.getLastMessage())
+                                .time(chatInfo.getLastMessageTimestamp())
+                                .type(chatInfo.getType())
+                                .notificationsNumber(String.valueOf(chatInfo.getUnreadCount()))
+                                .build();
+                        allChatUsers.add(0, uvm); // Add to the top of the master list
+                        performSearch(searchField.getText()); // Re-apply current filter
+                        userToSelect = uvm;
+                    }
+
+                    // Select the user in the ListView, which will open the chat
+                    chatListView.getSelectionModel().select(userToSelect);
+                    chatListView.scrollTo(userToSelect);
+                });
             } else {
-                // If not present, create a new UserViewModel and add it to the list
-                UserViewModel uvm = new UserViewModelBuilder()
-                        .userId(contactInfo.getUserId().toString())
-                        .avatarId(contactInfo.getProfilePictureId())
-                        .displayName(contactInfo.getFirstName() + " " + contactInfo.getLastName())
-                        .lastMessage("") // Will be fetched upon selection
-                        .time(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
-                        .type(UserType.USER.toString())
-                        .notificationsNumber("0")
-                        .isOnline(contactInfo.getStatus() == AccountStatus.ONLINE)
-                        .build();
-                allChatUsers.add(0, uvm); // Add to the top of the master list
-                performSearch(searchField.getText()); // Re-apply current filter
-                userToSelect = uvm;
+                Platform.runLater(() -> showTemporaryNotification("User @" + contactInfo.getUserId() + " not found.\n"));
+                System.err.println("Failed to find user by username: " + response.getMessage());
             }
-
-            // Select the user in the ListView, which will trigger the listener to open the chat
-            chatListView.getSelectionModel().select(userToSelect);
-            chatListView.scrollTo(userToSelect);
         });
+
+        findChatTask.setOnFailed(event -> {
+            findChatTask.getException().printStackTrace();
+            Platform.runLater(() -> showTemporaryNotification("Error finding user.\n"));
+        });
+
+        new Thread(findChatTask).start();
+
     }
 
     public boolean isMyProfile(UserViewModel userData) {
-        return userData.getUserId() == currentUserId;
+        return userData.getUserId().equals(currentUserId);
     }
 }
