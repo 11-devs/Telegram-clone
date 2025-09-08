@@ -466,8 +466,6 @@
                             <JFXToggleButton fx:id="notificationsToggle" graphicTextGap="0.0" prefWidth="82.0" styleClass="notificationsToggle" />
                         </children>
                     </HBox>
-
-                    <!-- Encryption -->
                     <HBox alignment="CENTER_LEFT" prefWidth="249.0" spacing="16.0" styleClass="profile-setting-item">
                         <padding>
                             <Insets bottom="16.0" left="24.0" right="24.0" top="16.0" />
@@ -486,6 +484,7 @@
                             </VBox>
                         </children>
                     </HBox>
+                    <!-- Encryption -->
 
                     <!-- More Options -->
                     <HBox fx:id="MoreHBox" alignment="CENTER_LEFT" spacing="16.0" styleClass="profile-setting-item">
@@ -502,6 +501,24 @@
                                 </HBox.margin>
                             </ImageView>
                             <Label styleClass="setting-title" text="More" HBox.hgrow="ALWAYS" />
+                        </children>
+                    </HBox>
+                    <HBox fx:id="DeleteContactBox" alignment="CENTER_LEFT" prefWidth="249.0" spacing="16.0" styleClass="profile-setting-item">
+                        <padding>
+                            <Insets bottom="16.0" left="24.0" right="24.0" top="16.0" />
+                        </padding>
+                        <children>
+                            <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="setting-icon">
+                                <image>
+                                    <Image url="@../images/close-icon.png" />
+                                </image>
+                            </ImageView>
+                            <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                                <children>
+                                    <Label styleClass="setting-title" text="Delete Contact" />
+                                    <Label styleClass="setting-subtitle" text="" />
+                                </children>
+                            </VBox>
                         </children>
                     </HBox>
                 </children>

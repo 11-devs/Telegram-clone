@@ -21,7 +21,6 @@ import Shared.Api.Models.MessageController.SendMessageInputModel;
 import Shared.Api.Models.MessageController.SendMessageOutputModel;
 import Shared.Events.Models.*;
 import Shared.Models.*;
-import Shared.Models.Account.AccountStatus;
 import Shared.Utils.SceneUtil;
 import Shared.Utils.SidebarUtil;
 import Shared.Models.Message.MessageType;
@@ -70,7 +69,6 @@ import javafx.geometry.Point2D;
 
 import java.awt.*;
 import java.io.IOException;
-import java.time.format.FormatStyle;
 import java.util.*;
 import java.io.File;
 import java.net.URI;
@@ -138,7 +136,7 @@ public class MainChatController implements Initializable {
      */
     @FXML private TextField searchField;
 
-    public ListView<UserViewModel> getChatListView() {
+    public ListView<ChatViewModel> getChatListView() {
         return chatListView;
     }
 
@@ -152,9 +150,9 @@ public class MainChatController implements Initializable {
 
     private String currentUserId;
     /**
-     * ListView displaying the chat list with UserViewModel items.
+     * ListView displaying the chat list with ChatViewModel items.
      */
-    @FXML private ListView<UserViewModel> chatListView;
+    @FXML private ListView<ChatViewModel> chatListView;
     /**
      * Button to open settings.
      */
@@ -321,6 +319,7 @@ public class MainChatController implements Initializable {
      * Handle about HBox click
      */
     @FXML private HBox MoreHBox;
+    @FXML private HBox DeleteContactBox;
     /**
      * Handle right panel
      */
@@ -332,22 +331,22 @@ public class MainChatController implements Initializable {
      */
     private String ownUsername = "Me";
 
-    public ObservableList<UserViewModel> getAllChatUsers() {
+    public ObservableList<ChatViewModel> getAllChatUsers() {
         return allChatUsers;
     }
 
     /**
      * ObservableList of all chat users.
      */
-    private ObservableList<UserViewModel> allChatUsers;
+    private ObservableList<ChatViewModel> allChatUsers;
     /**
      * ObservableList of filtered chat users based on search.
      */
-    private ObservableList<UserViewModel> filteredChatUsers;
+    private ObservableList<ChatViewModel> filteredChatUsers;
     /**
      * The currently selected user or chat.
      */
-    private UserViewModel currentSelectedUser;
+    private ChatViewModel currentSelectedChat;
     /**
      * ObservableList of current messages in the chat.
      */
@@ -478,7 +477,7 @@ public ChatService getChatService() {
     }
     public void handleIncomingMessage(NewMessageEventModel message) {
         // Check if the message belongs to the currently opened chat
-        if (currentSelectedUser != null && currentSelectedUser.getUserId().equals(message.getChatId().toString())) {
+        if (currentSelectedChat != null && currentSelectedChat.getChatId().equals(message.getChatId().toString())) {
             String formattedTime = LocalDateTime.parse(message.getTimestamp()).format(DateTimeFormatter.ofPattern("HH:mm"));
 
             if (message.getMessageType() == MessageType.TEXT) {
@@ -495,13 +494,13 @@ public ChatService getChatService() {
             if (messagesScrollPane.getVvalue() > 0.9) {
                 scrollToBottom();
             }
-            Task<Void> markAsReadTask = chatService.markChatAsRead(UUID.fromString(currentSelectedUser.getUserId()));
+            Task<Void> markAsReadTask = chatService.markChatAsRead(UUID.fromString(currentSelectedChat.getChatId()));
             new Thread(markAsReadTask).start();
         }
 
         // Update the corresponding chat item in the list
         allChatUsers.stream()
-                .filter(user -> user.getUserId().equals(message.getChatId().toString()))
+                .filter(user -> user.getChatId().equals(message.getChatId().toString()))
                 .findFirst()
                 .ifPresent(user -> {
                     String notificationMessage = message.getTextContent() != null ? message.getTextContent() : "Media";
@@ -509,7 +508,7 @@ public ChatService getChatService() {
                     user.setTime(message.getTimestamp());
 
                     // Increment unread count only if the chat is not currently active
-                    if (currentSelectedUser == null || !currentSelectedUser.getUserId().equals(user.getUserId())) {
+                    if (currentSelectedChat == null || !currentSelectedChat.getChatId().equals(user.getChatId())) {
                         try {
                             int currentCount = Integer.parseInt(user.getNotificationsNumber());
                             user.setNotificationsNumber(String.valueOf(currentCount + 1));
@@ -541,7 +540,7 @@ public ChatService getChatService() {
     }
 
     public void handleMessageEdited(MessageEditedEventModel eventModel) {
-        if (currentSelectedUser != null && currentSelectedUser.getUserId().equals(eventModel.getChatId().toString())) {
+        if (currentSelectedChat != null && currentSelectedChat.getChatId().equals(eventModel.getChatId().toString())) {
             Platform.runLater(() -> {
                 messagesContainer.getChildren().stream()
                         .filter(node -> node instanceof HBox)
@@ -558,7 +557,7 @@ public ChatService getChatService() {
         }
         // Update chat list item last message if it was the edited one
         allChatUsers.stream()
-                .filter(user -> user.getUserId().equals(eventModel.getChatId().toString()))
+                .filter(user -> user.getChatId().equals(eventModel.getChatId().toString()))
                 .findFirst()
                 .ifPresent(user -> {
                     // Update with the clean new content. The cell controller will format it.
@@ -569,7 +568,7 @@ public ChatService getChatService() {
     }
 
     public void handleMessageDeleted(MessageDeletedEventModel eventModel) {
-        if (currentSelectedUser != null && currentSelectedUser.getUserId().equals(eventModel.getChatId().toString())) {
+        if (currentSelectedChat != null && currentSelectedChat.getChatId().equals(eventModel.getChatId().toString())) {
             Platform.runLater(() -> {
                 // Find the message bubble by its ID and remove it
                 boolean removed = messagesContainer.getChildren().removeIf(node ->
@@ -587,7 +586,7 @@ public ChatService getChatService() {
         // Potentially update the chat list if the deleted message was the last one
         // This would require fetching the new last message for the chat.
         allChatUsers.stream()
-                .filter(user -> user.getUserId().equals(eventModel.getChatId().toString()))
+                .filter(user -> user.getChatId().equals(eventModel.getChatId().toString()))
                 .findFirst()
                 .ifPresent(user -> {
                     if (eventModel.isLastMessageDeleted()) {
@@ -600,7 +599,7 @@ public ChatService getChatService() {
 
 
     public void handleMessageRead(MessageReadEventModel eventModel) {
-        if (currentSelectedUser != null && currentSelectedUser.getUserId().equals(eventModel.getChatId().toString())) {
+        if (currentSelectedChat != null && currentSelectedChat.getChatId().equals(eventModel.getChatId().toString())) {
             Platform.runLater(() -> {
                 // Find all outgoing messages before or at this timestamp and mark them as read
                 messagesContainer.getChildren().stream()
@@ -621,7 +620,7 @@ public ChatService getChatService() {
         // This event means OUR messages have been read by the other party.
         // We need to update the status icon in the chat list, not our unread count.
         allChatUsers.stream()
-                .filter(user -> user.getUserId().equals(eventModel.getChatId().toString()))
+                .filter(user -> user.getChatId().equals(eventModel.getChatId().toString()))
                 .findFirst()
                 .ifPresent(user -> {
                     // CORRECT: Update the message status to 'read' (double tick)
@@ -631,7 +630,7 @@ public ChatService getChatService() {
     }
 
     public void handleUserTyping(UserIsTypingEventModel eventModel) {
-        if (currentSelectedUser != null && currentSelectedUser.getUserId().equals(eventModel.getChatId().toString())) {
+        if (currentSelectedChat != null && currentSelectedChat.getChatId().equals(eventModel.getChatId().toString())) {
             // Update the subtitle in the chat header to show typing status
             Platform.runLater(() -> {
                 if (eventModel.isTyping()) {
@@ -643,7 +642,7 @@ public ChatService getChatService() {
         }
         // Also update the typing status in the chat list preview
         allChatUsers.stream()
-                .filter(user -> user.getUserId().equals(eventModel.getChatId().toString()))
+                .filter(user -> user.getChatId().equals(eventModel.getChatId().toString()))
                 .findFirst()
                 .ifPresent(user -> Platform.runLater(() -> {
                     user.setTyping(eventModel.isTyping());
@@ -753,7 +752,7 @@ public ChatService getChatService() {
      */
     private void sortAndRefreshChatList() {
         Platform.runLater(() -> {
-            UserViewModel selected = chatListView.getSelectionModel().getSelectedItem();
+            ChatViewModel selected = chatListView.getSelectionModel().getSelectedItem();
             allChatUsers.sort((u1, u2) -> {
                 try {
                     LocalDateTime t1 = (u1.getTime() != null && !u1.getTime().isEmpty()) ? LocalDateTime.parse(u1.getTime()) : LocalDateTime.MIN;
@@ -803,7 +802,7 @@ public ChatService getChatService() {
      * Currently loads sample data.
      */
     private void initializeData() {
-        Callback<UserViewModel, Observable[]> extractor = user -> new Observable[]{
+        Callback<ChatViewModel, Observable[]> extractor = user -> new Observable[]{
                 user.isOnlineProperty(),
                 user.lastSeenProperty(),
                 user.lastMessageProperty(),
@@ -828,11 +827,12 @@ public ChatService getChatService() {
         getChatsTask.setOnSucceeded(event -> {
             RpcResponse<GetChatInfoOutputModel[]> response = getChatsTask.getValue();
             if (response.getStatusCode() == StatusCode.OK && response.getPayload() != null) {
-                List<UserViewModel> userViewModels = new ArrayList<>();
+                List<ChatViewModel> chatViewModels = new ArrayList<>();
                 for (GetChatInfoOutputModel chat : response.getPayload()) {
                     // --- MODIFIED LOGIC: Use real data from the server ---
-                    UserViewModel uvm = new UserViewModelBuilder()
-                            .userId(chat.getId().toString())
+                    ChatViewModel uvm = new ChatViewModelBuilder()
+                            .chatId(chat.getChatId().toString())
+                            .userId(chat.getUserId().toString())
                             .avatarId(chat.getProfilePictureId())
                             .username(chat.getUsername())
                             .bio(chat.getBio())
@@ -844,10 +844,11 @@ public ChatService getChatService() {
                             .isMuted(chat.isMuted())
                             .isOnline(chat.isOnline())
                             .lastSeen(chat.getLastSeen())
+                            .isContact(chat.isContact())
                             .build();
-                    userViewModels.add(uvm);
+                    chatViewModels.add(uvm);
                 }
-                userViewModels.sort((u1, u2) -> {
+                chatViewModels.sort((u1, u2) -> {
                     try {
                         LocalDateTime t1 = (u1.getTime() != null && !u1.getTime().isEmpty()) ? LocalDateTime.parse(u1.getTime()) : LocalDateTime.MIN;
                         LocalDateTime t2 = (u2.getTime() != null && !u2.getTime().isEmpty()) ? LocalDateTime.parse(u2.getTime()) : LocalDateTime.MIN;
@@ -857,7 +858,7 @@ public ChatService getChatService() {
                     }
                 });
                 Platform.runLater(() -> {
-                    allChatUsers.setAll(userViewModels);
+                    allChatUsers.setAll(chatViewModels);
                     filteredChatUsers.setAll(allChatUsers);
                 });
             } else {
@@ -882,9 +883,9 @@ public ChatService getChatService() {
 
         // Handle chat selection
         chatListView.getSelectionModel().selectedItemProperty().addListener((obs, oldUser, newUser) -> {
-            if (newUser != null && newUser != currentSelectedUser) {
+            if (newUser != null && newUser != currentSelectedChat) {
                 // Ignore placeholder clicks
-                if ("SEARCHING_PLACEHOLDER".equals(newUser.getUserId())) {
+                if ("SEARCHING_PLACEHOLDER".equals(newUser.getChatId())) {
                     Platform.runLater(() -> chatListView.getSelectionModel().clearSelection());
                     return;
                 }
@@ -1053,7 +1054,7 @@ public ChatService getChatService() {
         // Header buttons
 
             headerAvatarImage.setOnMouseClicked(e -> {
-                if (currentSelectedUser != null) {
+                if (currentSelectedChat != null) {
                     showProfileDialog();
                 }
             });
@@ -1078,11 +1079,54 @@ public ChatService getChatService() {
         profileSearchButton.setOnAction(e -> showSearchInChat());
         notificationsToggle.setOnAction(e -> toggleNotifications());
         MoreHBox.setOnMouseClicked(e -> handleAbout());
-
+        DeleteContactBox.setOnMouseClicked(e -> handleDeleteContact());
         // Scroll listener for messages
         messagesScrollPane.vvalueProperty().addListener((obs, oldVal, newVal) -> {
             updateScrollToBottomVisibility();
             handleScrollPositionChange(newVal.doubleValue());
+        });
+    }
+
+    private void handleDeleteContact() {
+        if (currentSelectedChat == null) return;
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Delete Message");
+        alert.setHeaderText("Are you sure you want to delete this contact?");
+        alert.setContentText("This action cannot be undone.");
+
+        alert.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.OK) {
+                Task<RpcResponse<String>> deleteTask = chatService.removeContact(UUID.fromString(currentSelectedChat.getChatId()));
+
+                deleteTask.setOnSucceeded(event -> {
+                    RpcResponse<String> result = deleteTask.getValue();
+                    if (result.getStatusCode() != StatusCode.OK) {
+                        Platform.runLater(() -> showTemporaryNotification("Failed to delete contact: " + result.getMessage() + "\n"));
+                    }else{
+                        allChatUsers.stream()
+                                .filter(user -> user.getChatId().equals(currentSelectedChat.getUserId()))
+                                .findFirst()
+                                .ifPresent(user -> {
+                                    if(!user.getIsContact()) {
+                                            user.setDisplayName(result.getPayload());
+                                        if (currentSelectedChat != null && currentSelectedChat.getChatId().equals(user.getChatId())) {
+                                            Platform.runLater(() -> {
+                                                updateChatHeader(user);
+                                                if (isRightPanelVisible) {
+                                                    updateRightPanel(user);
+                                                }
+                                            });
+                                        }
+                                    }
+                                });
+                    }
+                });
+                deleteTask.setOnFailed(event -> {
+                    deleteTask.getException().printStackTrace();
+                    Platform.runLater(() -> showTemporaryNotification("Error deleting contact.\n"));
+                });
+                new Thread(deleteTask).start();
+            }
         });
     }
 
@@ -1170,11 +1214,11 @@ public ChatService getChatService() {
     // ============ CHAT MANAGEMENT ============
 
     /**
-     * Selects a chat based on the provided UserViewModel and updates the UI.
+     * Selects a chat based on the provided ChatViewModel and updates the UI.
      *
-     * @param user The UserViewModel representing the selected chat.
+     * @param user The ChatViewModel representing the selected chat.
      */
-    private void selectChat(UserViewModel user) {
+    private void selectChat(ChatViewModel user) {
         if (user == null) return;
 
         // *** ADD THIS BLOCK TO FIX THE TYPING INDICATOR ***
@@ -1189,7 +1233,7 @@ public ChatService getChatService() {
         }
         // *** END OF ADDED BLOCK ***
 
-        currentSelectedUser = user;
+        currentSelectedChat = user;
 
         // Update UI state
         hideWelcomeState();
@@ -1201,7 +1245,7 @@ public ChatService getChatService() {
         // Clear notifications and mark chat as read
         if (user.hasUnreadMessages()) {
             user.clearUnreadCount();
-            Task<Void> markAsReadTask = chatService.markChatAsRead(UUID.fromString(user.getUserId()));
+            Task<Void> markAsReadTask = chatService.markChatAsRead(UUID.fromString(user.getChatId()));
             new Thread(markAsReadTask).start();
         }
 
@@ -1217,9 +1261,9 @@ public ChatService getChatService() {
     /**
      * Updates the chat header with the selected user's information.
      *
-     * @param user The UserViewModel to update the header with.
+     * @param user The ChatViewModel to update the header with.
      */
-    private void updateChatHeader(UserViewModel user) {
+    private void updateChatHeader(ChatViewModel user) {
         // Update chat title
         chatTitleLabel.setText(user.getDisplayName());
 
@@ -1263,12 +1307,12 @@ public ChatService getChatService() {
     /**
      * Updates the header avatar with the user's image or a default one.
      *
-     * @param user The UserViewModel to update the avatar for.
+     * @param user The ChatViewModel to update the avatar for.
      */
-    private void updateHeaderAvatar(UserViewModel user) {
+    private void updateHeaderAvatar(ChatViewModel user) {
         loadDefaultHeaderAvatar(); // Set default avatar immediately
 
-        // Assuming UserViewModel has getAvatarId()
+        // Assuming ChatViewModel has getAvatarId()
         String avatarId = user.getAvatarId();
 
         if (user.getType() == UserType.SAVED_MESSAGES){
@@ -1279,7 +1323,7 @@ public ChatService getChatService() {
             fileDownloadService.getFile(avatarId).thenAccept(file -> {
                 Platform.runLater(() -> {
                     // Check if the current user is still the one we initiated this download for
-                    if (currentSelectedUser != null && avatarId.equals(currentSelectedUser.getAvatarId())) {
+                    if (currentSelectedChat != null && avatarId.equals(currentSelectedChat.getAvatarId())) {
                         try {
                             Image avatar = new Image(file.toURI().toString());
                             headerAvatarImage.setImage(avatar);
@@ -1300,22 +1344,22 @@ public ChatService getChatService() {
     /**
      * Loads messages for the selected user based on their type.
      *
-     * @param user The UserViewModel to load messages for.
+     * @param user The ChatViewModel to load messages for.
      */
     /**
      * Loads messages for the selected user, now with support for media messages.
      *
-     * @param user The UserViewModel to load messages for.
+     * @param user The ChatViewModel to load messages for.
      */
 
-    public void loadMessages(UserViewModel user) {
+    public void loadMessages(ChatViewModel user) {
         messagesContainer.getChildren().clear();
-        if (user == null || user.getUserId() == null) {
+        if (user == null || user.getChatId() == null) {
             showEmptyChatState();
             return;
         }
 
-        Task<RpcResponse<GetMessageOutputModel[]>> getMessagesTask = chatService.fetchMessagesForChat(UUID.fromString(user.getUserId()));
+        Task<RpcResponse<GetMessageOutputModel[]>> getMessagesTask = chatService.fetchMessagesForChat(UUID.fromString(user.getChatId()));
 
         getMessagesTask.setOnSucceeded(event -> {
             RpcResponse<GetMessageOutputModel[]> response = getMessagesTask.getValue();
@@ -1468,7 +1512,7 @@ public ChatService getChatService() {
 //
 //                    // Step 4: Send the message pointing to the Media ID
 //                    SendMessageInputModel messageInput = new SendMessageInputModel();
-//                    messageInput.setChatId(UUID.fromString(currentSelectedUser.getUserId()));
+//                    messageInput.setChatId(UUID.fromString(currentSelectedChat.getUserId()));
 //                    messageInput.setMessageType(MessageType.MEDIA);
 //                    messageInput.setMediaId(createMediaResponse.getPayload());
 //
@@ -1514,11 +1558,11 @@ public ChatService getChatService() {
      * @return true if the user is an admin, false otherwise.
      */
     boolean isCurrentUserAdmin() {
-        if (currentSelectedUser == null) {
+        if (currentSelectedChat == null) {
             return false;
         }
         // TODO:Server
-        return "ADMIN".equalsIgnoreCase(currentSelectedUser.getUserRole());
+        return "ADMIN".equalsIgnoreCase(currentSelectedChat.getUserRole());
     }
 
     /**
@@ -1526,10 +1570,10 @@ public ChatService getChatService() {
      * The dialog's content and title are adjusted based on the chat type.
      */
     private void showProfileDialog() {
-        if (currentSelectedUser == null) return;
+        if (currentSelectedChat == null) return;
         try {
             String dialogTitle;
-            switch (currentSelectedUser.getType()) {
+            switch (currentSelectedChat.getType()) {
                 case GROUP:
                     dialogTitle = "Group Info";
                     break;
@@ -1549,7 +1593,7 @@ public ChatService getChatService() {
                     "/Client/fxml/profileSection.fxml",
                     parentStage,
                     this,
-                    currentSelectedUser,
+                    currentSelectedChat,
                     dialogTitle
             );
             dialogStage.initStyle(StageStyle.TRANSPARENT);
@@ -1563,12 +1607,12 @@ public ChatService getChatService() {
 
     // TODO
     /**
-     * Checks if the provided UserViewModel represents the currently logged-in user's profile.
+     * Checks if the provided ChatViewModel represents the currently logged-in user's profile.
      * This requires knowing the logged-in user's ID.
-     * @param user The UserViewModel to check.
+     * @param user The ChatViewModel to check.
      * @return true if it's the current user's own profile.
      */
-//    public boolean isMyOwnProfile(UserViewModel user) {
+//    public boolean isMyOwnProfile(ChatViewModel user) {
 //        if (user == null || connectionManager.getClient().getUserIdentity() == null) {
 //            return false;
 //        }
@@ -1619,8 +1663,8 @@ public ChatService getChatService() {
         } else {
             messageContainer.setAlignment(Pos.CENTER_LEFT);
 
-            if (currentSelectedUser != null &&
-                    (currentSelectedUser.getType() == UserType.GROUP || currentSelectedUser.getType() == UserType.SUPERGROUP)) {
+            if (currentSelectedChat != null &&
+                    (currentSelectedChat.getType() == UserType.GROUP || currentSelectedChat.getType() == UserType.SUPERGROUP)) {
                 ImageView senderAvatar = createSenderAvatar(senderProfilePcitureId);
                 messageContainer.getChildren().add(senderAvatar);
             }
@@ -1649,8 +1693,8 @@ public ChatService getChatService() {
         addReplyAndForwardHeaders(bubble, repliedToSenderName, repliedToMessageContent, forwardedFromName);
 
         // Add sender name for incoming group messages
-        if (!isOutgoing && senderName != null && currentSelectedUser != null &&
-                (currentSelectedUser.getType() == UserType.GROUP || currentSelectedUser.getType() == UserType.SUPERGROUP)) {
+        if (!isOutgoing && senderName != null && currentSelectedChat != null &&
+                (currentSelectedChat.getType() == UserType.GROUP || currentSelectedChat.getType() == UserType.SUPERGROUP)) {
             Label senderLabel = new Label(senderName);
             senderLabel.getStyleClass().add("sender-name");
             senderLabel.setMouseTransparent(true);
@@ -1873,17 +1917,17 @@ public ChatService getChatService() {
                 GetChatInfoOutputModel chatInfo = response.getPayload();
                 Platform.runLater(() -> {
                     // Check if this user is already in the local chat list
-                    Optional<UserViewModel> existingUser = allChatUsers.stream()
-                            .filter(uvm -> uvm.getUserId().equals(chatInfo.getId().toString()))
+                    Optional<ChatViewModel> existingUser = allChatUsers.stream()
+                            .filter(uvm -> uvm.getChatId().equals(chatInfo.getChatId().toString()))
                             .findFirst();
 
-                    UserViewModel userToSelect;
+                    ChatViewModel userToSelect;
                     if (existingUser.isPresent()) {
                         userToSelect = existingUser.get();
                     } else {
-                        // If not present, create a new UserViewModel and add it to the list
-                        UserViewModel uvm = new UserViewModelBuilder()
-                                .userId(chatInfo.getId().toString())
+                        // If not present, create a new ChatViewModel and add it to the list
+                        ChatViewModel uvm = new ChatViewModelBuilder()
+                                .chatId(chatInfo.getChatId().toString())
                                 .avatarId(chatInfo.getProfilePictureId())
                                 .displayName(chatInfo.getTitle())
                                 .lastMessage(chatInfo.getLastMessage())
@@ -2001,7 +2045,7 @@ public ChatService getChatService() {
 
         // 3. Determine the name of the person being replied to
         boolean isOwnMessage = messageBubble.getStyleClass().contains("outgoing");
-        String replyToName = isOwnMessage ? this.ownUsername : (currentSelectedUser != null ? currentSelectedUser.getDisplayName() : "User");
+        String replyToName = isOwnMessage ? this.ownUsername : (currentSelectedChat != null ? currentSelectedChat.getDisplayName() : "User");
 
         // 4. Get the raw text of the original message
         String originalMessageText = (String) messageBubble.getProperties().get("raw_text");
@@ -2143,7 +2187,7 @@ public ChatService getChatService() {
      * Processes the selected document and adds it to the chat
      */
     private void processDocumentAttachment(File file) {
-        if (currentSelectedUser == null) return;
+        if (currentSelectedChat == null) return;
 
         DocumentInfo docInfo = new DocumentInfo(
                 file.getName(),
@@ -2198,7 +2242,7 @@ public ChatService getChatService() {
                     app.unregisterTask(fileId);
 
                     SendMessageInputModel messageInput = new SendMessageInputModel();
-                    messageInput.setChatId(UUID.fromString(currentSelectedUser.getUserId()));
+                    messageInput.setChatId(UUID.fromString(currentSelectedChat.getChatId()));
                     messageInput.setMessageType(MessageType.MEDIA);
                     messageInput.setMediaId(mediaId);
 
@@ -2220,9 +2264,9 @@ public ChatService getChatService() {
                                     finalBubble.getProperties().put("messageTimestamp", LocalDateTime.parse(smResponse.getPayload().getTimestamp()));
                                     finalizeDocumentBubbleDisplay(finalBubble);
 
-                                    currentSelectedUser.setLastMessage(docInfo.getFileName());
-                                    currentSelectedUser.setTime(smResponse.getPayload().getTimestamp());
-                                    currentSelectedUser.setMessageStatus("sent");
+                                    currentSelectedChat.setLastMessage(docInfo.getFileName());
+                                    currentSelectedChat.setTime(smResponse.getPayload().getTimestamp());
+                                    currentSelectedChat.setMessageStatus("sent");
                                     sortAndRefreshChatList();
                                 });
                             } else {
@@ -2507,9 +2551,9 @@ public ChatService getChatService() {
             messageContainer.setAlignment(Pos.CENTER_LEFT);
 
             // Add sender avatar for group chats
-            if (currentSelectedUser != null &&
-                    (currentSelectedUser.getType() == UserType.GROUP ||
-                            currentSelectedUser.getType() == UserType.SUPERGROUP)) {
+            if (currentSelectedChat != null &&
+                    (currentSelectedChat.getType() == UserType.GROUP ||
+                            currentSelectedChat.getType() == UserType.SUPERGROUP)) {
                 ImageView senderAvatar = createSenderAvatar(senderProfilePictureId);
                 messageContainer.getChildren().add(senderAvatar);
             }
@@ -2742,7 +2786,7 @@ public ChatService getChatService() {
         String lowerCaseSearch = trimmedSearchText.toLowerCase();
 
         // 1. Always perform and display local search results immediately
-        List<UserViewModel> localResults = allChatUsers.stream()
+        List<ChatViewModel> localResults = allChatUsers.stream()
                 .filter(user -> user.getDisplayName().toLowerCase().contains(lowerCaseSearch) ||
                         (user.getLastMessage() != null && user.getLastMessage().toLowerCase().contains(lowerCaseSearch)))
                 .collect(Collectors.toList());
@@ -2756,8 +2800,8 @@ public ChatService getChatService() {
 
         // 3. If long enough, proceed with public search
         // Add "Searching..." placeholder to the local results
-        UserViewModel searchingPlaceholder = new UserViewModelBuilder().userId("SEARCHING_PLACEHOLDER").build();
-        ObservableList<UserViewModel> searchResults = FXCollections.observableArrayList(localResults);
+        ChatViewModel searchingPlaceholder = new ChatViewModelBuilder().chatId("SEARCHING_PLACEHOLDER").build();
+        ObservableList<ChatViewModel> searchResults = FXCollections.observableArrayList(localResults);
         searchResults.add(searchingPlaceholder);
         filteredChatUsers.setAll(searchResults);
 
@@ -2768,12 +2812,12 @@ public ChatService getChatService() {
             RpcResponse<GetChatInfoOutputModel[]> response = activeSearchTask.getValue();
             if (response.getStatusCode() == StatusCode.OK && response.getPayload() != null) {
                 Set<String> localResultChatIds = localResults.stream()
-                        .map(UserViewModel::getUserId)
+                        .map(ChatViewModel::getChatId)
                         .collect(Collectors.toSet());
 
-                List<UserViewModel> publicResults = new ArrayList<>();
+                List<ChatViewModel> publicResults = new ArrayList<>();
                 for (GetChatInfoOutputModel chat : response.getPayload()) {
-                    String resultId = chat.getId().toString();
+                    String resultId = chat.getChatId().toString();
 
                     boolean isChatType = !UserType.fromString(chat.getType()).equals(UserType.USER);
 
@@ -2782,8 +2826,8 @@ public ChatService getChatService() {
                         continue;
                     }
 
-                    UserViewModel uvm = new UserViewModelBuilder()
-                            .userId(resultId)
+                    ChatViewModel uvm = new ChatViewModelBuilder()
+                            .chatId(resultId)
                             .avatarId(chat.getProfilePictureId())
                             .displayName(chat.getTitle())
                             .username(chat.getUsername()) // Store username for user results
@@ -2817,24 +2861,24 @@ public ChatService getChatService() {
 
         new Thread(activeSearchTask).start();
     }
-    private void handlePublicSearchResultSelection(UserViewModel publicResult) {
+    private void handlePublicSearchResultSelection(ChatViewModel publicResult) {
         // A public search result was clicked. We need to find or create the chat.
         if (publicResult.getType() == UserType.USER) {
             String username = publicResult.getUsername();
             if (username != null && !username.isEmpty()) {
                 // This will find an existing private chat or create a new one,
-                // add the UserViewModel to the list, and select it.
+                // add the ChatViewModel to the list, and select it.
                 handleMentionClick(username);
             } else {
                 showTemporaryNotification("Cannot open chat: user information is missing.");
             }
         } else {
             // This is a public group or channel. The ID is the Chat ID.
-            Optional<UserViewModel> existingChat = allChatUsers.stream()
-                    .filter(u -> u.getUserId().equals(publicResult.getUserId()))
+            Optional<ChatViewModel> existingChat = allChatUsers.stream()
+                    .filter(u -> u.getChatId().equals(publicResult.getChatId()))
                     .findFirst();
 
-            UserViewModel chatToSelect;
+            ChatViewModel chatToSelect;
             if (existingChat.isPresent()) {
                 chatToSelect = existingChat.get();
             } else {
@@ -2938,7 +2982,7 @@ public ChatService getChatService() {
      */
     private void sendMessage() {
         String text = messageInputField.getText().trim();
-        if (text.isEmpty() || currentSelectedUser == null) return;
+        if (text.isEmpty() || currentSelectedChat == null) return;
 
         if (emptyChatStateContainer.isVisible()) {
             messagesContainer.getChildren().clear();
@@ -2956,7 +3000,7 @@ public ChatService getChatService() {
                     null);
 
             SendMessageInputModel input = new SendMessageInputModel();
-            input.setChatId(UUID.fromString(currentSelectedUser.getUserId()));
+            input.setChatId(UUID.fromString(currentSelectedChat.getChatId()));
             input.setTextContent(text);
             input.setMessageType(MessageType.TEXT);
             if (activeReplyInfo != null) {
@@ -2979,9 +3023,9 @@ public ChatService getChatService() {
                         bubble.getProperties().put("messageId", response.getPayload().getMessageId());
                         bubble.getProperties().put("messageTimestamp", serverTimestamp);
 
-                        currentSelectedUser.setLastMessage(text);
-                        currentSelectedUser.setTime(response.getPayload().getTimestamp());
-                        currentSelectedUser.setMessageStatus("sent");
+                        currentSelectedChat.setLastMessage(text);
+                        currentSelectedChat.setTime(response.getPayload().getTimestamp());
+                        currentSelectedChat.setMessageStatus("sent");
                         sortAndRefreshChatList();
                     });
                 } else {
@@ -3155,7 +3199,7 @@ public ChatService getChatService() {
      * TODO (Server): Implement server-side typing status transmission.
      */
     private void handleTypingDetection() {
-        if (currentSelectedUser == null) return;
+        if (currentSelectedChat == null) return;
 
         // If not already marked as typing, send the "is typing" status immediately
         if (!isCurrentlyTyping) {
@@ -3233,7 +3277,7 @@ public ChatService getChatService() {
      */
 // A conceptual rewrite of enableChatControls()
     private void enableChatControls() {
-        boolean canSendMessage = currentSelectedUser != null && (currentSelectedUser.getType() != UserType.CHANNEL || isCurrentUserAdmin());
+        boolean canSendMessage = currentSelectedChat != null && (currentSelectedChat.getType() != UserType.CHANNEL || isCurrentUserAdmin());
 
         messageInputContainer.setVisible(canSendMessage);
         messageInputContainer.setManaged(canSendMessage);
@@ -3245,28 +3289,28 @@ public ChatService getChatService() {
         sendButton.setDisable(!canSendMessage);
         attachmentButton.setDisable(!canSendMessage);
 
-        if (!canSendMessage && currentSelectedUser != null) {
+        if (!canSendMessage && currentSelectedChat != null) {
             updateChannelMuteButtonText();
         }
 
-        callButton.setDisable(currentSelectedUser == null);
-        videoCallButton.setDisable(currentSelectedUser == null);
-        searchInChatButton.setDisable(currentSelectedUser == null);
-        moreOptionsButton.setDisable(currentSelectedUser == null);
+        callButton.setDisable(currentSelectedChat == null);
+        videoCallButton.setDisable(currentSelectedChat == null);
+        searchInChatButton.setDisable(currentSelectedChat == null);
+        moreOptionsButton.setDisable(currentSelectedChat == null);
     }
 
 //    private void enableChatControls() {
-//        if (currentSelectedUser == null) {
+//        if (currentSelectedChat == null) {
 //            disableChatControls(); // Should not happen but good practice
 //            return;
 //        }
 //
-//        boolean isChannel = currentSelectedUser.getType() == UserType.CHANNEL;
+//        boolean isChannel = currentSelectedChat.getType() == UserType.CHANNEL;
 //        Node inputBar = messageInputField.getParent();
 //
 //        if (isChannel) {
 //            // --- Channel-Specific Logic ---
-//            String role = currentSelectedUser.getUserMembershipType(); // e.g., "OWNER", "ADMIN", "MEMBER"
+//            String role = currentSelectedChat.getUserMembershipType(); // e.g., "OWNER", "ADMIN", "MEMBER"
 //
 //            // Default channel state: no calls, input disabled
 //            callButton.setDisable(true);
@@ -3293,7 +3337,7 @@ public ChatService getChatService() {
 //            sendButton.setDisable(false);
 //            attachmentButton.setDisable(false);
 //
-//            boolean isUser = currentSelectedUser.getType() == UserType.USER;
+//            boolean isUser = currentSelectedChat.getType() == UserType.USER;
 //            callButton.setDisable(!isUser);
 //            videoCallButton.setDisable(!isUser);
 //        }
@@ -3333,7 +3377,7 @@ public ChatService getChatService() {
      * Toggles the visibility of the right panel.
      */
     private void toggleRightPanel() {
-        if (currentSelectedUser == null) return;
+        if (currentSelectedChat == null) return;
 
         if (isRightPanelVisible) {
             hideRightPanel();
@@ -3347,11 +3391,11 @@ public ChatService getChatService() {
      * to maintain the main chat area as the largest component.
      */
     private void showRightPanel() {
-        if (rightPanel == null || currentSelectedUser == null || splitPane.getItems().contains(rightPanel)) {
+        if (rightPanel == null || currentSelectedChat == null || splitPane.getItems().contains(rightPanel)) {
             return;
         }
 
-        updateRightPanel(currentSelectedUser);
+        updateRightPanel(currentSelectedChat);
         rightPanel.setManaged(true);
         rightPanel.setVisible(true);
 
@@ -3419,14 +3463,18 @@ public ChatService getChatService() {
     /**
      * Updates the right panel with the selected user's information.
      *
-     * @param user The UserViewModel to update the panel with.
+     * @param user The ChatViewModel to update the panel with.
      */
-    private void updateRightPanel(UserViewModel user) {
+    private void updateRightPanel(ChatViewModel user) {
         if (user == null) return;
 
         // Update profile info
         profileNameLabel.setText(user.getDisplayName());
-
+        if(user.getIsContact()){
+            DeleteContactBox.setVisible(true);
+        }else{
+            DeleteContactBox.setVisible(false);
+        }
         if (user.getUsername() != null && !user.getUsername().isEmpty()) {
             profileUsernameLabel.setText("@" + user.getUsername());
             profileUsernameLabel.setVisible(true);
@@ -3469,20 +3517,20 @@ public ChatService getChatService() {
     /**
      * Updates the profile avatar with the user's image or a default one.
      *
-     * @param user The UserViewModel to update the avatar for.
+     * @param user The ChatViewModel to update the avatar for.
      */
-    private void updateProfileAvatar(UserViewModel user) {
+    private void updateProfileAvatar(ChatViewModel user) {
         if (profileAvatarImage == null) return;
         loadDefaultProfileAvatar(); // Set default avatar immediately
 
-        // Assuming UserViewModel has getAvatarId()
+        // Assuming ChatViewModel has getAvatarId()
         String avatarId = user.getAvatarId();
 
         if (avatarId != null && !avatarId.isEmpty()) {
             fileDownloadService.getFile(avatarId).thenAccept(file -> {
                 Platform.runLater(() -> {
                     // Check if the right panel is still visible and for the same user
-                    if (isRightPanelVisible && currentSelectedUser != null && avatarId.equals(currentSelectedUser.getAvatarId())) {
+                    if (isRightPanelVisible && currentSelectedChat != null && avatarId.equals(currentSelectedChat.getAvatarId())) {
                         try {
                             Image avatar = new Image(file.toURI().toString());
                             profileAvatarImage.setImage(avatar);
@@ -3571,7 +3619,7 @@ public ChatService getChatService() {
         }
     }
 
-    private void updateChatSubtitle(UserViewModel user) {
+    private void updateChatSubtitle(ChatViewModel user) {
         // FIX for Bug 2 (Part 1): Add a guard. This method should NOT run if the
         // typing indicator is active. The `hideTypingIndicator` method will call
         // this when it's time to restore the normal subtitle.
@@ -3608,8 +3656,8 @@ public ChatService getChatService() {
 
         // FIX for Bug 2 (Part 2): Restore the original subtitle after stopping the animation.
         // This call is now safe because the new updateChatSubtitle has a guard.
-        if (currentSelectedUser != null) {
-            updateChatSubtitle(currentSelectedUser);
+        if (currentSelectedChat != null) {
+            updateChatSubtitle(currentSelectedChat);
         } else {
             chatSubtitleLabel.setText("");
             chatSubtitleLabel.getStyleClass().setAll("chat-subtitle");
@@ -3726,7 +3774,7 @@ public ChatService getChatService() {
      * Initiates a voice call with the current selected user.
      */
     private void startVoiceCall() {
-        if (currentSelectedUser == null) return;
+        if (currentSelectedChat == null) return;
         showTemporaryNotification("This feature will be implemented in the future.\n");
     }
 
@@ -3734,7 +3782,7 @@ public ChatService getChatService() {
      * Initiates a video call with the current selected user.
      */
     private void startVideoCall() {
-        if (currentSelectedUser == null) return;
+        if (currentSelectedChat == null) return;
         showTemporaryNotification("This feature will be implemented in the future.\n");
     }
 
@@ -3743,7 +3791,6 @@ public ChatService getChatService() {
      * The menu is positioned correctly relative to the 'moreOptionsButton'.
      */
     private void showMoreOptions() {
-        if (currentSelectedUser == null) return; // Add a guard clause
         if (activeMessageContextMenu != null && activeMessageContextMenu.isShowing()) {
             activeMessageContextMenu.hide();
         }
@@ -3757,15 +3804,13 @@ public ChatService getChatService() {
         MenuItem searchItem = createIconMenuItem("Search Messages", "/Client/images/context-menu/search.png");
         searchItem.setOnAction(e -> showSearchInChat());
 
-        String muteText = currentSelectedUser.isMuted() ? "Unmute" : "Mute";
-        String muteIcon = currentSelectedUser.isMuted() ? "/Client/images/context-menu/unmute.png" : "/Client/images/context-menu/mute.png";
+        String muteText = (currentSelectedChat != null && currentSelectedChat.isMuted()) ? "Unmute" : "Mute";
+        String muteIcon = (currentSelectedChat != null && currentSelectedChat.isMuted()) ? "/Client/images/context-menu/unmute.png" : "/Client/images/context-menu/mute.png";
         MenuItem muteItem = createIconMenuItem(muteText, muteIcon);
         muteItem.setOnAction(e -> toggleMute());
 
-        // Pinning is usually for main chat list, might be disabled here or handled differently.
-        // For now, we keep it.
-        String pinText = currentSelectedUser.isPinned() ? "Unpin" : "Pin";
-        String pinIcon = currentSelectedUser.isPinned() ? "/Client/images/context-menu/unpin.png" : "/Client/images/context-menu/pin.png";
+        String pinText = (currentSelectedChat != null && currentSelectedChat.isPinned()) ? "Unpin" : "Pin";
+        String pinIcon = (currentSelectedChat != null && currentSelectedChat.isPinned()) ? "/Client/images/context-menu/unpin.png" : "/Client/images/context-menu/pin.png";
         MenuItem pinItem = createIconMenuItem(pinText, pinIcon);
         pinItem.setOnAction(e -> togglePin());
 
@@ -3775,7 +3820,7 @@ public ChatService getChatService() {
         // --- DYNAMIC ITEM LOGIC ---
         menu.getItems().addAll(viewProfileItem, searchItem, muteItem, pinItem, clearHistoryItem);
 
-        UserType chatType = currentSelectedUser.getType();
+        UserType chatType = currentSelectedChat.getType();
         if (chatType == UserType.GROUP || chatType == UserType.SUPERGROUP) {
             MenuItem leaveGroupItem = createIconMenuItem("Leave Group", "/Client/images/context-menu/logout-icon.png");
             leaveGroupItem.getStyleClass().add("delete-button"); // Make it red
@@ -3807,10 +3852,10 @@ public ChatService getChatService() {
      * It shows a confirmation dialog before proceeding.
      */
     private void leaveCurrentChat() {
-        if (currentSelectedUser == null) return;
+        if (currentSelectedChat == null) return;
 
-        String chatType = currentSelectedUser.getType() == UserType.CHANNEL ? "channel" : "group";
-        String chatName = currentSelectedUser.getDisplayName();
+        String chatType = currentSelectedChat.getType() == UserType.CHANNEL ? "channel" : "group";
+        String chatName = currentSelectedChat.getDisplayName();
 
         // Show a confirmation dialog to the user
 //        boolean confirmed = AlertUtil.showConfirmation("Leave " + chatType,
@@ -3819,7 +3864,7 @@ public ChatService getChatService() {
         boolean confirmed = true;
         if (confirmed) {
             // If confirmed, create a background task to send the request
-            Task<RpcResponse<Object>> leaveChatTask = chatService.leaveChat(UUID.fromString(currentSelectedUser.getUserId()));
+            Task<RpcResponse<Object>> leaveChatTask = chatService.leaveChat(UUID.fromString(currentSelectedChat.getUserId()));
 
             leaveChatTask.setOnSucceeded(event -> {
                 RpcResponse<Object> response = leaveChatTask.getValue();
@@ -3827,8 +3872,8 @@ public ChatService getChatService() {
                     if (response.getStatusCode() == StatusCode.OK) {
                         // If successful, remove the chat from the list and go to the welcome state
                         showTemporaryNotification("You have left \"" + chatName + "\"\n");
-                        allChatUsers.remove(currentSelectedUser);
-                        filteredChatUsers.remove(currentSelectedUser);
+                        allChatUsers.remove(currentSelectedChat);
+                        filteredChatUsers.remove(currentSelectedChat);
                         goBackToWelcomeState();
                     } else {
                         // If failed, show an error message
@@ -3894,7 +3939,7 @@ public ChatService getChatService() {
             closeReplyPreview();
         } else if (isRightPanelVisible) {
             hideRightPanel();
-        } else if (currentSelectedUser != null) {
+        } else if (currentSelectedChat != null) {
             goBackToWelcomeState();
         }
     }
@@ -3905,7 +3950,7 @@ public ChatService getChatService() {
      * Returns to the welcome state, clearing the current selection.
      */
     private void goBackToWelcomeState() {
-        currentSelectedUser = null;
+        currentSelectedChat = null;
         chatListView.getSelectionModel().clearSelection();
         showWelcomeState();
         // TODO: Implement hiding typing indicator if implemented.
@@ -3999,14 +4044,14 @@ public ChatService getChatService() {
      */
     @FXML
     private void toggleMuteState() {
-        if (currentSelectedUser == null) return;
+        if (currentSelectedChat == null) return;
 
-        boolean newMuteState = !currentSelectedUser.isMuted();
-        currentSelectedUser.setMuted(newMuteState);
+        boolean newMuteState = !currentSelectedChat.isMuted();
+        currentSelectedChat.setMuted(newMuteState);
         notificationsToggle.setSelected(!newMuteState);
         notificationStatusLabel.setText(newMuteState ? "Disabled" : "Enabled");
         mutedIcon.setVisible(newMuteState);
-        String message = (newMuteState ? "Muted" : "Unmuted") + " " + currentSelectedUser.getDisplayName();
+        String message = (newMuteState ? "Muted" : "Unmuted") + " " + currentSelectedChat.getDisplayName();
         showTemporaryNotification(message + "\n");
 
         updateChannelMuteButtonText();
@@ -4018,29 +4063,29 @@ public ChatService getChatService() {
      * Handles the action from the JFXToggleButton.
      */
     private void toggleNotifications() {
-        if (currentSelectedUser == null) return;
+        if (currentSelectedChat == null) return;
 
-        boolean isCurrentlyMuted = currentSelectedUser.isMuted();
+        boolean isCurrentlyMuted = currentSelectedChat.isMuted();
         boolean newMuteState = !isCurrentlyMuted;
 
         // --- Optimistically update UI ---
-        currentSelectedUser.setMuted(newMuteState);
+        currentSelectedChat.setMuted(newMuteState);
         boolean isEnabled = !newMuteState;
         notificationStatusLabel.setText(isEnabled ? "Enabled" : "Disabled");
         mutedIcon.setVisible(newMuteState);
         updateNotificationToggle(isEnabled);
-        String message = (newMuteState ? "Muted" : "Unmuted") + " " + currentSelectedUser.getDisplayName();
+        String message = (newMuteState ? "Muted" : "Unmuted") + " " + currentSelectedChat.getDisplayName();
         showTemporaryNotification(message + "\n");
         // --- End of optimistic update ---
 
-        Task<RpcResponse<Object>> muteTask = chatService.toggleChatMute(UUID.fromString(currentSelectedUser.getUserId()), newMuteState);
+        Task<RpcResponse<Object>> muteTask = chatService.toggleChatMute(UUID.fromString(currentSelectedChat.getChatId()), newMuteState);
 
         muteTask.setOnSucceeded(event -> {
             RpcResponse<Object> response = muteTask.getValue();
             if (response.getStatusCode() != StatusCode.OK) {
                 // Revert UI on failure
                 Platform.runLater(() -> {
-                    currentSelectedUser.setMuted(isCurrentlyMuted); // Revert model
+                    currentSelectedChat.setMuted(isCurrentlyMuted); // Revert model
                     notificationStatusLabel.setText(!isCurrentlyMuted ? "Enabled" : "Disabled");
                     mutedIcon.setVisible(isCurrentlyMuted);
                     updateNotificationToggle(!isCurrentlyMuted);
@@ -4053,7 +4098,7 @@ public ChatService getChatService() {
         muteTask.setOnFailed(event -> {
             // Revert UI on failure
             Platform.runLater(() -> {
-                currentSelectedUser.setMuted(isCurrentlyMuted); // Revert model
+                currentSelectedChat.setMuted(isCurrentlyMuted); // Revert model
                 notificationStatusLabel.setText(!isCurrentlyMuted ? "Enabled" : "Disabled");
                 mutedIcon.setVisible(isCurrentlyMuted);
                 updateNotificationToggle(!isCurrentlyMuted);
@@ -4100,12 +4145,12 @@ public ChatService getChatService() {
      * Toggles the pinned state of the current chat.
      */
     private void togglePin() {
-        if (currentSelectedUser == null) return;
+        if (currentSelectedChat == null) return;
 
-        boolean newPinState = !currentSelectedUser.isPinned();
-        currentSelectedUser.setPinned(newPinState);
+        boolean newPinState = !currentSelectedChat.isPinned();
+        currentSelectedChat.setPinned(newPinState);
 
-        String message = (newPinState ? "Pinned" : "Unpinned") + " " + currentSelectedUser.getDisplayName();
+        String message = (newPinState ? "Pinned" : "Unpinned") + " " + currentSelectedChat.getDisplayName();
         showTemporaryNotification(message + "\n");
 
         refreshChatList();
@@ -4115,13 +4160,13 @@ public ChatService getChatService() {
      * Clears the chat history with a confirmation dialog.
      */
     private void clearChatHistory() {
-        if (currentSelectedUser == null) return;
+        if (currentSelectedChat == null) return;
 
         messagesContainer.getChildren().clear();
         showEmptyChatState();
 
         // Update last message in chat list
-        currentSelectedUser.setLastMessage("");
+        currentSelectedChat.setLastMessage("");
         refreshChatList();
 
         showTemporaryNotification("Chat history cleared\n");
@@ -4131,11 +4176,11 @@ public ChatService getChatService() {
      * Blocks the current user with a confirmation dialog.
      */
     private void blockUser() {
-        if (currentSelectedUser == null) return;
+        if (currentSelectedChat == null) return;
 
-        String userName = currentSelectedUser.getDisplayName();
-        allChatUsers.remove(currentSelectedUser);
-        filteredChatUsers.remove(currentSelectedUser);
+        String userName = currentSelectedChat.getDisplayName();
+        allChatUsers.remove(currentSelectedChat);
+        filteredChatUsers.remove(currentSelectedChat);
 
         goBackToWelcomeState();
         showTemporaryNotification("Blocked " + userName + "\n");
@@ -4205,15 +4250,15 @@ public ChatService getChatService() {
         if (activeMessageContextMenu != null && activeMessageContextMenu.isShowing()) {
             activeMessageContextMenu.hide();
         }
-        String role = currentSelectedUser.getUserMembershipType();
-        boolean isChannelAdmin = currentSelectedUser.getType() == UserType.CHANNEL && ("OWNER".equals(role) || "ADMIN".equals(role));
+        String role = currentSelectedChat.getUserMembershipType();
+        boolean isChannelAdmin = currentSelectedChat.getType() == UserType.CHANNEL && ("OWNER".equals(role) || "ADMIN".equals(role));
         ContextMenu newMenu = new ContextMenu();
         newMenu.setAutoHide(true);
 
         VBox messageBubble = (VBox) event.getSource();
         boolean isOutgoing = messageBubble.getStyleClass().contains("outgoing");
         boolean isDocument = messageBubble.getStyleClass().contains("document-bubble");
-        boolean isChannel = currentSelectedUser != null && currentSelectedUser.getType() == UserType.CHANNEL;
+        boolean isChannel = currentSelectedChat != null && currentSelectedChat.getType() == UserType.CHANNEL;
 
         MenuItem replyItem = createIconMenuItem("Reply", "/Client/images/context-menu/reply.png");
         replyItem.setOnAction(e -> showReplyPreview(messageBubble));
@@ -4375,9 +4420,9 @@ public ChatService getChatService() {
      * Updates the text and icon of the mute button shown in restricted channels.
      */
     private void updateChannelMuteButtonText() {
-        if (currentSelectedUser == null) return;
+        if (currentSelectedChat == null) return;
 
-        if (currentSelectedUser.isMuted()) {
+        if (currentSelectedChat.isMuted()) {
             channelMuteToggleButton.setText("UNMUTE");
         } else {
             channelMuteToggleButton.setText("MUTE");
@@ -4430,8 +4475,8 @@ public ChatService getChatService() {
     }
 
     protected void sendTypingStatus(boolean isTyping) {
-        if (currentSelectedUser == null) return;
-        Task<Void> typingTask = chatService.sendTypingStatus(UUID.fromString(currentSelectedUser.getUserId()), isTyping);
+        if (currentSelectedChat == null) return;
+        Task<Void> typingTask = chatService.sendTypingStatus(UUID.fromString(currentSelectedChat.getChatId()), isTyping);
         // We run this in the background and don't need to handle success/failure explicitly on the UI
         typingTask.setOnFailed(e -> System.err.println("Failed to send typing status: " + typingTask.getException().getMessage()));
         new Thread(typingTask).start();
@@ -4500,7 +4545,7 @@ public ChatService getChatService() {
             );
 
             dialogStage.show();
-//            Optional<List<UserViewModel>> result = dialog.showAndWait();
+//            Optional<List<ChatViewModel>> result = dialog.showAndWait();
 //
 //            result.ifPresent(selectedUsers -> {
 //                if (!selectedUsers.isEmpty()) {
@@ -4519,8 +4564,8 @@ public ChatService getChatService() {
 //                                String lastMessagePreview = "You: " + TextUtil.stripFormattingForCopying(messageContent);
 //
 //
-//                                UserViewModel lastUpdatedUser = null;
-//                                for (UserViewModel user : selectedUsers) {
+//                                ChatViewModel lastUpdatedUser = null;
+//                                for (ChatViewModel user : selectedUsers) {
 //                                    user.setLastMessage(lastMessagePreview);
 //                                    user.setTime(newTimestamp);
 //                                    lastUpdatedUser = user;
@@ -4584,7 +4629,7 @@ public ChatService getChatService() {
 
                     // 4. Iterate through all known chats and update the ones that were recipients
                     allChatUsers.stream()
-                            .filter(user -> recipientIdStrings.contains(user.getUserId()))
+                            .filter(user -> recipientIdStrings.contains(user.getChatId()))
                             .forEach(user -> {
                                 user.setLastMessage(lastMessagePreview);
                                 user.setTime(newTimestamp);
@@ -4680,12 +4725,12 @@ public ChatService getChatService() {
      */
     public void updateUserOnlineStatus(String userName, boolean isOnline) {
         Platform.runLater(() -> {
-            for (UserViewModel user : allChatUsers) {
+            for (ChatViewModel user : allChatUsers) {
                 if (user.getDisplayName().equals(userName)) {
                     user.setOnline(isOnline);
                     user.setLastSeen(isOnline ? "online" : "last seen just now");
 
-                    if (user == currentSelectedUser) {
+                    if (user == currentSelectedChat) {
                         // Update chat header and right panel if visible
                         updateChatHeader(user);
                         if (isRightPanelVisible) {
@@ -4706,9 +4751,9 @@ public ChatService getChatService() {
      * Adds a new user to the chat list.
      * TODO: Synchronize with server to add user globally.
      *
-     * @param user The UserViewModel to add.
+     * @param user The ChatViewModel to add.
      */
-    public void addUser(UserViewModel user) {
+    public void addUser(ChatViewModel user) {
         Platform.runLater(() -> {
             allChatUsers.add(user);
             // TODO (Server): Notify server to add user to the chat or group.
@@ -4720,14 +4765,14 @@ public ChatService getChatService() {
      * Removes a user from the chat list.
      * TODO: Synchronize with server to remove user globally.
      *
-     * @param user The UserViewModel to remove.
+     * @param user The ChatViewModel to remove.
      */
-    public void removeUser(UserViewModel user) {
+    public void removeUser(ChatViewModel user) {
         Platform.runLater(() -> {
             allChatUsers.remove(user);
             filteredChatUsers.remove(user);
 
-            if (currentSelectedUser == user) {
+            if (currentSelectedChat == user) {
                 goBackToWelcomeState();
             }
             // TODO (Server): Notify server to remove user from the chat or group.
@@ -4741,7 +4786,7 @@ public ChatService getChatService() {
      * @param userName The name of the user to select.
      */
     public void selectUserByName(String userName) {
-        for (UserViewModel user : allChatUsers) {
+        for (ChatViewModel user : allChatUsers) {
             if (user.getDisplayName().equals(userName)) {
                 Platform.runLater(() -> {
                     chatListView.getSelectionModel().select(user);
@@ -4754,10 +4799,10 @@ public ChatService getChatService() {
     /**
      * Returns the currently selected user.
      *
-     * @return The current UserViewModel, or null if none selected.
+     * @return The current ChatViewModel, or null if none selected.
      */
-    public UserViewModel getCurrentSelectedUser() {
-        return currentSelectedUser;
+    public ChatViewModel getCurrentSelectedChat() {
+        return currentSelectedChat;
     }
 
     /**
@@ -4801,7 +4846,7 @@ public ChatService getChatService() {
     }
     public void handleUserStatusChanged(UserStatusChangedEventModel eventModel) {
         allChatUsers.stream()
-                .filter(user -> user.getUserId().equals(eventModel.getChatId().toString()))
+                .filter(user -> user.getChatId().equals(eventModel.getChatId().toString()))
                 .findFirst()
                 .ifPresent(user -> {
                     user.setOnline(eventModel.isOnline());
@@ -4810,7 +4855,7 @@ public ChatService getChatService() {
                     }
 
                     // If the updated user is currently selected, refresh the header and right panel
-                    if (currentSelectedUser != null && currentSelectedUser.getUserId().equals(user.getUserId())) {
+                    if (currentSelectedChat != null && currentSelectedChat.getChatId().equals(user.getChatId())) {
                         updateChatHeader(user);
                         if (isRightPanelVisible) {
                             updateRightPanel(user);
@@ -4821,62 +4866,81 @@ public ChatService getChatService() {
 
     public void handleChatInfoChanged(ChatInfoChangedEventModel eventModel) {
         allChatUsers.stream()
-                .filter(user -> user.getUserId().equals(eventModel.getChatId().toString()))
+                .filter(user -> user.getChatId().equals(eventModel.getChatId().toString()))
                 .findFirst()
                 .ifPresent(user -> {
-                    if (eventModel.getNewTitle() != null) {
-                        user.setDisplayName(eventModel.getNewTitle());
-                    }
-                    if (eventModel.getNewProfilePictureId() != null) {
-                        user.setAvatarId(eventModel.getNewProfilePictureId());
-                    }
+                    if(!user.getIsContact()) {
+                        if (eventModel.getNewTitle() != null) {
+                            user.setDisplayName(eventModel.getNewTitle());
+                        }
+                        if (eventModel.getNewProfilePictureId() != null) {
+                            user.setAvatarId(eventModel.getNewProfilePictureId());
+                        }
 
-                    if (currentSelectedUser != null && currentSelectedUser.getUserId().equals(user.getUserId())) {
-                        Platform.runLater(() -> {
-                            updateChatHeader(user);
-                            if (isRightPanelVisible) {
-                                updateRightPanel(user);
-                            }
-                        });
+                        if (currentSelectedChat != null && currentSelectedChat.getChatId().equals(user.getChatId())) {
+                            Platform.runLater(() -> {
+                                updateChatHeader(user);
+                                if (isRightPanelVisible) {
+                                    updateRightPanel(user);
+                                }
+                            });
+                        }
                     }
                 });
     }
     public void openChatWithContact(ContactInfo contactInfo) {
         if (contactInfo == null) return;
+        Task<RpcResponse<GetChatInfoOutputModel>> findChatTask = chatService.getChatByUserId(contactInfo.getUserId());
 
-        Platform.runLater(() -> {
-            // Find if this user is already in the local chat list
-            Optional<UserViewModel> existingUser = allChatUsers.stream()
-                    .filter(uvm -> uvm.getUserId().equals(contactInfo.getUserId().toString()))
-                    .findFirst();
+        findChatTask.setOnSucceeded(event -> {
+            RpcResponse<GetChatInfoOutputModel> response = findChatTask.getValue();
+            if (response.getStatusCode() == StatusCode.OK && response.getPayload() != null) {
+                GetChatInfoOutputModel chatInfo = response.getPayload();
+                Platform.runLater(() -> {
+                    // Check if this user is already in the local chat list
+                    Optional<ChatViewModel> existingUser = allChatUsers.stream()
+                            .filter(uvm -> uvm.getChatId().equals(chatInfo.getChatId().toString()))
+                            .findFirst();
 
-            UserViewModel userToSelect;
-            if (existingUser.isPresent()) {
-                userToSelect = existingUser.get();
+                    ChatViewModel userToSelect;
+                    if (existingUser.isPresent()) {
+                        userToSelect = existingUser.get();
+                    } else {
+                        // If not present, create a new ChatViewModel and add it to the list
+                        ChatViewModel uvm = new ChatViewModelBuilder()
+                                .chatId(chatInfo.getChatId().toString())
+                                .avatarId(chatInfo.getProfilePictureId())
+                                .displayName(chatInfo.getTitle())
+                                .lastMessage(chatInfo.getLastMessage())
+                                .time(chatInfo.getLastMessageTimestamp())
+                                .type(chatInfo.getType())
+                                .notificationsNumber(String.valueOf(chatInfo.getUnreadCount()))
+                                .build();
+                        allChatUsers.add(0, uvm); // Add to the top of the master list
+                        performSearch(searchField.getText()); // Re-apply current filter
+                        userToSelect = uvm;
+                    }
+
+                    // Select the user in the ListView, which will open the chat
+                    chatListView.getSelectionModel().select(userToSelect);
+                    chatListView.scrollTo(userToSelect);
+                });
             } else {
-                // If not present, create a new UserViewModel and add it to the list
-                UserViewModel uvm = new UserViewModelBuilder()
-                        .userId(contactInfo.getUserId().toString())
-                        .avatarId(contactInfo.getProfilePictureId())
-                        .displayName(contactInfo.getFirstName() + " " + contactInfo.getLastName())
-                        .lastMessage("") // Will be fetched upon selection
-                        .time(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
-                        .type(UserType.USER.toString())
-                        .notificationsNumber("0")
-                        .isOnline(contactInfo.getStatus() == AccountStatus.ONLINE)
-                        .build();
-                allChatUsers.add(0, uvm); // Add to the top of the master list
-                performSearch(searchField.getText()); // Re-apply current filter
-                userToSelect = uvm;
+                Platform.runLater(() -> showTemporaryNotification("User @" + contactInfo.getUserId() + " not found.\n"));
+                System.err.println("Failed to find user by username: " + response.getMessage());
             }
-
-            // Select the user in the ListView, which will trigger the listener to open the chat
-            chatListView.getSelectionModel().select(userToSelect);
-            chatListView.scrollTo(userToSelect);
         });
+
+        findChatTask.setOnFailed(event -> {
+            findChatTask.getException().printStackTrace();
+            Platform.runLater(() -> showTemporaryNotification("Error finding user.\n"));
+        });
+
+        new Thread(findChatTask).start();
+
     }
 
-    public boolean isMyProfile(UserViewModel userData) {
-        return userData.getUserId() == currentUserId;
+    public boolean isMyProfile(ChatViewModel userData) {
+        return userData.getChatId().equals(currentUserId);
     }
 }

@@ -1,6 +1,6 @@
 package Client.Controllers;
 
-import Shared.Models.UserViewModel;
+import Shared.Models.ChatViewModel;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
@@ -8,11 +8,11 @@ import javafx.scene.control.ListCell;
 import javafx.scene.layout.GridPane;
 import java.io.IOException;
 
-public class UserCustomCell extends ListCell<UserViewModel> {
+public class UserCustomCell extends ListCell<ChatViewModel> {
 
     private UserCustomCellController controller;
     private GridPane root;
-    private UserViewModel currentUser; // TODO: Should be connected to the DAO
+    private ChatViewModel currentUser; // TODO: Should be connected to the DAO
 
     public UserCustomCell() {
         try {
@@ -40,7 +40,7 @@ public class UserCustomCell extends ListCell<UserViewModel> {
     }
 
     @Override
-    protected void updateItem(UserViewModel item, boolean empty) {
+    protected void updateItem(ChatViewModel item, boolean empty) {
         super.updateItem(item, empty);
 
         if (empty || item == null) {
@@ -54,7 +54,7 @@ public class UserCustomCell extends ListCell<UserViewModel> {
             currentUser = null;
         } else {
             // *** NEW: Handle placeholder item ***
-            if ("SEARCHING_PLACEHOLDER".equals(item.getUserId())) {
+            if ("SEARCHING_PLACEHOLDER".equals(item.getChatId())) {
                 Label searchingLabel = new Label("Searching globally...");
                 searchingLabel.getStyleClass().add("searching-placeholder-label");
                 searchingLabel.setPrefHeight(60); // Match cell height

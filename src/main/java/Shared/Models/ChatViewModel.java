@@ -2,7 +2,7 @@ package Shared.Models;
 
 import javafx.beans.property.*;
 
-public class UserViewModel {
+public class ChatViewModel {
     private final BooleanProperty isFromPublicSearch = new SimpleBooleanProperty(false);
     private final StringProperty subtitle = new SimpleStringProperty();
     private final StringProperty displayName = new SimpleStringProperty();
@@ -22,6 +22,19 @@ public class UserViewModel {
     private final ObjectProperty<UserType> type = new SimpleObjectProperty<>(UserType.USER);
     private final StringProperty userRole = new SimpleStringProperty("MEMBER");
     private final StringProperty messagePreview = new SimpleStringProperty();
+    private final StringProperty chatId = new SimpleStringProperty();
+
+    public String getUserId() {
+        return userId.get();
+    }
+    public void setUserId(String userId) {
+         this.userId.set(userId);
+    }
+
+    public StringProperty userIdProperty() {
+        return userId;
+    }
+
     private final StringProperty userId = new SimpleStringProperty();
     private final ReadOnlyBooleanWrapper isMessageSentByCurrentUser = new ReadOnlyBooleanWrapper(false);
     private final BooleanProperty isDraft = new SimpleBooleanProperty(false);
@@ -29,9 +42,9 @@ public class UserViewModel {
     private final StringProperty phoneNumber = new SimpleStringProperty();
     private final IntegerProperty membersCount = new SimpleIntegerProperty(0);
     private final StringProperty typingUserName = new SimpleStringProperty();
-
-    public UserViewModel() {
-        userId.addListener((obs, oldVal, newVal) -> updateIsMessageSentByCurrentUser());
+    private final BooleanProperty isContact = new SimpleBooleanProperty(false);
+    public ChatViewModel() {
+        chatId.addListener((obs, oldVal, newVal) -> updateIsMessageSentByCurrentUser());
     }
     // Property getters
     public StringProperty displayNameProperty() { return displayName; }
@@ -50,7 +63,7 @@ public class UserViewModel {
     public ObjectProperty<UserType> typeProperty() { return type; }
     public StringProperty userRoleProperty() { return userRole; }
     public StringProperty messagePreviewProperty() { return messagePreview; }
-    public StringProperty userIdProperty() { return userId; }
+    public StringProperty chatIdProperty() { return chatId; }
     public ReadOnlyBooleanProperty isMessageSentByCurrentUserProperty() { return isMessageSentByCurrentUser.getReadOnlyProperty(); }
     public BooleanProperty isDraftProperty() { return isDraft; }
     public StringProperty bioProperty() { return bio; }
@@ -78,7 +91,7 @@ public class UserViewModel {
     public UserType getType() { return type.get(); }
     public String getUserRole() { return userRole.get(); }
     public String getMessagePreview() { return messagePreview.get(); }
-    public String getUserId() { return userId.get(); }
+    public String getChatId() { return chatId.get(); }
     public boolean isMessageSentByCurrentUser() { return isMessageSentByCurrentUser.get(); }
     public boolean isDraft() { return isDraft.get(); }
     public String getBio() { return bio.get(); }
@@ -103,7 +116,7 @@ public class UserViewModel {
     public void setType(String typeString) { this.type.set(UserType.fromString(typeString)); }
     public void setUserRole(String role) { this.userRole.set(role); }
     public void setMessagePreview(String messagePreview) { this.messagePreview.set(messagePreview); }
-    public void setUserId(String userId) { this.userId.set(userId); updateIsMessageSentByCurrentUser(); }
+    public void setChatId(String chatId) { this.chatId.set(chatId); updateIsMessageSentByCurrentUser(); }
     public void setDraft(boolean isDraft) { this.isDraft.set(isDraft); }
     public void setBio(String bio) { this.bio.set(bio); }
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber.set(phoneNumber); }
@@ -119,7 +132,7 @@ public class UserViewModel {
     // Utility methods
     private void updateIsMessageSentByCurrentUser() {
         String currentUserId = "currentUserId"; // TODO: Replace with real logic
-        isMessageSentByCurrentUser.set(currentUserId.equals(getUserId()));
+        isMessageSentByCurrentUser.set(currentUserId.equals(getChatId()));
     }
 
     public void incrementUnreadCount() {
@@ -147,20 +160,20 @@ public class UserViewModel {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof UserViewModel that)) return false;
-        return getUserId() != null && getUserId().equals(that.getUserId());
+        if (!(o instanceof ChatViewModel that)) return false;
+        return getChatId() != null && getChatId().equals(that.getChatId());
     }
 
     @Override
     public int hashCode() {
-        return getUserId() != null ? getUserId().hashCode() : 0;
+        return getChatId() != null ? getChatId().hashCode() : 0;
     }
 
     @Override
     public String toString() {
-        return "UserViewModel{" +
+        return "ChatViewModel{" +
                 "userName=" + getDisplayName() +
-                ", userId=" + getUserId() +
+                ", userId=" + getChatId() +
                 ", phoneNumber=" + getPhoneNumber() +
                 ", bio=" + getBio() +
                 ", lastMessage=" + getLastMessage() +
@@ -187,5 +200,17 @@ public class UserViewModel {
 
     public void setUsername(String string) {
         this.username.set(string);
+    }
+
+    public boolean getIsContact() {
+        return isContact.get();
+    }
+
+    public void setIsContact(boolean value) {
+         this.isContact.set(value);
+    }
+
+    public BooleanProperty isContactProperty() {
+        return isContact;
     }
 }

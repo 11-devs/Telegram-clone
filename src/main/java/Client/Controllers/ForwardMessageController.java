@@ -1,6 +1,6 @@
 package Client.Controllers;
 
-import Shared.Models.UserViewModel;
+import Shared.Models.ChatViewModel;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -17,15 +17,15 @@ import java.util.stream.Collectors;
 public class ForwardMessageController {
 
     @FXML private TextField searchField;
-    @FXML private ListView<UserViewModel> chatsListView;
+    @FXML private ListView<ChatViewModel> chatsListView;
     @FXML private Button cancelButton;
     @FXML private Button forwardButton;
 
     private Stage dialogStage;
     private MainChatController parentController;
     private UUID messageIdToForward;
-    private final ObservableList<UserViewModel> allChats = FXCollections.observableArrayList();
-    private final ObservableList<UserViewModel> filteredChats = FXCollections.observableArrayList();
+    private final ObservableList<ChatViewModel> allChats = FXCollections.observableArrayList();
+    private final ObservableList<ChatViewModel> filteredChats = FXCollections.observableArrayList();
 
     public void initialize() {
         // Allow multiple selections
@@ -67,7 +67,7 @@ public class ForwardMessageController {
             return;
         }
         String lowerCaseFilter = searchText.toLowerCase().trim();
-        List<UserViewModel> searchResult = allChats.stream()
+        List<ChatViewModel> searchResult = allChats.stream()
                 .filter(user -> user.getDisplayName().toLowerCase().contains(lowerCaseFilter))
                 .collect(Collectors.toList());
         filteredChats.setAll(searchResult);
@@ -75,10 +75,10 @@ public class ForwardMessageController {
 
     @FXML
     private void handleForward() {
-        ObservableList<UserViewModel> selectedChats = chatsListView.getSelectionModel().getSelectedItems();
+        ObservableList<ChatViewModel> selectedChats = chatsListView.getSelectionModel().getSelectedItems();
         if (!selectedChats.isEmpty() && parentController != null) {
             List<UUID> recipientChatIds = selectedChats.stream()
-                    .map(uvm -> UUID.fromString(uvm.getUserId()))
+                    .map(uvm -> UUID.fromString(uvm.getChatId()))
                     .collect(Collectors.toList());
 
             // Call the forward method in the parent controller
@@ -99,5 +99,5 @@ public class ForwardMessageController {
     }
 
     // A record to pass multiple pieces of data easily
-    public record ForwardingData(UUID messageId, List<UserViewModel> userList) {}
+    public record ForwardingData(UUID messageId, List<ChatViewModel> userList) {}
 }

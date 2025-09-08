@@ -6,6 +6,7 @@ import Server.DaoManager;
 import Shared.Api.Models.ChatController.*;
 import Shared.Models.Account.Account;
 import Shared.Models.Chat.*;
+import Shared.Models.Contact.Contact;
 import Shared.Models.Media.Media;
 import Shared.Models.Membership.Membership;
 import Shared.Models.Membership.MembershipType;
@@ -35,123 +36,7 @@ public class ChatRpcController extends RpcControllerBase {
                 .findAllByField("account.id", currentUserId);
 
         List<GetChatInfoOutputModel> chatInfoList = memberships.stream()
-                .map(membership -> {
-                    Chat chat = membership.getChat();
-                    GetChatInfoOutputModel output = new GetChatInfoOutputModel();
-                    output.setId(chat.getId());
-                    output.setType(chat.getType().toString());
-                    output.setUserMembershipType(membership.getType().toString());
-
-                    if (chat.getType() == ChatType.PRIVATE) {
-                        List<Membership> chatMembers = daoManager.getMembershipDAO().findAllByField("chat.id", chat.getId());
-                        Optional<Account> otherUserOpt = chatMembers.stream()
-                                .map(Membership::getAccount)
-                                .filter(account -> !account.getId().equals(currentUserId))
-                                .findFirst();
-
-                        if (otherUserOpt.isPresent()) {
-                            Account otherUser = otherUserOpt.get();
-                            output.setPhoneNumber(otherUser.getPhoneNumber());
-                            String otherUserName = otherUser.getFirstName() + (otherUser.getLastName() != null ? " " + otherUser.getLastName() : "");
-                            output.setTitle(otherUserName.trim());
-                            output.setUsername(otherUser.getUsername());
-                            output.setBio(otherUser.getBio());
-                            output.setOnline(getServerSessionManager().isUserOnline(otherUser.getId().toString()));
-                            if (otherUser.getLastSeen() != null) {
-                                output.setLastSeen(otherUser.getLastSeen().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-                            }
-
-                            if(otherUser.getProfilePictureId() != null && !otherUser.getProfilePictureId().trim().isEmpty()) {
-                                Media media = daoManager.getEntityManager().find(Media.class, UUID.fromString(otherUser.getProfilePictureId()));
-                                if (media != null) {
-                                    output.setProfilePictureId(media.getFileId());
-                                }
-                            }
-                        } else {
-                            output.setTitle("Deleted Account");
-                            output.setProfilePictureId(null);
-                        }
-                    } else {
-                        output.setTitle(chat.getTitle());
-                        if(chat.getProfilePictureId() != null && !chat.getProfilePictureId().trim().isEmpty()) {
-                            Media media = daoManager.getEntityManager().find(Media.class, UUID.fromString(chat.getProfilePictureId()));
-                            if (media != null) {
-                                output.setProfilePictureId(media.getFileId());
-                            }
-                        }
-                    }
-
-                    Message lastMessage = daoManager.getMessageDAO().findOneByJpql("SELECT m FROM Message m JOIN FETCH m.sender WHERE m.chat.id = :chatId AND m.isDeleted = false ORDER BY m.timestamp DESC", query -> {
-                        query.setParameter("chatId", chat.getId());
-                        query.setMaxResults(1);
-                    });
-
-                    if (lastMessage != null) {
-                        switch (lastMessage.getType()) {
-                            case TEXT:
-                                TextMessage textMessage = daoManager.getEntityManager().find(TextMessage.class, lastMessage.getId());
-                                if (textMessage != null) {
-                                    output.setLastMessage(textMessage.getTextContent());
-                                }
-                                break;
-                            case MEDIA:
-                                output.setLastMessage("Media");
-                                break;
-                            case VOICE:
-                                output.setLastMessage("Voice Message");
-                                break;
-                            case VIDEO:
-                                output.setLastMessage("Video");
-                                break;
-                            default:
-                                output.setLastMessage("...");
-                                break;
-                        }
-                        output.setLastMessageTimestamp(lastMessage.getTimestamp().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-                        Account sender = lastMessage.getSender();
-                        if (sender != null) {
-                            output.setLastMessageSenderName(sender.getFirstName());
-                        }
-                    } else {
-                        output.setLastMessage("");
-                        output.setLastMessageTimestamp(null);
-                        output.setLastMessageSenderName("");
-                    }
-
-                    // SOFT-DELETE FIX: Safely get the last read timestamp without touching the proxy object.
-                    LocalDateTime lastReadTimestamp = null;
-                    try {
-                        TypedQuery<LocalDateTime> tsQuery = daoManager.getEntityManager().createQuery(
-                                "SELECT msg.timestamp FROM Membership mem JOIN mem.lastReadMessage msg " +
-                                        "WHERE mem.id = :membershipId AND msg.isDeleted = false", LocalDateTime.class);
-                        tsQuery.setParameter("membershipId", membership.getId());
-                        lastReadTimestamp = tsQuery.getSingleResult();
-                    } catch (NoResultException e) {
-                        // Expected if last read message was deleted or never existed.
-                    }
-
-                    long unreadCount;
-                    if (lastReadTimestamp == null) {
-                        // If no valid last read message exists, count all non-deleted messages not sent by the current user.
-                        String jpql = "SELECT COUNT(m) FROM Message m WHERE m.chat.id = :chatId AND m.sender.id != :senderId AND m.isDeleted = false";
-                        unreadCount = daoManager.getMessageDAO().countByJpql(jpql, query -> {
-                            query.setParameter("chatId", chat.getId());
-                            query.setParameter("senderId", currentUserId);
-                        });
-                    } else {
-                        // Count non-deleted messages newer than the last valid one read.
-                        final LocalDateTime finalLastReadTimestamp = lastReadTimestamp;
-                        String jpql = "SELECT COUNT(m) FROM Message m WHERE m.chat.id = :chatId AND m.timestamp > :lastReadTimestamp AND m.sender.id != :senderId AND m.isDeleted = false";
-                        unreadCount = daoManager.getMessageDAO().countByJpql(jpql, query -> {
-                            query.setParameter("chatId", chat.getId());
-                            query.setParameter("lastReadTimestamp", finalLastReadTimestamp);
-                            query.setParameter("senderId", currentUserId);
-                        });
-                    }
-                    output.setUnreadCount((int) unreadCount);
-                    output.setMuted(membership.isMuted());
-                    return output;
-                })
+                .map(this::mapToGetChatInfoOutputModel)
                 .collect(Collectors.toList());
 
         return Ok(chatInfoList);
@@ -242,7 +127,26 @@ public class ChatRpcController extends RpcControllerBase {
         output.setProfilePictureId(chat.getProfilePictureId());
         return Ok(output);
     }
+    public RpcResponse<Object> getChatByUserId(UUID userId){
+        UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
+        Account currentUser = daoManager.getAccountDAO().findById(currentUserId);
+        if (currentUser == null) {
+            return BadRequest("Could not find current user account.");
+        }
 
+        Account targetUser = daoManager.getEntityManager().find(Account.class, userId);
+        if (targetUser == null) {
+            return NotFound();
+        }
+
+        PrivateChat privateChat = findOrCreatePrivateChat(currentUser, targetUser);
+        if (privateChat == null) {
+            return BadRequest("Failed to create or find private chat.");
+        }
+
+        GetChatInfoOutputModel output = mapNewPrivateChatToOutput(privateChat, targetUser);
+        return Ok(output);
+    }
     public RpcResponse<Object> deleteChat(UUID chatId) {
         UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
         Membership membership = daoManager.getMembershipDAO().findOneByJpql("SELECT m FROM Membership m WHERE m.chat.id = :chatId AND m.account.id = :accountId", q -> {
@@ -279,85 +183,52 @@ public class ChatRpcController extends RpcControllerBase {
         return Ok();
     }
     public RpcResponse<Object> getChatByUsername(String username) {
-        Chat chat = null;
         UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
         Account targetUser = daoManager.getAccountDAO().findByField("username", username.toLowerCase());
+
         if (targetUser == null) {
             return NotFound();
         }
-        if (targetUser.getId().equals(currentUserId)){
 
-            String jpql = "SELECT pc FROM SavedMessages pc WHERE " +
-                    "(pc.owner.id = :ownerId)";
-            chat = daoManager.getSavedMessagesDAO().findOneByJpql(jpql, query -> {
-                query.setParameter("ownerId", currentUserId);
-            });
-
-        }else {
-            String jpql = "SELECT pc FROM PrivateChat pc WHERE " +
-                    "(pc.user1.id = :user1Id AND pc.user2.id = :user2Id) OR " +
-                    "(pc.user1.id = :user2Id AND pc.user2.id = :user1Id)";
-            PrivateChat privateChat = daoManager.getPrivateChatDAO().findOneByJpql(jpql, query -> {
-                query.setParameter("user1Id", currentUserId);
-                query.setParameter("user2Id", targetUser.getId());
-            });
-
-            if (privateChat == null) {
-                Account currentUser = daoManager.getAccountDAO().findById(currentUserId);
-                if (currentUser == null) {
-                    return BadRequest("Could not find current user account.");
-                }
-                privateChat = new PrivateChat(currentUser, targetUser);
-                daoManager.getPrivateChatDAO().insert(privateChat);
-
-                Membership currentUserMembership = new Membership();
-                currentUserMembership.setAccount(currentUser);
-                currentUserMembership.setChat(privateChat);
-                currentUserMembership.setType(MembershipType.MEMBER);
-                currentUserMembership.setJoinDate(LocalDateTime.now());
-                daoManager.getMembershipDAO().insert(currentUserMembership);
-
-                Membership targetUserMembership = new Membership();
-                targetUserMembership.setAccount(targetUser);
-                targetUserMembership.setChat(privateChat);
-                targetUserMembership.setType(MembershipType.MEMBER);
-                targetUserMembership.setJoinDate(LocalDateTime.now());
-                daoManager.getMembershipDAO().insert(targetUserMembership);
-            }
-            chat = privateChat;
-            System.out.println("chat! :" + chat.getId());
+        Account currentUser = daoManager.getAccountDAO().findById(currentUserId);
+        if (currentUser == null) {
+            return BadRequest("Could not find current user account.");
         }
 
-        GetChatInfoOutputModel output = new GetChatInfoOutputModel();
-        output.setId(chat.getId());
-        output.setType(chat.getType().toString());
-
-        String otherUserName = targetUser.getFirstName() + (targetUser.getLastName() != null ? " " + targetUser.getLastName() : "");
-        output.setTitle(otherUserName.trim());
-        output.setProfilePictureId(targetUser.getProfilePictureId());
-        output.setLastMessage("");
-        output.setUnreadCount(0);
-
-        return Ok(output);
+        if (targetUser.getId().equals(currentUserId)) {
+            // Request for "Saved Messages"
+            SavedMessages savedMessages = findOrCreateSavedMessages(currentUser);
+            GetChatInfoOutputModel output = new GetChatInfoOutputModel();
+            output.setChatId(savedMessages.getId());
+            output.setType(savedMessages.getType().toString());
+            output.setTitle("Saved Messages");
+            output.setLastMessage("");
+            output.setUnreadCount(0);
+            return Ok(output);
+        } else {
+            // Request for a private chat with another user
+            PrivateChat privateChat = findOrCreatePrivateChat(currentUser, targetUser);
+            if (privateChat == null) {
+                return BadRequest("Failed to create or find private chat.");
+            }
+            GetChatInfoOutputModel output = mapNewPrivateChatToOutput(privateChat, targetUser);
+            return Ok(output);
+        }
     }
 
-    // Add this method inside Server.Controllers.ChatRpcController
     public RpcResponse<Object> getSavedMessage(){
         UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
-        var account = daoManager.getAccountDAO().findById(currentUserId);
-            String jpql = "SELECT pc FROM SavedMessages pc WHERE " +
-                    "(pc.owner.id = :ownerId)";
-           SavedMessages chat = daoManager.getSavedMessagesDAO().findOneByJpql(jpql, query -> {
-                query.setParameter("ownerId", currentUserId);
-            });
-           if(chat == null){
-               var savedMessage = new SavedMessages(account);
-               daoManager.getSavedMessagesDAO().insert(savedMessage);
-           }
+        Account account = daoManager.getAccountDAO().findById(currentUserId);
+        if (account == null) {
+            return BadRequest("User not found.");
+        }
+
+        SavedMessages chat = findOrCreateSavedMessages(account);
+
         GetChatInfoOutputModel output = new GetChatInfoOutputModel();
-        output.setId(chat.getId());
-        output.setType(String.valueOf(ChatType.SAVED_MESSAGES));
-        output.setTitle("Saved Message");
+        output.setChatId(chat.getId());
+        output.setType(chat.getType().toString());
+        output.setTitle("Saved Messages");
         output.setLastMessage("");
         output.setUnreadCount(0);
         return Ok(output);
@@ -365,92 +236,312 @@ public class ChatRpcController extends RpcControllerBase {
     public RpcResponse<GetChatInfoOutputModel[]> searchPublic(String query) {
         UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
         String searchQuery = "%" + query.toLowerCase() + "%";
-
         List<GetChatInfoOutputModel> results = new ArrayList<>();
 
-        // 1. Find accounts by username or full name, excluding the current user
+        // 1. Find accounts
         String accountJpql = "SELECT a FROM Account a WHERE a.id != :currentUserId AND (LOWER(a.username) LIKE :query OR LOWER(CONCAT(a.firstName, ' ', a.lastName)) LIKE :query)";
         List<Account> foundAccounts = daoManager.getAccountDAO().findByJpql(accountJpql, q -> {
             q.setParameter("currentUserId", currentUserId);
             q.setParameter("query", searchQuery);
-            q.setMaxResults(10); // Limit results
+            q.setMaxResults(10);
         });
+        foundAccounts.stream()
+                .map(this::mapAccountToSearchOutput)
+                .forEach(results::add);
 
-        results.addAll(foundAccounts.stream()
-                .map(account -> {
-                    GetChatInfoOutputModel output = new GetChatInfoOutputModel();
-                    output.setId(account.getId()); // This is the Account ID
-                    output.setType(ChatType.PRIVATE.toString());
-                    output.setTitle(account.getFirstName() + " " + account.getLastName());
-                    output.setUsername(account.getUsername());
-
-                    if(account.getProfilePictureId() != null && !account.getProfilePictureId().trim().isEmpty()) {
-                        Media media = daoManager.getEntityManager().find(Media.class, UUID.fromString(account.getProfilePictureId()));
-                        if (media != null) {
-                            output.setProfilePictureId(media.getFileId());
-                        }
-                    }
-                    output.setLastMessage("@" + account.getUsername()); // Subtitle for UI
-                    output.setOnline(getServerSessionManager().isUserOnline(account.getId().toString()));
-                    if (account.getLastSeen() != null) {
-                        output.setLastSeen(account.getLastSeen().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-                    }
-                    return output;
-                })
-                .collect(Collectors.toList()));
-
-        // 2. Find public channels by title
+        // 2. Find public channels
         String channelJpql = "SELECT c FROM Channel c WHERE c.isPublic = true AND LOWER(c.title) LIKE :query";
         List<Channel> foundChannels = daoManager.getChannelDAO().findByJpql(channelJpql, q -> {
             q.setParameter("query", searchQuery);
             q.setMaxResults(10);
         });
+        foundChannels.stream()
+                .map(this::mapPublicChatToSearchOutput)
+                .forEach(results::add);
 
-        results.addAll(foundChannels.stream()
-                .map(channel -> {
-                    GetChatInfoOutputModel output = new GetChatInfoOutputModel();
-                    output.setId(channel.getId()); // This is the Chat ID
-                    output.setType(ChatType.CHANNEL.toString());
-                    output.setTitle(channel.getTitle());
-                    if(channel.getProfilePictureId() != null && !channel.getProfilePictureId().trim().isEmpty()) {
-                        Media media = daoManager.getEntityManager().find(Media.class, UUID.fromString(channel.getProfilePictureId()));
-                        if (media != null) {
-                            output.setProfilePictureId(media.getFileId());
-                        }
-                    }
-                    long memberCount = daoManager.getMembershipDAO().countByJpql("SELECT COUNT(m) FROM Membership m WHERE m.chat.id = :chatId",
-                            q -> q.setParameter("chatId", channel.getId()));
-                    output.setLastMessage(memberCount + " subscribers");
-                    return output;
-                })
-                .collect(Collectors.toList()));
-
-        // 3. Find groups by title
+        // 3. Find groups
         String groupJpql = "SELECT g FROM GroupChat g WHERE LOWER(g.title) LIKE :query";
         List<GroupChat> foundGroups = daoManager.getGroupChatDAO().findByJpql(groupJpql, q -> {
             q.setParameter("query", searchQuery);
             q.setMaxResults(10);
         });
-
-        results.addAll(foundGroups.stream()
-                .map(group -> {
-                    GetChatInfoOutputModel output = new GetChatInfoOutputModel();
-                    output.setId(group.getId()); // This is the Chat ID
-                    output.setType(ChatType.GROUP.toString());
-                    output.setTitle(group.getTitle());
-                    if(group.getProfilePictureId() != null && !group.getProfilePictureId().trim().isEmpty()) {
-                        Media media = daoManager.getEntityManager().find(Media.class, UUID.fromString(group.getProfilePictureId()));
-                        if (media != null) {
-                            output.setProfilePictureId(media.getFileId());
-                        }
-                    }
-                    long memberCount = daoManager.getMembershipDAO().countByJpql("SELECT COUNT(m) FROM Membership m WHERE m.chat.id = :chatId",
-                            q -> q.setParameter("chatId", group.getId()));
-                    output.setLastMessage(memberCount + " members");
-                    return output;
-                })
-                .collect(Collectors.toList()));
+        foundGroups.stream()
+                .map(this::mapPublicChatToSearchOutput)
+                .forEach(results::add);
 
         return Ok(results.toArray(new GetChatInfoOutputModel[0]));
     }
+
+    // <editor-fold desc="Private Helper Methods">
+
+    /**
+     * Maps a Membership entity to a GetChatInfoOutputModel, populating all necessary fields.
+     * This is the main orchestrator for building chat list items.
+     */
+    private GetChatInfoOutputModel mapToGetChatInfoOutputModel(Membership membership) {
+        UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
+        Chat chat = membership.getChat();
+        GetChatInfoOutputModel output = new GetChatInfoOutputModel();
+
+        output.setChatId(chat.getId());
+        output.setUserId(membership.getAccount().getId());
+        output.setType(chat.getType().toString());
+        output.setUserMembershipType(membership.getType().toString());
+
+        if (chat.getType() == ChatType.PRIVATE) {
+            populatePrivateChatInfo(output, chat, currentUserId);
+        } else {
+            populateGroupOrChannelInfo(output, chat);
+        }
+
+        populateLastMessageInfo(output, chat);
+        populateUnreadCount(output, membership, currentUserId);
+        output.setMuted(membership.isMuted());
+
+        return output;
+    }
+
+    /**
+     * Populates fields specific to a private chat (the other user's info).
+     */
+    private void populatePrivateChatInfo(GetChatInfoOutputModel output, Chat chat, UUID currentUserId) {
+        List<Membership> chatMembers = daoManager.getMembershipDAO().findAllByField("chat.id", chat.getId());
+        Optional<Account> otherUserOpt = chatMembers.stream()
+                .map(Membership::getAccount)
+                .filter(account -> !account.getId().equals(currentUserId))
+                .findFirst();
+
+        if (otherUserOpt.isPresent()) {
+            Account otherUser = otherUserOpt.get();
+
+            // Check if the other user is a contact and set title accordingly
+            Optional<Contact> contactOpt = findContact(currentUserId, otherUser.getId());
+            String chatTitle;
+            if (contactOpt.isPresent() && contactOpt.get().getSavedName() != null && !contactOpt.get().getSavedName().trim().isEmpty()) {
+                chatTitle = contactOpt.get().getSavedName();
+                output.setContact(true);
+            } else {
+                chatTitle = otherUser.getFirstName() + (otherUser.getLastName() != null ? " " + otherUser.getLastName() : "");
+                output.setContact(false);
+            }
+            output.setTitle(chatTitle.trim());
+
+            output.setPhoneNumber(otherUser.getPhoneNumber());
+            output.setUsername(otherUser.getUsername());
+            output.setBio(otherUser.getBio());
+            output.setOnline(getServerSessionManager().isUserOnline(otherUser.getId().toString()));
+            if (otherUser.getLastSeen() != null) {
+                output.setLastSeen(otherUser.getLastSeen().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+            }
+            output.setProfilePictureId(getFileIdFromMediaId(otherUser.getProfilePictureId()));
+        } else {
+            output.setTitle("Deleted Account");
+        }
+    }
+
+    /**
+     * Populates fields for group or channel chats (title and profile picture).
+     */
+    private void populateGroupOrChannelInfo(GetChatInfoOutputModel output, Chat chat) {
+        output.setTitle(chat.getTitle());
+        output.setProfilePictureId(getFileIdFromMediaId(chat.getProfilePictureId()));
+    }
+
+    /**
+     * Finds the last message in a chat and populates the output model with its content and timestamp.
+     */
+    private void populateLastMessageInfo(GetChatInfoOutputModel output, Chat chat) {
+        Message lastMessage = daoManager.getMessageDAO().findOneByJpql(
+                "SELECT m FROM Message m JOIN FETCH m.sender WHERE m.chat.id = :chatId AND m.isDeleted = false ORDER BY m.timestamp DESC",
+                query -> {
+                    query.setParameter("chatId", chat.getId());
+                    query.setMaxResults(1);
+                });
+
+        if (lastMessage == null) {
+            output.setLastMessage("");
+            return;
+        }
+
+        String lastMessageText;
+        switch (lastMessage.getType()) {
+            case TEXT -> {
+                TextMessage textMessage = daoManager.getEntityManager().find(TextMessage.class, lastMessage.getId());
+                lastMessageText = (textMessage != null) ? textMessage.getTextContent() : "...";
+            }
+            case MEDIA -> lastMessageText = "Media";
+            case VOICE -> lastMessageText = "Voice Message";
+            case VIDEO -> lastMessageText = "Video";
+            default -> lastMessageText = "...";
+        }
+        output.setLastMessage(lastMessageText);
+        output.setLastMessageTimestamp(lastMessage.getTimestamp().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+        if (lastMessage.getSender() != null) {
+            output.setLastMessageSenderName(lastMessage.getSender().getFirstName());
+        }
+    }
+
+    /**
+     * Calculates the number of unread messages for the current user in a chat.
+     */
+    private void populateUnreadCount(GetChatInfoOutputModel output, Membership membership, UUID currentUserId) {
+        LocalDateTime lastReadTimestamp = null;
+        try {
+            TypedQuery<LocalDateTime> tsQuery = daoManager.getEntityManager().createQuery(
+                    "SELECT msg.timestamp FROM Membership mem JOIN mem.lastReadMessage msg " +
+                            "WHERE mem.id = :membershipId AND msg.isDeleted = false", LocalDateTime.class);
+            tsQuery.setParameter("membershipId", membership.getId());
+            lastReadTimestamp = tsQuery.getSingleResult();
+        } catch (NoResultException e) {
+            // Expected if last read message was deleted or never existed.
+        }
+
+        long unreadCount;
+        if (lastReadTimestamp == null) {
+            String jpql = "SELECT COUNT(m) FROM Message m WHERE m.chat.id = :chatId AND m.sender.id != :senderId AND m.isDeleted = false";
+            unreadCount = daoManager.getMessageDAO().countByJpql(jpql, query -> {
+                query.setParameter("chatId", membership.getChat().getId());
+                query.setParameter("senderId", currentUserId);
+            });
+        } else {
+            final LocalDateTime finalLastReadTimestamp = lastReadTimestamp;
+            String jpql = "SELECT COUNT(m) FROM Message m WHERE m.chat.id = :chatId AND m.timestamp > :lastReadTimestamp AND m.sender.id != :senderId AND m.isDeleted = false";
+            unreadCount = daoManager.getMessageDAO().countByJpql(jpql, query -> {
+                query.setParameter("chatId", membership.getChat().getId());
+                query.setParameter("lastReadTimestamp", finalLastReadTimestamp);
+                query.setParameter("senderId", currentUserId);
+            });
+        }
+        output.setUnreadCount((int) unreadCount);
+    }
+
+    /**
+     * Finds an existing private chat between two users or creates a new one if it doesn't exist.
+     */
+    private PrivateChat findOrCreatePrivateChat(Account user1, Account user2) {
+        String jpql = "SELECT pc FROM PrivateChat pc WHERE " +
+                "(pc.user1.id = :user1Id AND pc.user2.id = :user2Id) OR " +
+                "(pc.user1.id = :user2Id AND pc.user2.id = :user1Id)";
+
+        PrivateChat privateChat = daoManager.getPrivateChatDAO().findOneByJpql(jpql, query -> {
+            query.setParameter("user1Id", user1.getId());
+            query.setParameter("user2Id", user2.getId());
+        });
+
+        if (privateChat == null) {
+            privateChat = new PrivateChat(user1, user2);
+            daoManager.getPrivateChatDAO().insert(privateChat);
+
+            Membership m1 = new Membership();
+            m1.setAccount(user1);
+            m1.setChat(privateChat);
+            m1.setType(MembershipType.MEMBER);
+            m1.setJoinDate(LocalDateTime.now());
+            daoManager.getMembershipDAO().insert(m1);
+
+            Membership m2 = new Membership();
+            m2.setAccount(user2);
+            m2.setChat(privateChat);
+            m2.setType(MembershipType.MEMBER);
+            m2.setJoinDate(LocalDateTime.now());
+            daoManager.getMembershipDAO().insert(m2);
+        }
+        return privateChat;
+    }
+
+    /**
+     * Finds the "Saved Messages" chat for a user or creates it if it doesn't exist.
+     */
+    private SavedMessages findOrCreateSavedMessages(Account owner) {
+        String jpql = "SELECT sm FROM SavedMessages sm WHERE sm.owner.id = :ownerId";
+        SavedMessages savedMessages = daoManager.getSavedMessagesDAO().findOneByJpql(jpql, query -> query.setParameter("ownerId", owner.getId()));
+
+        if (savedMessages == null) {
+            savedMessages = new SavedMessages(owner);
+            daoManager.getSavedMessagesDAO().insert(savedMessages);
+        }
+        return savedMessages;
+    }
+
+    /**
+     * Finds a contact relationship between two users.
+     *
+     * @param ownerId The ID of the user whose contact list is being checked.
+     * @param contactUserId The ID of the user to check for in the contact list.
+     * @return An Optional containing the Contact if found, otherwise an empty Optional.
+     */
+    private Optional<Contact> findContact(UUID ownerId, UUID contactUserId) {
+        String jpql = "SELECT c FROM Contact c WHERE c.owner.id = :ownerId AND c.contact.id = :contactUserId";
+        Contact contact = daoManager.getContactDAO().findOneByJpql(jpql, query -> {
+            query.setParameter("ownerId", ownerId);
+            query.setParameter("contactUserId", contactUserId);
+        });
+        return Optional.ofNullable(contact);
+    }
+
+    /**
+     * Maps a newly created/fetched PrivateChat to a basic GetChatInfoOutputModel.
+     */
+    private GetChatInfoOutputModel mapNewPrivateChatToOutput(PrivateChat chat, Account otherUser) {
+        GetChatInfoOutputModel output = new GetChatInfoOutputModel();
+        output.setChatId(chat.getId());
+        output.setType(chat.getType().toString());
+        String otherUserName = otherUser.getFirstName() + (otherUser.getLastName() != null ? " " + otherUser.getLastName() : "");
+        output.setTitle(otherUserName.trim());
+        output.setProfilePictureId(getFileIdFromMediaId(otherUser.getProfilePictureId()));
+        output.setLastMessage("");
+        output.setUnreadCount(0);
+        return output;
+    }
+
+    /**
+     * Maps an Account entity to a GetChatInfoOutputModel for public search results.
+     */
+    private GetChatInfoOutputModel mapAccountToSearchOutput(Account account) {
+        GetChatInfoOutputModel output = new GetChatInfoOutputModel();
+        output.setChatId(account.getId()); // Note: This is the Account ID for search results
+        output.setType(ChatType.PRIVATE.toString());
+        output.setTitle(account.getFirstName() + " " + account.getLastName());
+        output.setUsername(account.getUsername());
+        output.setProfilePictureId(getFileIdFromMediaId(account.getProfilePictureId()));
+        output.setLastMessage("@" + account.getUsername()); // Use lastMessage for subtitle
+        output.setOnline(getServerSessionManager().isUserOnline(account.getId().toString()));
+        if (account.getLastSeen() != null) {
+            output.setLastSeen(account.getLastSeen().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+        }
+        return output;
+    }
+
+    /**
+     * Maps a public Chat (Group or Channel) to a GetChatInfoOutputModel for search results.
+     */
+    private GetChatInfoOutputModel mapPublicChatToSearchOutput(Chat chat) {
+        GetChatInfoOutputModel output = new GetChatInfoOutputModel();
+        output.setChatId(chat.getId());
+        output.setType(chat.getType().toString());
+        output.setTitle(chat.getTitle());
+        output.setProfilePictureId(getFileIdFromMediaId(chat.getProfilePictureId()));
+        long memberCount = daoManager.getMembershipDAO().countByJpql(
+                "SELECT COUNT(m) FROM Membership m WHERE m.chat.id = :chatId",
+                q -> q.setParameter("chatId", chat.getId()));
+        String subtitle = (chat.getType() == ChatType.CHANNEL) ? "subscribers" : "members";
+        output.setLastMessage(memberCount + " " + subtitle); // Use lastMessage for subtitle
+        return output;
+    }
+
+    /**
+     * Safely retrieves a media file ID from a media entity ID string.
+     */
+    private String getFileIdFromMediaId(String mediaIdStr) {
+        if (mediaIdStr == null || mediaIdStr.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            Media media = daoManager.getEntityManager().find(Media.class, UUID.fromString(mediaIdStr));
+            return (media != null) ? media.getFileId() : null;
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+    // </editor-fold>
 }

@@ -9,9 +9,9 @@ import Client.Services.ThemeManager;
 import JSocket2.Protocol.Rpc.RpcResponse;
 import JSocket2.Protocol.StatusCode;
 import Shared.Api.Models.AccountController.GetAccountInfoOutputModel;
+import Shared.Models.ChatViewModel;
 import Shared.Models.UserType;
-import Shared.Models.UserViewModel;
-import Shared.Models.UserViewModelBuilder;
+import Shared.Models.ChatViewModelBuilder;
 import Shared.Utils.AlertUtil;
 import Shared.Utils.DialogUtil;
 import Shared.Utils.SceneUtil;
@@ -237,8 +237,8 @@ public class SidebarMenuController implements Initializable {
                 // This is important for the "Edit Profile" button logic
                 mainChatController.setCurrentUserId(accountInfo.getId().toString());
 
-                UserViewModel myProfileViewModel = new UserViewModelBuilder()
-                        .userId(accountInfo.getId().toString())
+                ChatViewModel myProfileViewModel = new ChatViewModelBuilder()
+                        .chatId(accountInfo.getId().toString())
                         .displayName(accountInfo.getFirstName() + " " + accountInfo.getLastName())
                         .username(accountInfo.getUsername())
                         .bio(accountInfo.getBio())
@@ -510,17 +510,17 @@ public class SidebarMenuController implements Initializable {
             getChatsTask.setOnSucceeded(event -> {
                 var response = getChatsTask.getValue();
                 if (response.getStatusCode() == StatusCode.OK && response.getPayload() != null) {
-                    Optional<UserViewModel> existingUser = mainChatController.getAllChatUsers().stream()
-                            .filter(uvm -> uvm.getUserId().equals(response.getPayload().getId().toString()))
+                    Optional<ChatViewModel> existingUser = mainChatController.getAllChatUsers().stream()
+                            .filter(uvm -> uvm.getChatId().equals(response.getPayload().getChatId().toString()))
                             .findFirst();
 
-                    UserViewModel userToSelect;
+                    ChatViewModel userToSelect;
                     if (existingUser.isPresent()) {
                         userToSelect = existingUser.get();
                     } else {
-                        // If not present, create a new UserViewModel and add it to the list
-                        UserViewModel uvm = new UserViewModelBuilder()
-                                .userId(response.getPayload().getId().toString())
+                        // If not present, create a new ChatViewModel and add it to the list
+                        ChatViewModel uvm = new ChatViewModelBuilder()
+                                .chatId(response.getPayload().getChatId().toString())
                                 .avatarId(response.getPayload().getProfilePictureId())
                                 .displayName(response.getPayload().getTitle())
                                 .lastMessage(response.getPayload().getLastMessage())

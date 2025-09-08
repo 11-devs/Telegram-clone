@@ -56,7 +56,14 @@ public class ChatService {
             }
         };
     }
-
+    public Task<RpcResponse<GetChatInfoOutputModel>> getChatByUserId(UUID userId) {
+        return new Task<>() {
+            @Override
+            protected RpcResponse<GetChatInfoOutputModel> call() throws Exception {
+                return rpcCaller.getChatByUserId(userId);
+            }
+        };
+    }
     /**
      * Creates a background task to fetch all messages for a specific chat.
      * @param chatId The ID of the chat to fetch messages for.
@@ -196,6 +203,14 @@ public class ChatService {
             @Override
             protected RpcResponse<Object> call() throws Exception {
                 return rpcCaller.deleteChat(chatId);
+            }
+        };
+    }
+    public Task<RpcResponse<String>> removeContact(UUID chatId) {
+        return new Task<>() {
+            @Override
+            protected RpcResponse<String> call() throws Exception {
+                return rpcCaller.removeContact(chatId);
             }
         };
     }
