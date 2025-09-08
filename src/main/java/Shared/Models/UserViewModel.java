@@ -3,7 +3,8 @@ package Shared.Models;
 import javafx.beans.property.*;
 
 public class UserViewModel {
-
+    private final BooleanProperty isFromPublicSearch = new SimpleBooleanProperty(false);
+    private final StringProperty subtitle = new SimpleStringProperty();
     private final StringProperty displayName = new SimpleStringProperty();
     private final StringProperty username = new SimpleStringProperty();
     private final StringProperty lastMessage = new SimpleStringProperty();
@@ -108,6 +109,13 @@ public class UserViewModel {
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber.set(phoneNumber); }
     public void setMembersCount(int membersCount) { this.membersCount.set(membersCount); }
     public void setTypingUserName(String typingUserName) { this.typingUserName.set(typingUserName); }
+    public BooleanProperty isFromPublicSearchProperty() { return isFromPublicSearch; }
+    public StringProperty subtitleProperty() { return subtitle; }
+    public boolean isFromPublicSearch() { return isFromPublicSearch.get(); }
+    public String getSubtitle() { return subtitle.get(); }
+    public void setFromPublicSearch(boolean isFromPublicSearch) { this.isFromPublicSearch.set(isFromPublicSearch); }
+    public void setSubtitle(String subtitle) { this.subtitle.set(subtitle); }
+
     // Utility methods
     private void updateIsMessageSentByCurrentUser() {
         String currentUserId = "currentUserId"; // TODO: Replace with real logic

@@ -108,6 +108,7 @@ public class MainChatController implements Initializable {
     private static final String UNDERLINE_MARKER_SUFFIX = "++";
     private static final String SPOILER_MARKER_PREFIX = "||";
     private static final String SPOILER_MARKER_SUFFIX = "||";
+    private final int MIN_PUBLIC_SEARCH_LENGTH = 5;
     // ============ FXML INJECTED COMPONENTS ============
 
     /**
@@ -463,6 +464,7 @@ public ChatService getChatService() {
         chatUIService = connectionManager.getClient().getServiceProvider().GetService(ChatUIService.class);
         chatUIService.setActiveChatController(this);
         typingTimer = new Timer(true);
+        searchTimer = new Timer(true);
         //currentUser = connectionManager.getClient().getUserIdentity();
         initializeSidebarsSplitPane();
         initializeData();
@@ -871,6 +873,9 @@ public ChatService getChatService() {
     /**
      * Sets up the chat list with a custom cell factory and selection listener.
      */
+    private Task<RpcResponse<GetChatInfoOutputModel[]>> activeSearchTask = null;
+    private Timer searchTimer;
+    private TimerTask searchTask;
     private void setupChatList() {
         chatListView.setItems(filteredChatUsers);
         chatListView.setCellFactory(listView -> new UserCustomCell());
@@ -878,7 +883,17 @@ public ChatService getChatService() {
         // Handle chat selection
         chatListView.getSelectionModel().selectedItemProperty().addListener((obs, oldUser, newUser) -> {
             if (newUser != null && newUser != currentSelectedUser) {
-                selectChat(newUser);
+                // Ignore placeholder clicks
+                if ("SEARCHING_PLACEHOLDER".equals(newUser.getUserId())) {
+                    Platform.runLater(() -> chatListView.getSelectionModel().clearSelection());
+                    return;
+                }
+
+                if (newUser.isFromPublicSearch()) {
+                    handlePublicSearchResultSelection(newUser);
+                } else {
+                    selectChat(newUser);
+                }
             }
         });
         // Initially show welcome state
@@ -1007,7 +1022,7 @@ public ChatService getChatService() {
         settingsButton.setOnAction(e -> openSettings());
 
         // Search functionality
-        searchField.textProperty().addListener((obs, oldText, newText) -> performSearch(newText));
+        searchField.textProperty().addListener((obs, oldText, newText) -> debounceSearch(newText));
 
         // Header buttons
 
@@ -2621,7 +2636,20 @@ public ChatService getChatService() {
     }
 
     // ============ FILTER AND SEARCH ============
-
+    private void debounceSearch(String searchText) {
+        if (searchTask != null) {
+            searchTask.cancel(); // Cancel the previously scheduled task
+        }
+        searchTask = new TimerTask() {
+            @Override
+            public void run() {
+                // The actual search logic must run on the JavaFX Application Thread
+                Platform.runLater(() -> performSearch(searchText));
+            }
+        };
+        // Schedule the new task to run after a 300ms delay of inactivity
+        searchTimer.schedule(searchTask, 300);
+    }
     /**
      * Performs a search on the chat list based on the input text.
      * If the search text is empty, it resets the list to show all chats.
@@ -2629,26 +2657,132 @@ public ChatService getChatService() {
      * @param searchText The text to search for.
      */
     private void performSearch(String searchText) {
+        // Cancel any previously running search
+        if (activeSearchTask != null && activeSearchTask.isRunning()) {
+            activeSearchTask.cancel(true);
+        }
+
+        // If the search text is empty, show all user chats and cancel any further action.
         if (searchText == null || searchText.trim().isEmpty()) {
             filteredChatUsers.setAll(allChatUsers);
             chatListView.scrollTo(0);
             return;
         }
 
-        ObservableList<UserViewModel> searchResults = FXCollections.observableArrayList();
-        String lowerCaseSearch = searchText.toLowerCase().trim();
+        String trimmedSearchText = searchText.trim();
+        String lowerCaseSearch = trimmedSearchText.toLowerCase();
 
-        for (UserViewModel user : allChatUsers) {
-            boolean nameMatches = user.getDisplayName().toLowerCase().contains(lowerCaseSearch);
-            boolean messageMatches = user.getLastMessage() != null && user.getLastMessage().toLowerCase().contains(lowerCaseSearch);
+        // 1. Always perform and display local search results immediately
+        List<UserViewModel> localResults = allChatUsers.stream()
+                .filter(user -> user.getDisplayName().toLowerCase().contains(lowerCaseSearch) ||
+                        (user.getLastMessage() != null && user.getLastMessage().toLowerCase().contains(lowerCaseSearch)))
+                .collect(Collectors.toList());
 
-            if (nameMatches || messageMatches) {
-                searchResults.add(user);
-            }
+        // 2. Check if the search text is long enough for a public search
+        if (trimmedSearchText.length() < MIN_PUBLIC_SEARCH_LENGTH) {
+            // If not, just show the local results and stop.
+            filteredChatUsers.setAll(localResults);
+            return;
         }
 
+        // 3. If long enough, proceed with public search
+        // Add "Searching..." placeholder to the local results
+        UserViewModel searchingPlaceholder = new UserViewModelBuilder().userId("SEARCHING_PLACEHOLDER").build();
+        ObservableList<UserViewModel> searchResults = FXCollections.observableArrayList(localResults);
+        searchResults.add(searchingPlaceholder);
         filteredChatUsers.setAll(searchResults);
-        chatListView.scrollTo(0);
+
+        // Start the server search task
+        activeSearchTask = chatService.searchPublic(trimmedSearchText);
+
+        activeSearchTask.setOnSucceeded(event -> {
+            RpcResponse<GetChatInfoOutputModel[]> response = activeSearchTask.getValue();
+            if (response.getStatusCode() == StatusCode.OK && response.getPayload() != null) {
+                Set<String> localResultChatIds = localResults.stream()
+                        .map(UserViewModel::getUserId)
+                        .collect(Collectors.toSet());
+
+                List<UserViewModel> publicResults = new ArrayList<>();
+                for (GetChatInfoOutputModel chat : response.getPayload()) {
+                    String resultId = chat.getId().toString();
+
+                    boolean isChatType = !UserType.fromString(chat.getType()).equals(UserType.USER);
+
+                    // Filter out groups/channels that are already in the local results
+                    if (isChatType && localResultChatIds.contains(resultId)) {
+                        continue;
+                    }
+
+                    UserViewModel uvm = new UserViewModelBuilder()
+                            .userId(resultId)
+                            .avatarId(chat.getProfilePictureId())
+                            .displayName(chat.getTitle())
+                            .username(chat.getUsername()) // Store username for user results
+                            .subtitle(chat.getLastMessage()) // This will be @username or member count
+                            .type(chat.getType())
+                            .isFromPublicSearch(true) // Mark as a public result
+                            .isOnline(chat.isOnline())
+                            .lastSeen(chat.getLastSeen())
+                            .build();
+                    publicResults.add(uvm);
+                }
+
+                Platform.runLater(() -> {
+                    searchResults.remove(searchingPlaceholder);
+                    searchResults.addAll(publicResults);
+                    filteredChatUsers.setAll(searchResults);
+                });
+            } else {
+                Platform.runLater(() -> searchResults.remove(searchingPlaceholder));
+                System.err.println("Public search failed: " + response.getMessage());
+            }
+        });
+
+        activeSearchTask.setOnFailed(event -> {
+            if (!activeSearchTask.isCancelled()) {
+                Platform.runLater(() -> searchResults.remove(searchingPlaceholder));
+                if(activeSearchTask.getException() != null)
+                    activeSearchTask.getException().printStackTrace();
+            }
+        });
+
+        new Thread(activeSearchTask).start();
+    }
+    private void handlePublicSearchResultSelection(UserViewModel publicResult) {
+        // A public search result was clicked. We need to find or create the chat.
+        if (publicResult.getType() == UserType.USER) {
+            String username = publicResult.getUsername();
+            if (username != null && !username.isEmpty()) {
+                // This will find an existing private chat or create a new one,
+                // add the UserViewModel to the list, and select it.
+                handleMentionClick(username);
+            } else {
+                showTemporaryNotification("Cannot open chat: user information is missing.");
+            }
+        } else {
+            // This is a public group or channel. The ID is the Chat ID.
+            Optional<UserViewModel> existingChat = allChatUsers.stream()
+                    .filter(u -> u.getUserId().equals(publicResult.getUserId()))
+                    .findFirst();
+
+            UserViewModel chatToSelect;
+            if (existingChat.isPresent()) {
+                chatToSelect = existingChat.get();
+            } else {
+                // It's a new chat for us. Add it to our master list.
+                publicResult.setFromPublicSearch(false); // It's a local chat now
+                allChatUsers.add(0, publicResult);
+                chatToSelect = publicResult;
+            }
+
+            // Reset the search field, which will repopulate the list with all chats,
+            // then select the new/existing chat.
+            searchField.clear(); // This will trigger performSearch("")
+            Platform.runLater(() -> {
+                chatListView.getSelectionModel().select(chatToSelect);
+                chatListView.scrollTo(chatToSelect);
+            });
+        }
     }
 
     // ============ MESSAGE INPUT HANDLING ============
