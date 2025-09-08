@@ -108,7 +108,7 @@ public class AddMembersDialogController {
         avatarView.setFitWidth(28);
         avatarView.setClip(new Circle(14, 14, 14));
 
-        Image placeholder = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Client/images/default-profile-icon.png")));
+        Image placeholder = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Client/images/11Devs-white.png")));
         avatarView.setImage(placeholder);
 
         if (contact.getContact().getProfilePictureId() != null && !contact.getContact().getProfilePictureId().isEmpty()) {
@@ -318,7 +318,7 @@ public class AddMembersDialogController {
         }
 
         private void loadAvatar(String pictureId) {
-            Image placeholder = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Client/images/default-profile-icon.png")));
+            Image placeholder = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Client/images/11Devs-white.png")));
             avatarView.setImage(placeholder);
             if (pictureId != null && !pictureId.isEmpty()) {
                 FileDownloadService.getInstance().getImage(pictureId).thenAccept(avatar -> {

@@ -1306,11 +1306,11 @@ public ChatService getChatService() {
                         LocalDateTime timestamp = LocalDateTime.parse(msg.getTimestamp());
                         String formattedTime = timestamp.format(DateTimeFormatter.ofPattern("HH:mm"));
                         String senderName = msg.getOutgoing() ? null : msg.getSenderName();
-
+                        String senderProfilePictureId = msg.getOutgoing() ? null : msg.getSenderProfilePictureId();
                         if (msg.getMessageType() == MessageType.TEXT && msg.getTextContent() != null) {
                             String status = msg.getOutgoing() ? msg.getMessageStatus() : "received";
                             HBox messageNode = addMessageBubble(msg.getTextContent(), msg.getOutgoing(), formattedTime, status, senderName, msg.isEdited(),
-                                    msg.getRepliedToSenderName(), msg.getRepliedToMessageContent(), msg.getForwardedFromSenderName());
+                                    msg.getRepliedToSenderName(), msg.getRepliedToMessageContent(), msg.getForwardedFromSenderName(),senderProfilePictureId);
                             // Store messageId and timestamp for later updates
                             messageNode.getChildren().getFirst().getProperties().put("messageId", msg.getMessageId());
                             messageNode.getChildren().getFirst().getProperties().put("messageTimestamp", timestamp);
@@ -1319,7 +1319,7 @@ public ChatService getChatService() {
                             docInfo.setSenderName(senderName);
                             String status = msg.getOutgoing() ? msg.getMessageStatus() : "received";
                             HBox messageNode = addDocumentMessageBubble(docInfo, msg.getOutgoing(), formattedTime, status,
-                                    msg.getRepliedToSenderName(), msg.getRepliedToMessageContent(), msg.getForwardedFromSenderName());
+                                    msg.getRepliedToSenderName(), msg.getRepliedToMessageContent(), msg.getForwardedFromSenderName(),senderProfilePictureId);
                             // Store messageId and timestamp for later updates
                             ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageId", msg.getMessageId());
                             ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageTimestamp", timestamp);
@@ -1572,8 +1572,12 @@ public ChatService getChatService() {
         // Keep old signature for compatibility, delegate to the new one.
         return addMessageBubble(text, isOutgoing, time, status, senderName, isEdited, null, null, null);
     }
+    private HBox addMessageBubble(String text, boolean isOutgoing, String time, String status, String senderName, boolean isEdited,  String repliedToSenderName, String repliedToMessageContent, String forwardedFromName) {
+        // Keep old signature for compatibility, delegate to the new one.
+        return addMessageBubble(text, isOutgoing, time, status, senderName, isEdited, repliedToSenderName, repliedToMessageContent, forwardedFromName);
+    }
     private HBox addMessageBubble(String text, boolean isOutgoing, String time, String status, String senderName, boolean isEdited,
-                                  String repliedToSenderName, String repliedToMessageContent, String forwardedFromName) {
+                                  String repliedToSenderName, String repliedToMessageContent, String forwardedFromName , String senderProfilePcitureId) {
         HBox messageContainer = new HBox();
         messageContainer.setSpacing(12);
         messageContainer.setPadding(new Insets(4, 0, 4, 0));
@@ -1590,7 +1594,7 @@ public ChatService getChatService() {
 
             if (currentSelectedUser != null &&
                     (currentSelectedUser.getType() == UserType.GROUP || currentSelectedUser.getType() == UserType.SUPERGROUP)) {
-                ImageView senderAvatar = createSenderAvatar(senderName);
+                ImageView senderAvatar = createSenderAvatar(senderProfilePcitureId);
                 messageContainer.getChildren().add(senderAvatar);
             }
 
@@ -1882,13 +1886,8 @@ public ChatService getChatService() {
 
         new Thread(findChatTask).start();
     }
-    /**
-     * Creates an ImageView for a sender's avatar with a circular clip.
-     *
-     * @param senderName The name of the sender (used for avatar lookup).
-     * @return The ImageView for the sender's avatar.
-     */
-    private ImageView createSenderAvatar(String senderName) {
+
+    private ImageView createSenderAvatar(String avatarId) {
         ImageView avatar = new ImageView();
         avatar.setFitWidth(32);
         avatar.setFitHeight(32);
@@ -1900,17 +1899,36 @@ public ChatService getChatService() {
 
         // Load default or sender-specific avatar
         try {
-            // TODO: In a real app, load the actual sender's avatar from the server.
-            Image defaultAvatar = new Image(Objects.requireNonNull(getClass().getResource("/Client/images/11Devs-black.png")).toExternalForm());
-            avatar.setImage(defaultAvatar);
+            if (avatarId != null && !avatarId.isBlank()) {
+                fileDownloadService.getImage(avatarId).thenAccept(image -> {
+                    if (image != null) {
+                        Platform.runLater(() -> avatar.setImage(image));
+                    } else {
+                        loadSenderDefaultProfilePicture(avatar);
+                    }
+                }).exceptionally(e -> {
+                    e.printStackTrace();
+                    loadSenderDefaultProfilePicture(avatar);
+                    return null;
+                });
+            } else {
+                loadSenderDefaultProfilePicture(avatar);
+            }
         } catch (Exception e) {
-            System.err.println("Failed to load sender avatar for: " + senderName);
+            System.err.println("Failed to load sender avatar for: " + avatarId);
         }
 
         avatar.getStyleClass().add("sender-avatar");
         return avatar;
     }
-
+    private void loadSenderDefaultProfilePicture(ImageView avatar) {
+        try {
+            Image profileImage = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/Client/images/11Devs-white.png")));
+            Platform.runLater(() -> avatar.setImage(profileImage));
+        } catch (Exception e) {
+            System.err.println("Could not load default profile picture: " + e.getMessage());
+        }
+    }
     /**
      * Handles mouse clicks on a message bubble.
      * Differentiates between primary (left) and secondary (right) clicks.
@@ -2446,6 +2464,10 @@ public ChatService getChatService() {
      */
     private HBox addDocumentMessageBubble(DocumentInfo docInfo, boolean isOutgoing,
                                           String time, String status, String repliedToSenderName, String repliedToMessageContent, String forwardedFromName) {
+    return addDocumentMessageBubble(docInfo,isOutgoing,time,  status,  repliedToSenderName,  repliedToMessageContent, forwardedFromName,null);
+    }
+    private HBox addDocumentMessageBubble(DocumentInfo docInfo, boolean isOutgoing,
+                                          String time, String status, String repliedToSenderName, String repliedToMessageContent, String forwardedFromName, String senderProfilePictureId) {
         HBox messageContainer = new HBox();
         messageContainer.setSpacing(12);
         messageContainer.setPadding(new Insets(4, 0, 4, 0));
@@ -2461,7 +2483,7 @@ public ChatService getChatService() {
             if (currentSelectedUser != null &&
                     (currentSelectedUser.getType() == UserType.GROUP ||
                             currentSelectedUser.getType() == UserType.SUPERGROUP)) {
-                ImageView senderAvatar = createSenderAvatar(docInfo.getSenderName());
+                ImageView senderAvatar = createSenderAvatar(senderProfilePictureId);
                 messageContainer.getChildren().add(senderAvatar);
             }
 

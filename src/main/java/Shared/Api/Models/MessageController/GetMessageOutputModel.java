@@ -7,6 +7,8 @@ import java.util.UUID;
 public class GetMessageOutputModel {
     private UUID messageId;
     private UUID senderId;
+
+    private String senderProfilePictureId;
     private String senderName;
     private UUID chatId;
     private String timestamp; // Changed from LocalDateTime to String
@@ -178,5 +180,11 @@ public class GetMessageOutputModel {
     public void setForwardedFromSenderName(String forwardedFromSenderName) {
         this.forwardedFromSenderName = forwardedFromSenderName;
     }
-    //</editor-fold>
+    public String getSenderProfilePictureId() {
+        return senderProfilePictureId;
+    }
+
+    public void setSenderProfilePictureId(String senderProfilePictureId) {
+        this.senderProfilePictureId = senderProfilePictureId;
+    }
 }

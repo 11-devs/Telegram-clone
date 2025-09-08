@@ -1,4 +1,3 @@
-// CREATE NEW FILE: main/java/Client/Controllers/CreateGroupDialogController.java
 package Client.Controllers;
 
 import Client.AppConnectionManager; // <-- IMPORT THE SINGLETON
@@ -176,34 +175,23 @@ public class CreateGroupDialogController {
             AddMembersDialogController controller = loader.getController();
             controller.init(mainChatController, groupName, profilePictureId);
 
-            // Close the current dialog
-            Stage currentStage = (Stage) dialogRoot.getScene().getWindow();
-            currentStage.close();
+            // --- FIX: Replace the scene's root instead of closing and opening a new stage ---
+            // This avoids destroying native window resources, which was causing the JVM crash.
+            Stage stage = (Stage) dialogRoot.getScene().getWindow();
+            stage.getScene().setRoot(addMembersRoot);
 
-            // Show the next dialog
-            Stage dialogStage = new Stage();
-            dialogStage.initOwner(parentStage);
-            dialogStage.initModality(Modality.WINDOW_MODAL);
-            dialogStage.initStyle(StageStyle.UNDECORATED);
-
-            Scene scene = new Scene(addMembersRoot);
-            scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
-            dialogStage.setScene(scene);
-            dialogStage.initStyle(StageStyle.TRANSPARENT);
-
-            // Center the dialog
-            dialogStage.setOnShown(e -> {
-                dialogStage.setX(parentStage.getX() + parentStage.getWidth() / 2 - dialogStage.getWidth() / 2);
-                dialogStage.setY(parentStage.getY() + parentStage.getHeight() / 2 - dialogStage.getHeight() / 2);
-            });
-            dialogStage.showAndWait();
+            // Recenter the stage as the new content might have a different size
+            stage.sizeToScene();
+            stage.centerOnScreen();
 
         } catch (IOException e) {
             e.printStackTrace();
             AlertUtil.showError("Could not open the add members window: " + e.getMessage());
             // Re-enable buttons if opening the next dialog failed
-            nextButton.setDisable(false);
-            cancelButton.setDisable(false);
+            Platform.runLater(() -> {
+                nextButton.setDisable(false);
+                cancelButton.setDisable(false);
+            });
         }
     }
     @FXML
