@@ -6,6 +6,7 @@ import Server.DaoManager;
 import Shared.Api.Models.ContactController.*;
 import Shared.Models.Account.Account;
 import Shared.Models.Contact.Contact;
+import Shared.Models.Media.Media;
 
 import java.util.List;
 import java.util.Objects;
@@ -70,7 +71,7 @@ public class ContactRpcController extends RpcControllerBase {
                     Account contactUser = contact.getContact();
                     String firstName;
                     String lastName;
-
+                    String fileId = "";
                     // If a custom name is saved, use it. Otherwise, use the contact's actual name.
                     if (contact.getSavedName() != null && !contact.getSavedName().trim().isEmpty()) {
                         String[] names = contact.getSavedName().split(" ", 2);
@@ -80,14 +81,19 @@ public class ContactRpcController extends RpcControllerBase {
                         firstName = contactUser.getFirstName();
                         lastName = contactUser.getLastName();
                     }
-
+                    if(contactUser.getProfilePictureId() != null && !contactUser.getProfilePictureId().trim().isEmpty()) {
+                        Media media = daoManager.getEntityManager().find(Media.class, UUID.fromString(contactUser.getProfilePictureId()));
+                        if (media != null) {
+                            fileId = media.getFileId();
+                        }
+                    }
                     return new ContactInfo(
                             contactUser.getId(),
                             firstName,
                             lastName,
                             contactUser.getUsername(),
                             contactUser.getStatus(),
-                            contactUser.getProfilePictureId()
+                            fileId
                     );
                 })
                 .collect(Collectors.toList());

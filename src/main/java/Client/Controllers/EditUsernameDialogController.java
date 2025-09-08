@@ -1,5 +1,6 @@
 package Client.Controllers;
 
+import Client.RpcCaller;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -24,7 +25,7 @@ public class EditUsernameDialogController {
 
     private Stage dialogStage;
     private MyAccountSettingsController parentController;
-
+    private RpcCaller rpcCaller;
     @FXML
     private void initialize() {
         System.out.println("EditUsernameDialogController initialized.");

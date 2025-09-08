@@ -179,14 +179,16 @@ public class ChatRpcController extends RpcControllerBase {
         if(model.getMemberIds() != null) {
             for (UUID memberId : model.getMemberIds()) {
                 if (!memberId.equals(creatorId)) {
-                    Account member = daoManager.getAccountDAO().findById(memberId);
+                    Account member = daoManager.getEntityManager().find(Account.class,memberId);
                     if (member != null) {
                         Membership memberMembership = new Membership();
                         memberMembership.setAccount(member);
                         memberMembership.setChat(groupChat);
                         memberMembership.setInvitedBy(creator);
                         memberMembership.setType(MembershipType.MEMBER);
+                        memberMembership.setJoinDate(LocalDateTime.now());
                         daoManager.getMembershipDAO().insert(memberMembership);
+                        System.out.println("membership id: "+ memberMembership.getId() + ", chat id: "+ memberMembership.getChat().getId());
                     }
                 }
             }
