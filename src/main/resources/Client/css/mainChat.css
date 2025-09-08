@@ -1053,20 +1053,22 @@
     -fx-pref-height: 72px;
 }
 
-.chat-cell:hover {
+/* Apply hover effect only when the cell is NOT selected */
+.chat-cell:hover:not(:selected) {
     -fx-background-color: #1E2832;
 }
 
-.chat-cell.selected {
+/* --- Selected State (High Priority) --- */
+/* This style will apply when the cell is selected, overriding other states */
+.chat-cell:selected {
     -fx-background-color: #2B5278;
 }
 
-.chat-cell.unread {
-    -fx-background-color: rgba(79, 195, 247, 0.05);
-}
-
-.chat-cell.unread:hover {
-    -fx-background-color: rgba(79, 195, 247, 0.1);
+/* Change text color for better readability when selected */
+.chat-cell:selected .chat-name,
+.chat-cell:selected .last-message-label,
+.chat-cell:selected .message-time-label {
+    -fx-text-fill: white;
 }
 
 .chat-avatar {

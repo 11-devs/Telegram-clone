@@ -4431,33 +4431,42 @@ public ChatService getChatService() {
             return;
         }
 
+        // Create the background task for forwarding the message
         Task<RpcResponse<Object>> forwardTask = chatService.forwardMessage(messageId, recipientChatIds);
 
         forwardTask.setOnSucceeded(event -> {
+            RpcResponse<Object> response = forwardTask.getValue();
             Platform.runLater(() -> {
-                RpcResponse<Object> response = forwardTask.getValue();
                 if (response.getStatusCode() == StatusCode.OK) {
-                    showTemporaryNotification("Message forwarded successfully!\n");
+                    // --- Improved UI Feedback and Update Logic ---
 
-                    // Optimistically update the UI for the chats the message was forwarded to.
+                    // 1. Show a more informative success message
+                    String successMessage = recipientChatIds.size() == 1 ?
+                            "Message forwarded successfully!" :
+                            "Message forwarded to " + recipientChatIds.size() + " chats.";
+                    showTemporaryNotification(successMessage + "\n");
+
+                    // 2. Prepare data for UI update
                     String newTimestamp = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-                    String lastMessagePreview = "Forwarded message"; // Use a generic placeholder
+                    String lastMessagePreview = "Forwarded message";
 
-                    UserViewModel lastUpdatedUser = null;
+                    // 3. Create a Set of recipient IDs for efficient lookup
+                    Set<String> recipientIdStrings = recipientChatIds.stream()
+                            .map(UUID::toString)
+                            .collect(Collectors.toSet());
 
-                    List<UserViewModel> selectedUsers = allChatUsers.stream()
-                            .filter(u -> recipientChatIds.contains(UUID.fromString(u.getUserId())))
-                            .collect(Collectors.toList());
+                    // 4. Iterate through all known chats and update the ones that were recipients
+                    allChatUsers.stream()
+                            .filter(user -> recipientIdStrings.contains(user.getUserId()))
+                            .forEach(user -> {
+                                user.setLastMessage(lastMessagePreview);
+                                user.setTime(newTimestamp);
+                                user.setMessageStatus("sent"); // Ensure status is updated to a single tick
+                            });
 
-                    for (UserViewModel user : selectedUsers) {
-                        user.setLastMessage(lastMessagePreview);
-                        user.setTime(newTimestamp);
-                        lastUpdatedUser = user;
-                    }
+                    // 5. Sort and refresh the entire chat list just once after all updates
+                    sortAndRefreshChatList();
 
-                    if (lastUpdatedUser != null) {
-                        sortAndRefreshChatList();
-                    }
                 } else {
                     showTemporaryNotification("Failed to forward message: " + response.getMessage() + "\n");
                 }

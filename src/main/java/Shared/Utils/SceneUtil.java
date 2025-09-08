@@ -52,7 +52,7 @@ public class SceneUtil {
             Stage stage = (Stage) node.getScene().getWindow();
             Scene scene = new Scene(root);
 
-            applyThemeToScene(scene); // Apply theme to the new scene
+            //applyThemeToScene(scene); // Apply theme to the new scene
 
             stage.setScene(scene);
             stage.setMaximized(maximized);
@@ -92,7 +92,7 @@ public class SceneUtil {
             double height = currentScene.getHeight();
             Scene newScene = new Scene(root, width, height);
 
-            applyThemeToScene(newScene); // Apply theme to the new scene
+            //applyThemeToScene(newScene); // Apply theme to the new scene
 
             stage.setScene(newScene);
             stage.show();
@@ -115,7 +115,7 @@ public class SceneUtil {
         Scene scene = new Scene(root);
         scene.setFill(Color.TRANSPARENT);
 
-        applyThemeToScene(scene); // Apply theme to the new dialog's scene
+        //applyThemeToScene(scene); // Apply theme to the new dialog's scene
 
         dialogStage.setScene(scene);
         dialogStage.initOwner(parentStage);
