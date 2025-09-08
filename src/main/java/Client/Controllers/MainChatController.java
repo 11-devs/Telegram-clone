@@ -53,6 +53,8 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
@@ -87,6 +89,8 @@ import java.util.stream.Collectors;
 import javafx.beans.Observable;
 import javafx.scene.Node;
 
+import javax.sound.sampled.*;
+
 import static JSocket2.Utils.FileUtil.getFileExtension;
 import static Shared.Utils.DialogUtil.showNotificationDialog;
 import static Shared.Utils.FileUtil.*;
@@ -112,13 +116,13 @@ public class MainChatController implements Initializable {
     /**
      * The main container for the chat interface, a BorderPane.
      */
-    @FXML private BorderPane mainChatContainer;
-
-    // Sidebar elements
+    @FXML
+    private BorderPane mainChatContainer; // Sidebar elements
     /**
      * The left sidebar containing the chat list and controls.
      */
-    @FXML private VBox leftSidebar;
+    @FXML
+    private VBox leftSidebar;
     /**
      * The SplitPane that holds the left, center, and right panels.
      */
@@ -126,15 +130,18 @@ public class MainChatController implements Initializable {
     /**
      * Button to toggle the sidebar menu.
      */
-    @FXML private Button menuButton;
+    @FXML
+    private Button menuButton;
     /**
      * Container for the search field in the sidebar.
      */
-    @FXML private HBox searchContainer;
+    @FXML
+    private HBox searchContainer;
     /**
      * Text field for searching chats.
      */
-    @FXML private TextField searchField;
+    @FXML
+    private TextField searchField;
 
     public ListView<ChatViewModel> getChatListView() {
         return chatListView;
@@ -152,180 +159,210 @@ public class MainChatController implements Initializable {
     /**
      * ListView displaying the chat list with ChatViewModel items.
      */
-    @FXML private ListView<ChatViewModel> chatListView;
+    @FXML
+    private ListView<ChatViewModel> chatListView;
     /**
      * Button to open settings.
      */
-    @FXML private Button settingsButton;
+    @FXML
+    private Button settingsButton;
     /**
      * Circle indicator for connection status.
      */
-    @FXML private Circle connectionIndicator;
+    @FXML
+    private Circle connectionIndicator;
     /**
      * Label showing the connection status text.
      */
-    @FXML private Label connectionLabel;
-
-    // Chat header elements
+    @FXML
+    private Label connectionLabel; // Chat header elements
     /**
      * ImageView for the user's avatar in the chat header.
      */
-    @FXML private ImageView headerAvatarImage;
+    @FXML
+    private ImageView headerAvatarImage;
     /**
      * Circle indicating the online status of the user in the chat header.
      */
-    @FXML private Circle onlineIndicator;
+    @FXML
+    private Circle onlineIndicator;
     /**
      * Label displaying the chat title (user or group name).
      */
-    @FXML private Label chatTitleLabel;
+    @FXML
+    private Label chatTitleLabel;
     /**
      * Label displaying the chat subtitle (e.g., online status or last seen).
      */
-    @FXML private Label chatSubtitleLabel;
+    @FXML
+    private Label chatSubtitleLabel;
     /**
      * Label showing the number of members in a group chat.
      */
-    @FXML private Label membersCountLabel;
+    @FXML
+    private Label membersCountLabel;
     /**
      * ImageView for the muted icon in the chat header.
      */
-    @FXML private ImageView mutedIcon;
+    @FXML
+    private ImageView mutedIcon;
     /**
      * Button to search within the current chat.
      */
-    @FXML private Button searchInChatButton;
+    @FXML
+    private Button searchInChatButton;
     /**
      * Button to initiate a voice call.
      */
-    @FXML private Button callButton;
+    @FXML
+    private Button callButton;
     /**
      * Button to initiate a video call.
      */
-    @FXML private Button videoCallButton;
+    @FXML
+    private Button videoCallButton;
     /**
      * Button to show more options for the chat.
      */
-    @FXML private Button moreOptionsButton;
-
-    // Messages area
+    @FXML
+    private Button moreOptionsButton; // Messages area
     /**
      * ScrollPane containing the messages list.
      */
-    @FXML private ScrollPane messagesScrollPane;
+    @FXML
+    private ScrollPane messagesScrollPane;
     /**
      * VBox containing all message bubbles.
      */
-    @FXML private VBox messagesContainer;
+    @FXML
+    private VBox messagesContainer;
     /**
      * VBox for the welcome state when no chat is selected.
      */
-    @FXML private VBox welcomeStateContainer;
+    @FXML
+    private VBox welcomeStateContainer;
     /**
      * VBox for the empty chat state when no messages are present.
      */
-    @FXML private VBox emptyChatStateContainer;
+    @FXML
+    private VBox emptyChatStateContainer;
     /**
      * StackPane containing the scroll-to-bottom button.
      */
-    @FXML private StackPane scrollToBottomContainer;
+    @FXML
+    private StackPane scrollToBottomContainer;
     /**
      * Button to scroll to the bottom of the messages list.
      */
-    @FXML private Button scrollToBottomButton;
-
-    // Reply preview
+    @FXML
+    private Button scrollToBottomButton; // Reply preview
     /**
      * HBox containing the reply preview area.
      */
-    @FXML private HBox replyPreviewContainer;
+    @FXML
+    private HBox replyPreviewContainer;
     /**
      * Label showing the user or entity being replied to.
      */
-    @FXML private Label replyToLabel;
+    @FXML
+    private Label replyToLabel;
     /**
      * Label showing the text of the message being replied to.
      */
-    @FXML private Label replyMessageLabel;
+    @FXML
+    private Label replyMessageLabel;
     /**
      * Button to close the reply preview.
      */
-    @FXML private Button closeReplyButton;
-
-    // Message input area
+    @FXML
+    private Button closeReplyButton; // Message input area
     /**
      * Button to open attachment options.
      */
-    @FXML private Button attachmentButton;
+    @FXML
+    private Button attachmentButton;
     /**
      * TextArea for composing messages.
      */
-    @FXML private TextArea messageInputField;
+    @FXML
+    private TextArea messageInputField;
     /**
      * Button to send messages or start voice recording.
      */
-    @FXML private Button sendButton;
+    @FXML
+    private Button sendButton;
     /**
      * ImageView for the send button icon (e.g., send or microphone).
      */
-    @FXML private ImageView sendButtonIcon;
-
-    // Right panel elements
+    @FXML
+    private ImageView sendButtonIcon; // Right panel elements
     /**
      * VBox containing the right panel for user profile and media.
      */
-    @FXML private VBox rightPanel;
+    @FXML
+    private VBox rightPanel;
     /**
      * ImageView for the user's avatar in the right panel.
      */
-    @FXML private ImageView profileAvatarImage;
+    @FXML
+    private ImageView profileAvatarImage;
     /**
      * Label showing the user's name in the right panel.
      */
-    @FXML private Label profileNameLabel;
+    @FXML
+    private Label profileNameLabel;
     /**
      * Label showing the user's username in the right panel.
      */
-    @FXML private Label profileUsernameLabel;
+    @FXML
+    private Label profileUsernameLabel;
     /**
      * Label showing the user's status (e.g., online or last seen).
      */
-    @FXML private Label profileStatusLabel;
+    @FXML
+    private Label profileStatusLabel;
     /**
      * Label showing the user's phone number in the right panel.
      */
-    @FXML private Label profilePhoneLabel;
+    @FXML
+    private Label profilePhoneLabel;
     /**
      * Button to initiate a voice call from the right panel.
      */
-    @FXML private Button profileCallButton;
+    @FXML
+    private Button profileCallButton;
     /**
      * Button to initiate a video call from the right panel.
      */
-    @FXML private Button profileVideoButton;
+    @FXML
+    private Button profileVideoButton;
     /**
      * Button to search within the chat from the right panel.
      */
-    @FXML private Button profileSearchButton;
+    @FXML
+    private Button profileSearchButton;
     /**
      * Label showing the notification status in the right panel.
      */
-    @FXML private Label notificationStatusLabel;
+    @FXML
+    private Label notificationStatusLabel;
     /**
      * Button to toggle notifications in the right panel.
      */
-    @FXML private JFXToggleButton notificationsToggle;
+    @FXML
+    private JFXToggleButton notificationsToggle;
     /**
      * Handle about HBox click
      */
-    @FXML private HBox MoreHBox;
-    @FXML private HBox DeleteContactBox;
+    @FXML
+    private HBox MoreHBox;
+    @FXML
+    private HBox DeleteContactBox;
     /**
      * Handle right panel
      */
-    @FXML private Button closeRightPanelButton;
-
-    // ============ DATA AND STATE ============
+    @FXML
+    private Button closeRightPanelButton; // ============ DATA AND STATE ============
     /**
      * Default users name.
      */
@@ -366,9 +403,7 @@ public class MainChatController implements Initializable {
     /**
      * editingMessageBubble VBox.
      */
-    private VBox editingMessageBubble = null;
-
-    // Animation timelines
+    private VBox editingMessageBubble = null; // Animation timelines
     /**
      * Timeline for typing animation.
      */
@@ -384,9 +419,7 @@ public class MainChatController implements Initializable {
     /**
      * ParallelTransition for reply animation.
      */
-    private ParallelTransition replyPreviewAnimation;
-
-    // State flags
+    private ParallelTransition replyPreviewAnimation; // State flags
     /**
      * Flag indicating if dark theme is active.
      */
@@ -406,9 +439,7 @@ public class MainChatController implements Initializable {
     /**
      * Count of unread messages when scrolled up.
      */
-    private int unreadScrollCount = 0;
-
-    // Sidebars settings
+    private int unreadScrollCount = 0; // Sidebars settings
     /**
      * Initial X position of the left sidebar.
      */
@@ -418,12 +449,12 @@ public class MainChatController implements Initializable {
      */
     private double rightInitialX;
     private ReplyInfo activeReplyInfo = null;
-
-    @FXML private StackPane messageInputWrapper;
-    @FXML private VBox messageInputContainer;
-    @FXML private Button channelMuteToggleButton;
-
-    // Sidebar Menu
+    @FXML
+    private StackPane messageInputWrapper;
+    @FXML
+    private VBox messageInputContainer;
+    @FXML
+    private Button channelMuteToggleButton; // Sidebar Menu
     /**
      * Controller for the sidebar menu.
      */
@@ -448,6 +479,18 @@ public class MainChatController implements Initializable {
     private FileDownloadService fileDownloadService;
     //private UserIdentity currentUser;
     private final Gson gson = new Gson();
+
+    // ================== VOICE MESSAGE IMPLEMENTATION: START ==================
+    private boolean isRecording = false;
+    private AudioFormat audioFormat;
+    private TargetDataLine targetDataLine;
+    private Thread recordingThread;
+    private File tempAudioFile;
+    private MediaPlayer activeMediaPlayer;
+    private VBox currentlyPlayingVoiceBubble;
+    private DocumentInfo currentlyPlayingAudioInfo;
+    private Timeline recordingVisualTimeline; // For UI feedback during recording
+
 public ChatService getChatService() {
     return chatService;
 }
@@ -462,9 +505,11 @@ public ChatService getChatService() {
         fileDownloadService.initialize();;
         chatUIService = connectionManager.getClient().getServiceProvider().GetService(ChatUIService.class);
         chatUIService.setActiveChatController(this);
+
         typingTimer = new Timer(true);
         searchTimer = new Timer(true);
         //currentUser = connectionManager.getClient().getUserIdentity();
+
         initializeSidebarsSplitPane();
         initializeData();
         setupChatList();
@@ -472,6 +517,7 @@ public ChatService getChatService() {
         setupMessageInputFormatting();
         setupEventHandlers();
         setupAnimations();
+
         // TODO: Implement keyboard shortcut setup for enhanced navigation.
         loadInitialState();
     }
@@ -479,16 +525,12 @@ public ChatService getChatService() {
         // Check if the message belongs to the currently opened chat
         if (currentSelectedChat != null && currentSelectedChat.getChatId().equals(message.getChatId().toString())) {
             String formattedTime = LocalDateTime.parse(message.getTimestamp()).format(DateTimeFormatter.ofPattern("HH:mm"));
-
             if (message.getMessageType() == MessageType.TEXT) {
-                addMessageBubble(message.getTextContent(), false, formattedTime, "received", message.getSenderName(),
-                        false, message.getRepliedToSenderName(), message.getRepliedToMessageContent(), message.getForwardedFromSenderName());
+                addMessageBubble(message.getTextContent(), false, formattedTime, "received", message.getSenderName(), false, message.getRepliedToSenderName(), message.getRepliedToMessageContent(), message.getForwardedFromSenderName());
             } else if (message.getMessageType() == MessageType.MEDIA) {
                 DocumentInfo docInfo = new DocumentInfo(message);
-                docInfo.setSenderName(message.getSenderName());
-                // For media, the bubble needs reply/forward info too.
-                HBox messageNode = addDocumentMessageBubble(docInfo, false, formattedTime, "received",
-                        message.getRepliedToSenderName(), message.getRepliedToMessageContent(), message.getForwardedFromSenderName());
+                docInfo.setSenderName(message.getSenderName()); // For media, the bubble needs reply/forward info too.
+                HBox messageNode = addDocumentMessageBubble(docInfo, false, formattedTime, "received", message.getRepliedToSenderName(), message.getRepliedToMessageContent(), message.getForwardedFromSenderName());
             }
 
             if (messagesScrollPane.getVvalue() > 0.9) {
@@ -499,38 +541,35 @@ public ChatService getChatService() {
         }
 
         // Update the corresponding chat item in the list
-        allChatUsers.stream()
-                .filter(user -> user.getChatId().equals(message.getChatId().toString()))
-                .findFirst()
-                .ifPresent(user -> {
-                    String notificationMessage = message.getTextContent() != null ? message.getTextContent() : "Media";
-                    user.setLastMessage(message.getTextContent() != null ? message.getTextContent() : "Media");
-                    user.setTime(message.getTimestamp());
-
-                    // Increment unread count only if the chat is not currently active
-                    if (currentSelectedChat == null || !currentSelectedChat.getChatId().equals(user.getChatId())) {
-                        try {
-                            int currentCount = Integer.parseInt(user.getNotificationsNumber());
-                            user.setNotificationsNumber(String.valueOf(currentCount + 1));
-                        } catch (NumberFormatException e) {
-                            user.setNotificationsNumber("1");
-                        }
-                    }
-                    if (!user.isMuted()) {
-                        SystemNotificationUtil.showNotification(user.getDisplayName(), notificationMessage);
-                    }
-                    sortAndRefreshChatList();
-                });
+        allChatUsers.stream().filter(user -> user.getChatId().equals(message.getChatId().toString())).findFirst().ifPresent(user -> {
+            String notificationMessage = message.getTextContent() != null ? message.getTextContent() : "Media";
+            user.setLastMessage(message.getTextContent() != null ? message.getTextContent() : "Media");
+            user.setTime(message.getTimestamp());
+            // Increment unread count only if the chat is not currently active
+            if (currentSelectedChat == null || !currentSelectedChat.getChatId().equals(user.getChatId())) {
+                try {
+                    int currentCount = Integer.parseInt(user.getNotificationsNumber());
+                    user.setNotificationsNumber(String.valueOf(currentCount + 1));
+                } catch (NumberFormatException e) {
+                    user.setNotificationsNumber("1");
+                }
+            }
+            if (!user.isMuted()) {
+                SystemNotificationUtil.showNotification(user.getDisplayName(), notificationMessage);
+            }
+            sortAndRefreshChatList();
+        });
     }
-
 
     private Label findStatusLabelInMessageNode(HBox messageNode) {
         if (messageNode == null || messageNode.getChildren().isEmpty() || !(messageNode.getChildren().getFirst() instanceof VBox bubble)) {
             return null;
         }
+
         if (bubble.getChildren().isEmpty() || !(bubble.getChildren().getLast() instanceof HBox timeContainer)) {
             return null;
         }
+
         for (var node : timeContainer.getChildren()) {
             if (node.getStyleClass().contains("message-status")) {
                 return (Label) node;
@@ -542,39 +581,27 @@ public ChatService getChatService() {
     public void handleMessageEdited(MessageEditedEventModel eventModel) {
         if (currentSelectedChat != null && currentSelectedChat.getChatId().equals(eventModel.getChatId().toString())) {
             Platform.runLater(() -> {
-                messagesContainer.getChildren().stream()
-                        .filter(node -> node instanceof HBox)
-                        .map(node -> (HBox) node)
-                        .flatMap(hBox -> hBox.getChildren().stream())
-                        .filter(node -> node instanceof VBox && node.getProperties().containsKey("messageId") && node.getProperties().get("messageId").equals(eventModel.getMessageId()))
-                        .map(node -> (VBox) node)
-                        .findFirst() // Use findFirst as messageId should be unique
-                        .ifPresent(bubble -> {
-                            // 1. Update the raw_text property for future actions like copy/edit
-                            updateMessage(bubble,eventModel.getNewContent());
+                messagesContainer.getChildren().stream().filter(node -> node instanceof HBox).map(node -> (HBox) node).flatMap(hBox -> hBox.getChildren().stream()).filter(node -> node instanceof VBox && node.getProperties().containsKey("messageId") && node.getProperties().get("messageId").equals(eventModel.getMessageId())).map(node -> (VBox) node).findFirst() // Use findFirst as messageId should be unique
+                        .ifPresent(bubble -> { // 1. Update the raw_text property for future actions like copy/edit
+                            updateMessage(bubble, eventModel.getNewContent());
                         });
             });
         }
+
         // Update chat list item last message if it was the edited one
-        allChatUsers.stream()
-                .filter(user -> user.getChatId().equals(eventModel.getChatId().toString()))
-                .findFirst()
-                .ifPresent(user -> {
-                    // Update with the clean new content. The cell controller will format it.
-                    user.setLastMessage(eventModel.getNewContent());
-                    user.setTime(eventModel.getTimestamp());
-                    sortAndRefreshChatList();
-                });
+        allChatUsers.stream().filter(user -> user.getChatId().equals(eventModel.getChatId().toString())).findFirst().ifPresent(user -> { // Update with the clean new content. The cell controller will format it.
+            user.setLastMessage(eventModel.getNewContent());
+            user.setTime(eventModel.getTimestamp());
+            sortAndRefreshChatList();
+        });
     }
+
 
     public void handleMessageDeleted(MessageDeletedEventModel eventModel) {
         if (currentSelectedChat != null && currentSelectedChat.getChatId().equals(eventModel.getChatId().toString())) {
             Platform.runLater(() -> {
                 // Find the message bubble by its ID and remove it
-                boolean removed = messagesContainer.getChildren().removeIf(node ->
-                        node instanceof HBox && ((HBox) node).getChildren().stream()
-                                .anyMatch(child -> child instanceof VBox && child.getProperties().containsKey("messageId") && child.getProperties().get("messageId").equals(eventModel.getMessageId()))
-                );
+                boolean removed = messagesContainer.getChildren().removeIf(node -> node instanceof HBox && ((HBox) node).getChildren().stream().anyMatch(child -> child instanceof VBox && child.getProperties().containsKey("messageId") && child.getProperties().get("messageId").equals(eventModel.getMessageId())));
                 if (removed) {
                     messagesContainer.requestLayout();
                 }
@@ -585,16 +612,13 @@ public ChatService getChatService() {
         }
         // Potentially update the chat list if the deleted message was the last one
         // This would require fetching the new last message for the chat.
-        allChatUsers.stream()
-                .filter(user -> user.getChatId().equals(eventModel.getChatId().toString()))
-                .findFirst()
-                .ifPresent(user -> {
-                    if (eventModel.isLastMessageDeleted()) {
-                        user.setLastMessage(eventModel.getNewLastMessageContent());
-                        user.setTime(eventModel.getNewLastMessageTimestamp());
-                    }
-                    sortAndRefreshChatList();
-                });
+        allChatUsers.stream().filter(user -> user.getChatId().equals(eventModel.getChatId().toString())).findFirst().ifPresent(user -> {
+            if (eventModel.isLastMessageDeleted()) {
+                user.setLastMessage(eventModel.getNewLastMessageContent());
+                user.setTime(eventModel.getNewLastMessageTimestamp());
+            }
+            sortAndRefreshChatList();
+        });
     }
 
 
@@ -602,32 +626,26 @@ public ChatService getChatService() {
         if (currentSelectedChat != null && currentSelectedChat.getChatId().equals(eventModel.getChatId().toString())) {
             Platform.runLater(() -> {
                 // Find all outgoing messages before or at this timestamp and mark them as read
-                messagesContainer.getChildren().stream()
-                        .filter(node -> node instanceof HBox && node.getStyleClass().contains("outgoing"))
-                        .map(node -> (HBox) node)
-                        .filter(hBox -> hBox.getChildren().getFirst() instanceof VBox bubble && bubble.getProperties().containsKey("messageTimestamp"))
-                        .forEach(hBox -> {
-                            VBox bubble = (VBox) hBox.getChildren().getFirst();
-                            LocalDateTime messageTime = (LocalDateTime) bubble.getProperties().get("messageTimestamp");
-                            LocalDateTime readTime = LocalDateTime.parse(eventModel.getReadTimestamp());
-                            if (!messageTime.isAfter(readTime)) {
-                                updateMessageStatus(hBox, "read", null);
-                            }
-                        });
+                messagesContainer.getChildren().stream().filter(node -> node instanceof HBox && node.getStyleClass().contains("outgoing")).map(node -> (HBox) node).filter(hBox -> hBox.getChildren().getFirst() instanceof VBox bubble && bubble.getProperties().containsKey("messageTimestamp")).forEach(hBox -> {
+                    VBox bubble = (VBox) hBox.getChildren().getFirst();
+                    LocalDateTime messageTime = (LocalDateTime) bubble.getProperties().get("messageTimestamp");
+                    LocalDateTime readTime = LocalDateTime.parse(eventModel.getReadTimestamp());
+
+                    if (!messageTime.isAfter(readTime)) {
+                        updateMessageStatus(hBox, "read", null);
+                    }
+                });
             });
         }
 
         // This event means OUR messages have been read by the other party.
         // We need to update the status icon in the chat list, not our unread count.
-        allChatUsers.stream()
-                .filter(user -> user.getChatId().equals(eventModel.getChatId().toString()))
-                .findFirst()
-                .ifPresent(user -> {
-                    // CORRECT: Update the message status to 'read' (double tick)
-                    user.setMessageStatus("read");
-                    sortAndRefreshChatList();
-                });
+        allChatUsers.stream().filter(user -> user.getChatId().equals(eventModel.getChatId().toString())).findFirst().ifPresent(user -> { // CORRECT: Update the message status to 'read' (double tick)
+            user.setMessageStatus("read");
+            sortAndRefreshChatList();
+        });
     }
+
 
     public void handleUserTyping(UserIsTypingEventModel eventModel) {
         if (currentSelectedChat != null && currentSelectedChat.getChatId().equals(eventModel.getChatId().toString())) {
@@ -641,19 +659,15 @@ public ChatService getChatService() {
             });
         }
         // Also update the typing status in the chat list preview
-        allChatUsers.stream()
-                .filter(user -> user.getChatId().equals(eventModel.getChatId().toString()))
-                .findFirst()
-                .ifPresent(user -> Platform.runLater(() -> {
-                    user.setTyping(eventModel.isTyping());
-                    if (eventModel.isTyping()) {
-                        user.setTypingUserName(eventModel.getSenderName());
-                    } else {
-                        user.setTypingUserName(null);
-                    }
-                }));
+        allChatUsers.stream().filter(user -> user.getChatId().equals(eventModel.getChatId().toString())).findFirst().ifPresent(user -> Platform.runLater(() -> {
+            user.setTyping(eventModel.isTyping());
+            if (eventModel.isTyping()) {
+                user.setTypingUserName(eventModel.getSenderName());
+            } else {
+                user.setTypingUserName(null);
+            }
+        }));
     }
-
 
 // Add these two new methods anywhere inside the MainChatController class.
 
@@ -1044,6 +1058,11 @@ public ChatService getChatService() {
      * Sets up event handlers for all interactive UI components.
      */
     private void setupEventHandlers() {
+        // ================== VOICE MESSAGE IMPLEMENTATION: START ==================
+        sendButton.setOnMousePressed(this::handleSendButtonPress);
+        sendButton.setOnMouseReleased(this::handleSendButtonRelease);
+        // ================== VOICE MESSAGE IMPLEMENTATION: END ====================
+
         // Sidebar buttons
         menuButton.setOnAction(e -> showSideBar());
         settingsButton.setOnAction(e -> openSettings());
@@ -1052,12 +1071,11 @@ public ChatService getChatService() {
         searchField.textProperty().addListener((obs, oldText, newText) -> debounceSearch(newText));
 
         // Header buttons
-
-            headerAvatarImage.setOnMouseClicked(e -> {
-                if (currentSelectedChat != null) {
-                    showProfileDialog();
-                }
-            });
+        headerAvatarImage.setOnMouseClicked(e -> {
+            if (currentSelectedChat != null) {
+                showProfileDialog();
+            }
+        });
         searchInChatButton.setOnAction(e -> showSearchInChat());
         callButton.setOnAction(e -> startVoiceCall());
         videoCallButton.setOnAction(e -> startVideoCall());
@@ -1065,7 +1083,7 @@ public ChatService getChatService() {
 
         // Message input buttons
         attachmentButton.setOnAction(e -> attachDocument());
-        sendButton.setOnAction(e -> handleSendAction());
+        // sendButton.setOnAction(e -> handleSendAction()); // This is replaced
 
         // Scroll and navigation
         scrollToBottomButton.setOnAction(e -> scrollToBottom());
@@ -1089,6 +1107,7 @@ public ChatService getChatService() {
 
     private void handleDeleteContact() {
         if (currentSelectedChat == null) return;
+
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Delete Message");
         alert.setHeaderText("Are you sure you want to delete this contact?");
@@ -1097,28 +1116,24 @@ public ChatService getChatService() {
         alert.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
                 Task<RpcResponse<String>> deleteTask = chatService.removeContact(UUID.fromString(currentSelectedChat.getChatId()));
-
                 deleteTask.setOnSucceeded(event -> {
                     RpcResponse<String> result = deleteTask.getValue();
                     if (result.getStatusCode() != StatusCode.OK) {
                         Platform.runLater(() -> showTemporaryNotification("Failed to delete contact: " + result.getMessage() + "\n"));
-                    }else{
-                        allChatUsers.stream()
-                                .filter(user -> user.getChatId().equals(currentSelectedChat.getUserId()))
-                                .findFirst()
-                                .ifPresent(user -> {
-                                    if(!user.getIsContact()) {
-                                            user.setDisplayName(result.getPayload());
-                                        if (currentSelectedChat != null && currentSelectedChat.getChatId().equals(user.getChatId())) {
-                                            Platform.runLater(() -> {
-                                                updateChatHeader(user);
-                                                if (isRightPanelVisible) {
-                                                    updateRightPanel(user);
-                                                }
-                                            });
+                    } else {
+                        allChatUsers.stream().filter(user -> user.getChatId().equals(currentSelectedChat.getUserId())).findFirst().ifPresent(user -> {
+                            if (!user.getIsContact()) {
+                                user.setDisplayName(result.getPayload());
+                                if (currentSelectedChat != null && currentSelectedChat.getChatId().equals(user.getChatId())) {
+                                    Platform.runLater(() -> {
+                                        updateChatHeader(user);
+                                        if (isRightPanelVisible) {
+                                            updateRightPanel(user);
                                         }
-                                    }
-                                });
+                                    });
+                                }
+                            }
+                        });
                     }
                 });
                 deleteTask.setOnFailed(event -> {
@@ -1221,6 +1236,10 @@ public ChatService getChatService() {
     private void selectChat(ChatViewModel user) {
         if (user == null) return;
 
+        // ================== VOICE MESSAGE IMPLEMENTATION: START ==================
+        stopCurrentPlayback();
+        // ================== VOICE MESSAGE IMPLEMENTATION: END ====================
+
         // *** ADD THIS BLOCK TO FIX THE TYPING INDICATOR ***
         // When switching chats, cancel any pending typing-stop task for the old chat.
         if (typingStopTask != null) {
@@ -1232,7 +1251,6 @@ public ChatService getChatService() {
             isCurrentlyTyping = false;
         }
         // *** END OF ADDED BLOCK ***
-
         currentSelectedChat = user;
 
         // Update UI state
@@ -1360,7 +1378,6 @@ public ChatService getChatService() {
         }
 
         Task<RpcResponse<GetMessageOutputModel[]>> getMessagesTask = chatService.fetchMessagesForChat(UUID.fromString(user.getChatId()));
-
         getMessagesTask.setOnSucceeded(event -> {
             RpcResponse<GetMessageOutputModel[]> response = getMessagesTask.getValue();
             if (response.getStatusCode() == StatusCode.OK && response.getPayload() != null) {
@@ -1372,27 +1389,38 @@ public ChatService getChatService() {
                     }
                     List<GetMessageOutputModel> sortedMessages = new ArrayList<>(Arrays.asList(response.getPayload()));
                     sortedMessages.sort(Comparator.comparing(msg -> LocalDateTime.parse(msg.getTimestamp())));
+
                     for (GetMessageOutputModel msg : sortedMessages) {
                         LocalDateTime timestamp = LocalDateTime.parse(msg.getTimestamp());
                         String formattedTime = timestamp.format(DateTimeFormatter.ofPattern("HH:mm"));
                         String senderName = msg.getOutgoing() ? null : msg.getSenderName();
                         String senderProfilePictureId = msg.getOutgoing() ? null : msg.getSenderProfilePictureId();
+
                         if (msg.getMessageType() == MessageType.TEXT && msg.getTextContent() != null) {
                             String status = msg.getOutgoing() ? msg.getMessageStatus() : "received";
-                            HBox messageNode = addMessageBubble(msg.getTextContent(), msg.getOutgoing(), formattedTime, status, senderName, msg.isEdited(),
-                                    msg.getRepliedToSenderName(), msg.getRepliedToMessageContent(), msg.getForwardedFromSenderName(),senderProfilePictureId);
-                            // Store messageId and timestamp for later updates
-                            messageNode.getChildren().getFirst().getProperties().put("messageId", msg.getMessageId());
-                            messageNode.getChildren().getFirst().getProperties().put("messageTimestamp", timestamp);
+                            HBox messageNode = addMessageBubble(msg.getTextContent(), msg.getOutgoing(), formattedTime, status, senderName, msg.isEdited(), msg.getRepliedToSenderName(), msg.getRepliedToMessageContent(), msg.getForwardedFromSenderName(), senderProfilePictureId);
+
+                            // ================== FIX: USE THE HELPER METHOD ==================
+                            VBox bubble = getBubbleFromMessageNode(messageNode);
+                            if (bubble != null) {
+                                bubble.getProperties().put("messageId", msg.getMessageId());
+                                bubble.getProperties().put("messageTimestamp", timestamp);
+                            }
+                            // ================================================================
+
                         } else if (msg.getMessageType() == MessageType.MEDIA && msg.getMediaId() != null) {
                             DocumentInfo docInfo = new DocumentInfo(msg);
                             docInfo.setSenderName(senderName);
                             String status = msg.getOutgoing() ? msg.getMessageStatus() : "received";
-                            HBox messageNode = addDocumentMessageBubble(docInfo, msg.getOutgoing(), formattedTime, status,
-                                    msg.getRepliedToSenderName(), msg.getRepliedToMessageContent(), msg.getForwardedFromSenderName(),senderProfilePictureId);
-                            // Store messageId and timestamp for later updates
-                            ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageId", msg.getMessageId());
-                            ((VBox) messageNode.getChildren().getFirst()).getProperties().put("messageTimestamp", timestamp);
+                            HBox messageNode = addDocumentMessageBubble(docInfo, msg.getOutgoing(), formattedTime, status, msg.getRepliedToSenderName(), msg.getRepliedToMessageContent(), msg.getForwardedFromSenderName(), senderProfilePictureId);
+
+                            // ================== FIX: USE THE HELPER METHOD ==================
+                            VBox bubble = getBubbleFromMessageNode(messageNode);
+                            if (bubble != null) {
+                                bubble.getProperties().put("messageId", msg.getMessageId());
+                                bubble.getProperties().put("messageTimestamp", timestamp);
+                            }
+                            // ================================================================
                         }
                     }
                     Platform.runLater(this::scrollToBottom);
@@ -1402,12 +1430,10 @@ public ChatService getChatService() {
                 Platform.runLater(this::showEmptyChatState);
             }
         });
-
         getMessagesTask.setOnFailed(event -> {
             getMessagesTask.getException().printStackTrace();
             Platform.runLater(this::showEmptyChatState);
         });
-
         new Thread(getMessagesTask).start();
     }
 
@@ -2169,7 +2195,7 @@ public ChatService getChatService() {
 
         if (selectedFile != null) {
             // Validate file size (e.g., max 100MB)
-            long maxFileSize = 100 * 1024 * 1024; // 100MB in bytes
+            long maxFileSize = 2000 * 1024 * 1024; // 100MB in bytes
             if (selectedFile.length() > maxFileSize) {
                 showTemporaryNotification("File Too Large\nThe selected file is too large. Maximum file size is 100MB.\n");
                 return;
@@ -2178,6 +2204,23 @@ public ChatService getChatService() {
             // Process the file attachment
             processDocumentAttachment(selectedFile);
         }
+    }
+
+    /**
+     * Safely retrieves the message bubble (VBox) from its container (HBox),
+     * regardless of its position (first or last child).
+     * @param messageNode The HBox containing the message bubble and potentially an avatar.
+     * @return The VBox bubble if found, otherwise null.
+     */
+    private VBox getBubbleFromMessageNode(HBox messageNode) {
+        if (messageNode == null) return null;
+        // The VBox bubble can be the first or last child.
+        // The safest way is to find it by its type.
+        return messageNode.getChildren().stream()
+                .filter(node -> node instanceof VBox)
+                .map(node -> (VBox) node)
+                .findFirst()
+                .orElse(null);
     }
 
     /**
@@ -2240,12 +2283,10 @@ public ChatService getChatService() {
 
                 uploadTask.setOnSucceeded(e -> {
                     app.unregisterTask(fileId);
-
                     SendMessageInputModel messageInput = new SendMessageInputModel();
                     messageInput.setChatId(UUID.fromString(currentSelectedChat.getChatId()));
                     messageInput.setMessageType(MessageType.MEDIA);
                     messageInput.setMediaId(mediaId);
-
                     if (activeReplyInfo != null) {
                         messageInput.setRepliedToMessageId(activeReplyInfo.messageId);
                     }
@@ -2262,9 +2303,44 @@ public ChatService getChatService() {
                                     updateMessageStatus(finalMessageNode, "sent", LocalDateTime.parse(smResponse.getPayload().getTimestamp()).format(DateTimeFormatter.ofPattern("HH:mm")));
                                     finalBubble.getProperties().put("messageId", smResponse.getPayload().getMessageId());
                                     finalBubble.getProperties().put("messageTimestamp", LocalDateTime.parse(smResponse.getPayload().getTimestamp()));
+
+                                    // ================== FIX: USE getOriginalPath() ==================
+                                    DocumentInfo oldDocInfo = (DocumentInfo) finalBubble.getUserData();
+                                    if (oldDocInfo != null && oldDocInfo.getOriginalPath() != null) {
+                                        try {
+                                            File sourceFile = new File(oldDocInfo.getOriginalPath());
+                                            if (sourceFile.exists()) {
+                                                File destinationDir = fileDownloadService.getDocumentCacheDir().toFile();
+                                                File destinationFile = new File(destinationDir, sourceFile.getName());
+
+                                                Files.move(sourceFile.toPath(), destinationFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+                                                DocumentInfo newCorrectDocInfo = new DocumentInfo(
+                                                        destinationFile.getName(),
+                                                        destinationFile.length(),
+                                                        getFileExtension(destinationFile),
+                                                        null
+                                                );
+                                                newCorrectDocInfo.setStoredPath(destinationFile.getAbsolutePath());
+                                                newCorrectDocInfo.setFileId(fileId);
+
+                                                finalBubble.setUserData(newCorrectDocInfo);
+
+                                                System.out.println("Moved temp file to cache and updated UserData on bubble.");
+                                            }
+                                        } catch (IOException ioException) {
+                                            System.err.println("Failed to move temp file to cache: " + ioException.getMessage());
+                                        }
+                                    }
+                                    // ===============================================================
+
                                     finalizeDocumentBubbleDisplay(finalBubble);
 
-                                    currentSelectedChat.setLastMessage(docInfo.getFileName());
+                                    String lastMessageText = "Voice Message";
+                                    if (!"voice".equalsIgnoreCase(getFileExtension(file))) {
+                                        lastMessageText = "File";
+                                    }
+                                    currentSelectedChat.setLastMessage(lastMessageText);
                                     currentSelectedChat.setTime(smResponse.getPayload().getTimestamp());
                                     currentSelectedChat.setMessageStatus("sent");
                                     sortAndRefreshChatList();
@@ -2277,14 +2353,11 @@ public ChatService getChatService() {
                     sendMessageTask.setOnFailed(failEvent -> Platform.runLater(() -> updateMessageStatus(temporaryMessageNodes.remove(tempId), "failed", null)));
                     new Thread(sendMessageTask).start();
                 });
-
                 uploadTask.setOnFailed(failEvent -> {
                     app.unregisterTask(fileId);
                     Platform.runLater(() -> updateMessageStatus(temporaryMessageNodes.remove(tempId), "failed", null));
                 });
-
                 backgroundExecutor.submit(uploadTask);
-
             } catch (Exception ex) {
                 Platform.runLater(() -> updateMessageStatus(temporaryMessageNodes.remove(tempId), "failed", null));
                 ex.printStackTrace();
@@ -2304,6 +2377,41 @@ public ChatService getChatService() {
 
         addReplyAndForwardHeaders(bubble, repliedToSenderName, repliedToMessageContent, forwardedFromName);
 
+        // ================== VOICE/FILE DISPATCHER: START ==================
+        boolean isVoiceMessage = "voice".equalsIgnoreCase(docInfo.getFileExtension());
+        if (isVoiceMessage) {
+            buildVoiceMessageUI(bubble, docInfo, isOutgoing);
+        } else {
+            buildGenericFileUI(bubble, docInfo, isOutgoing, status);
+        }
+        // ================== VOICE/FILE DISPATCHER: END ====================
+
+        HBox timeContainer = createTimeContainer(time, status, isOutgoing);
+        bubble.getChildren().add(timeContainer);
+
+        bubble.setOnMouseClicked(event -> {
+            if (event.getButton() == MouseButton.SECONDARY) {
+                showMessageContextMenu(event);
+            } else if (event.getButton() == MouseButton.PRIMARY && !isVoiceMessage) {
+                // Click handling for generic files
+                if (docInfo.getStoredPath() != null && !docInfo.getStoredPath().isEmpty()) {
+                    File currentFileState = new File(docInfo.getStoredPath());
+                    if (currentFileState.exists()) {
+                        openDocument(docInfo);
+                    }
+                }
+            }
+            event.consume();
+        });
+
+        bubble.setUserData(docInfo);
+        return bubble;
+    }
+
+    /**
+     * Builds the UI for a generic file message (non-voice).
+     */
+    private void buildGenericFileUI(VBox bubble, DocumentInfo docInfo, boolean isOutgoing, String status) {
         HBox docContainer = new HBox(12);
         docContainer.setAlignment(Pos.CENTER_LEFT);
 
@@ -2339,10 +2447,12 @@ public ChatService getChatService() {
         fileDetails.getStyleClass().addAll("document-details", isOutgoing ? "outgoing" : "incoming");
         fileInfo.getChildren().addAll(fileName, fileDetails);
 
+        // Store components in properties for later access
         bubble.getProperties().put("progressIndicator", progressIndicator);
         bubble.getProperties().put("actionButton", actionButton);
         bubble.getProperties().put("fileIcon", fileIcon);
         bubble.getProperties().put("iconBackground", iconBackground);
+
 
         boolean isFileDownloaded;
         if (docInfo.getStoredPath() != null && !docInfo.getStoredPath().isEmpty()) {
@@ -2351,7 +2461,6 @@ public ChatService getChatService() {
         } else {
             isFileDownloaded = false;
         }
-        // =================================================================================
 
         if (isOutgoing && "sending".equals(status)) {
             progressIndicator.setVisible(true);
@@ -2368,60 +2477,44 @@ public ChatService getChatService() {
             actionButton.setVisible(true);
             actionButton.setGraphic(createIconView("/Client/images/context-menu/download.png", 24));
             actionButton.setOnAction(e -> startDownload(docInfo, progressIndicator, actionButton, bubble));
-
             fileIcon.setVisible(false);
             iconBackground.setVisible(false);
         }
 
         docContainer.getChildren().addAll(iconStack, fileInfo);
+        bubble.getChildren().add(docContainer);
+    }
 
+    /**
+     * Creates the HBox containing the time and status icon for a message.
+     */
+    private HBox createTimeContainer(String time, String status, boolean isOutgoing) {
         HBox timeContainer = new HBox(4);
         timeContainer.setAlignment(Pos.CENTER_RIGHT);
         timeContainer.setPadding(new Insets(4, 0, 0, 0));
         Label timeLabel = new Label(time);
         timeLabel.getStyleClass().addAll("message-time", isOutgoing ? "outgoing" : "incoming");
         timeContainer.getChildren().add(timeLabel);
-
         if (isOutgoing && status != null) {
             String imagePath = switch (status.toLowerCase()) {
-                case "sending" -> "/Client/images/status/sending.png"; // Clock icon
-                case "sent", "delivered" -> "/Client/images/status/sent.png"; // One tick
-                case "read" -> "/Client/images/status/read.png"; // Blue double tick
+                case "sending" -> "/Client/images/status/sending.png";
+                case "sent", "delivered" -> "/Client/images/status/sent.png";
+                case "read" -> "/Client/images/status/read.png";
                 default -> null;
             };
-
             if (imagePath != null) {
                 try {
                     ImageView statusIcon = new ImageView(new Image(Objects.requireNonNull(getClass().getResource(imagePath)).toExternalForm()));
                     statusIcon.setFitHeight(16);
                     statusIcon.setPreserveRatio(true);
                     statusIcon.getStyleClass().add("status-icon-image");
-
                     timeContainer.getChildren().add(statusIcon);
                 } catch (Exception e) {
                     System.err.println("Could not load status icon: " + imagePath);
                 }
             }
         }
-
-        bubble.getChildren().addAll(docContainer, timeContainer);
-
-        bubble.setOnMouseClicked(event -> {
-            if (event.getButton() == MouseButton.SECONDARY) {
-                showMessageContextMenu(event);
-            } else if (event.getButton() == MouseButton.PRIMARY) {
-                if (docInfo.getStoredPath() != null && !docInfo.getStoredPath().isEmpty()) {
-                    File currentFileState = new File(docInfo.getStoredPath());
-                    if (currentFileState.exists()) {
-                        openDocument(docInfo);
-                    }
-                }
-            }
-            event.consume();
-        });
-
-        bubble.setUserData(docInfo);
-        return bubble;
+        return timeContainer;
     }
 
     /**
@@ -2475,61 +2568,6 @@ public ChatService getChatService() {
         });
     }
 
-    /**
-     * Starts the download for a given media file and updates the UI accordingly.
-     */
-    private void startDownload(DocumentInfo docInfo, ProgressIndicator progressIndicator, Button actionButton, VBox bubble) {
-        String fileId = docInfo.getFileId();
-        if (fileId == null || activeDownloadTasks.containsKey(fileId)) return;
-
-        actionButton.setGraphic(createIconView("/Client/images/context-menu/delete.png", 24));
-        actionButton.setOnAction(e -> cancelDownload(fileId));
-        progressIndicator.setProgress(0);
-        progressIndicator.setVisible(true);
-
-        actionButton.setGraphic(null);
-
-
-        var app = connectionManager.getClient();
-        var transferManager = app.getFileTransferManager();
-        var executor = app.getBackgroundExecutor();
-
-        executor.submit(() -> {
-            try {
-                String destinationPath = fileDownloadService.getDocumentCacheDir().toString();
-                TransferInfo info = transferManager.initiateDownload(fileId, destinationPath);
-                if (info == null) {
-                    Platform.runLater(() -> resetDownloadUI(progressIndicator, actionButton, docInfo, bubble, "Failed to get file info."));
-                    return;
-                }
-                docInfo.setStoredPath(new File(info.getDestinationPath(), info.getFileName() + "." + info.getFileExtension()).getPath());
-
-                IProgressListener listener = (transferred, total) -> {
-                    double progress = (total > 0) ? ((double) transferred / total) : 0;
-                    Platform.runLater(() -> progressIndicator.setProgress(progress));
-                };
-
-                DownloadTask downloadTask = new DownloadTask(transferManager, info, null, fileId, listener);
-
-                downloadTask.setOnSucceeded(e -> {
-                    activeDownloadTasks.remove(fileId);
-                    // =========================== REFACTORING ===========================
-                    finalizeDocumentBubbleDisplay(bubble);
-                    // ===================================================================
-                });;
-
-                downloadTask.setOnFailed(e -> Platform.runLater(() -> resetDownloadUI(progressIndicator, actionButton, docInfo, bubble, "Download failed.")));
-                downloadTask.setOnCancelled(e -> Platform.runLater(() -> resetDownloadUI(progressIndicator, actionButton, docInfo, bubble, "Download cancelled.")));
-
-                activeDownloadTasks.put(fileId, downloadTask);
-                executor.submit(downloadTask);
-
-            } catch (IOException e) {
-                Platform.runLater(() -> resetDownloadUI(progressIndicator, actionButton, docInfo, bubble, "Error starting download."));
-                e.printStackTrace();
-            }
-        });
-    }
     /**
      * Creates a document message bubble with file info and controls
      */
@@ -2928,6 +2966,7 @@ public ChatService getChatService() {
                     return;
             }
         }
+
         if (event.isControlDown() && event.isShiftDown() && event.getCode() == KeyCode.P) {
             applyFormatting(SPOILER_MARKER_PREFIX, SPOILER_MARKER_SUFFIX);
             event.consume();
@@ -2942,7 +2981,12 @@ public ChatService getChatService() {
             } else {
                 // Send message with Enter
                 event.consume();
-                sendMessage();
+                // ================== VOICE MESSAGE IMPLEMENTATION: MODIFIED ==================
+                // handleSendAction is now obsolete, call sendMessage directly
+                if (!messageInputField.getText().trim().isEmpty()) {
+                    sendMessage();
+                }
+                // =========================================================================
             }
         } else if (event.getCode() == KeyCode.ESCAPE) {
             if (replyPreviewContainer.isVisible()) {
@@ -2954,10 +2998,6 @@ public ChatService getChatService() {
         }
     }
 
-    /**
-     * Handles the send button action based on input state.
-     * TODO: Implement full send action logic.
-     */
     private void handleSendAction() {
         String text = messageInputField.getText().trim();
         if (editingMessageBubble != null) {
@@ -2968,14 +3008,446 @@ public ChatService getChatService() {
                 }
             }
             closeReplyPreview();
-        }
-        else if (!text.isEmpty()) {
+        } else if (!text.isEmpty()) {
             sendMessage();
         } else {
-            // Handle voice message recording
-            startVoiceRecording();
+            // Voice message logic is now handled by mouse press/release events
+            System.out.println("Voice recording should start here (handled by OnMousePressed).");
         }
     }
+
+
+    // ================== VOICE MESSAGE IMPLEMENTATION: START ==================
+    /**
+     * Handles the mouse press event on the send button.
+     * Starts voice recording if the input field is empty.
+     */
+    private void handleSendButtonPress(MouseEvent event) {
+        if (messageInputField.getText().trim().isEmpty() && !isEditing) {
+            startRecording();
+        }
+    }
+
+    /**
+     * Handles the mouse release event on the send button.
+     * Stops recording and sends the voice message, or sends a text message.
+     */
+    private void handleSendButtonRelease(MouseEvent event) {
+        if (isRecording) {
+            stopAndSendRecording();
+        } else if (!messageInputField.getText().trim().isEmpty()) {
+            if (isEditing && editingMessageBubble != null) {
+                String text = messageInputField.getText().trim();
+                if (!text.isEmpty() && !text.equals(originalEditText)) {
+                    UUID messageId = (UUID) editingMessageBubble.getProperties().get("messageId");
+                    if (messageId != null) {
+                        editMessage(messageId, text);
+                    }
+                }
+                closeReplyPreview();
+                messageInputField.clear();
+            } else {
+                sendMessage();
+            }
+        }
+    }
+
+    /**
+     * Starts the audio recording process.
+     */
+    private void startRecording() {
+        if (isRecording) return;
+        isRecording = true;
+        System.out.println("Recording started...");
+
+        // Update UI to show recording state
+        Platform.runLater(() -> {
+            sendButton.getStyleClass().add("recording");
+            // You can add more visual feedback here, like a blinking red dot
+        });
+
+        try {
+            audioFormat = new AudioFormat(44100, 16, 1, true, false);
+            DataLine.Info info = new DataLine.Info(TargetDataLine.class, audioFormat);
+            if (!AudioSystem.isLineSupported(info)) {
+                System.err.println("Audio line not supported");
+                isRecording = false;
+                return;
+            }
+
+            targetDataLine = (TargetDataLine) AudioSystem.getLine(info);
+            targetDataLine.open(audioFormat);
+            targetDataLine.start();
+
+            recordingThread = new Thread(() -> {
+                try {
+                    tempAudioFile = File.createTempFile("voice_message_", ".wav");
+                    AudioInputStream audioInputStream = new AudioInputStream(targetDataLine);
+                    AudioSystem.write(audioInputStream, AudioFileFormat.Type.WAVE, tempAudioFile);
+                } catch (IOException e) {
+                    System.err.println("Error while writing audio file: " + e.getMessage());
+                }
+            });
+            recordingThread.start();
+        } catch (LineUnavailableException e) {
+            System.err.println("Audio line unavailable: " + e.getMessage());
+            isRecording = false;
+        }
+    }
+
+    /**
+     * Stops the audio recording and initiates the upload process.
+     */
+    private void stopAndSendRecording() {
+        if (!isRecording) return;
+        isRecording = false;
+        System.out.println("Recording stopped...");
+
+        Platform.runLater(() -> sendButton.getStyleClass().remove("recording"));
+
+        if (targetDataLine != null) {
+            targetDataLine.stop();
+            targetDataLine.close();
+        }
+
+        if (recordingThread != null && recordingThread.isAlive()) {
+            try {
+                recordingThread.join(500);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        if (tempAudioFile != null && tempAudioFile.exists() && tempAudioFile.length() > 44) {
+            try {
+                // ================== FIX: GET DURATION AND RENAME FILE ==================
+                int duration = getWavDuration(tempAudioFile);
+                String newFileName = "voice_" + System.currentTimeMillis() + "_" + duration + "s.voice";
+                File voiceFile = new File(tempAudioFile.getParent(), newFileName);
+
+                if (tempAudioFile.renameTo(voiceFile)) {
+                    processDocumentAttachment(voiceFile);
+                } else {
+                    System.err.println("Failed to rename temp audio file.");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            System.out.println("Recording was too short or failed.");
+        }
+    }
+
+
+    /**
+     * Builds the UI specific to a voice message.
+     */
+    private void buildVoiceMessageUI(VBox bubble, DocumentInfo docInfo, boolean isOutgoing) {
+        HBox voiceContainer = new HBox(10);
+        voiceContainer.setAlignment(Pos.CENTER_LEFT);
+        voiceContainer.setPadding(new Insets(5));
+
+        Button playPauseButton = new Button();
+        playPauseButton.getStyleClass().add("voice-play-button");
+        playPauseButton.setGraphic(createIconView("/Client/images/play-button.png", 24));
+
+        Slider progressBar = new Slider(0, 100, 0);
+        HBox.setHgrow(progressBar, Priority.ALWAYS);
+        progressBar.getStyleClass().add("voice-progress-bar");
+
+        Label durationLabel = new Label("00:00");
+        durationLabel.getStyleClass().addAll("document-details", isOutgoing ? "outgoing" : "incoming");
+
+        parseDurationFromFilename(docInfo.getFileName()).ifPresent(duration -> {
+            durationLabel.setText(formatDuration(Duration.seconds(duration)));
+            progressBar.setMax(duration);
+        });
+
+        voiceContainer.getChildren().addAll(playPauseButton, progressBar, durationLabel);
+        bubble.getChildren().add(voiceContainer);
+
+        bubble.getProperties().put("playPauseButton", playPauseButton);
+        bubble.getProperties().put("progressBar", progressBar);
+        bubble.getProperties().put("durationLabel", durationLabel);
+
+        playPauseButton.setOnAction(e -> playVoiceMessage(bubble));
+    }
+
+
+    /**
+     * Handles the logic to play a voice message.
+     */
+    private void playVoiceMessage(VBox bubble) {
+        DocumentInfo docInfo = (DocumentInfo) bubble.getUserData();
+        if (docInfo == null) {
+            System.err.println("Cannot play voice: DocumentInfo is missing from the message bubble.");
+            return;
+        }
+
+        if (docInfo.equals(currentlyPlayingAudioInfo) && activeMediaPlayer != null) {
+            // This is the currently playing message, so toggle play/pause
+            if (activeMediaPlayer.getStatus() == MediaPlayer.Status.PLAYING) {
+                activeMediaPlayer.pause();
+                ((Button) bubble.getProperties().get("playPauseButton")).setGraphic(createIconView("/Client/images/play-button.png", 24));
+            } else {
+                activeMediaPlayer.play();
+                ((Button) bubble.getProperties().get("playPauseButton")).setGraphic(createIconView("/Client/images/pause-button.png", 24));
+            }
+            return;
+        }
+
+        // Stop any currently playing audio before starting a new one
+        stopCurrentPlayback();
+
+        if (docInfo.getStoredPath() == null || !new File(docInfo.getStoredPath()).exists()) {
+            // File not downloaded, start download first
+            ProgressIndicator tempIndicator = new ProgressIndicator(-1); // Indeterminate
+            tempIndicator.setPrefSize(24, 24);
+            Button playButton = (Button) bubble.getProperties().get("playPauseButton");
+            playButton.setGraphic(tempIndicator);
+
+            startDownload(docInfo, null, null, bubble).thenRun(() -> {
+                Platform.runLater(() -> playVoiceMessage(bubble));
+            });
+            return;
+        }
+
+        try {
+            File audioFile = new File(docInfo.getStoredPath());
+            Media media = new Media(audioFile.toURI().toString());
+            activeMediaPlayer = new MediaPlayer(media);
+
+            currentlyPlayingVoiceBubble = bubble;
+            currentlyPlayingAudioInfo = docInfo;
+            Button playPauseButton = (Button) bubble.getProperties().get("playPauseButton");
+            Slider progressBar = (Slider) bubble.getProperties().get("progressBar");
+            Label durationLabel = (Label) bubble.getProperties().get("durationLabel");
+
+            activeMediaPlayer.setOnReady(() -> {
+                Duration totalDuration = activeMediaPlayer.getTotalDuration();
+                bubble.getProperties().put("totalDuration", totalDuration);
+                progressBar.setMax(totalDuration.toSeconds());
+                durationLabel.setText(formatDuration(totalDuration));
+            });
+
+            activeMediaPlayer.currentTimeProperty().addListener((obs, oldTime, newTime) -> {
+                if (activeMediaPlayer != null) {
+                    progressBar.setValue(newTime.toSeconds());
+                    Duration totalDuration = activeMediaPlayer.getTotalDuration();
+                    durationLabel.setText(formatDuration(newTime) + " / " + formatDuration(totalDuration));
+                }
+            });
+
+            activeMediaPlayer.setOnEndOfMedia(this::stopCurrentPlayback);
+            activeMediaPlayer.setOnError(() -> {
+                System.err.println("MediaPlayer Error: " + activeMediaPlayer.getError());
+                stopCurrentPlayback();
+            });
+
+            activeMediaPlayer.play();
+            playPauseButton.setGraphic(createIconView("/Client/images/pause-button.png", 24));
+
+        } catch (Exception e) {
+            System.err.println("Error playing voice message: " + e.getMessage());
+            e.printStackTrace();
+            stopCurrentPlayback();
+        }
+    }
+
+
+    /**
+     * Stops the currently playing voice message and resets its UI.
+     */
+    private void stopCurrentPlayback() {
+        if (activeMediaPlayer != null) {
+            activeMediaPlayer.stop();
+            activeMediaPlayer.dispose();
+            activeMediaPlayer = null;
+        }
+        if (currentlyPlayingVoiceBubble != null) {
+            resetVoiceBubbleUI(currentlyPlayingVoiceBubble);
+            currentlyPlayingVoiceBubble = null;
+            currentlyPlayingAudioInfo = null;
+        }
+    }
+
+    private void resetVoiceBubbleUI(VBox bubble) {
+        if (bubble == null || !bubble.getProperties().containsKey("playPauseButton")) return;
+
+        Platform.runLater(() -> {
+            Button playPauseButton = (Button) bubble.getProperties().get("playPauseButton");
+            Slider progressBar = (Slider) bubble.getProperties().get("progressBar");
+            Label durationLabel = (Label) bubble.getProperties().get("durationLabel");
+
+            playPauseButton.setGraphic(createIconView("/Client/images/play-button.png", 24));
+            progressBar.setValue(0);
+
+            // ================== FIX: USE STORED DURATION ==================
+            // Get the stored duration from the bubble's properties instead of the (now null) player
+            Duration totalDuration = (Duration) bubble.getProperties().get("totalDuration");
+            if (totalDuration != null) {
+                durationLabel.setText(formatDuration(totalDuration));
+            } else {
+                durationLabel.setText("00:00");
+            }
+        });
+    }
+
+    /**
+     * Formats a Duration object into a "mm:ss" string.
+     */
+    private String formatDuration(Duration duration) {
+        if (duration == null || duration.isUnknown()) return "00:00";
+        long totalSeconds = (long) duration.toSeconds();
+        long minutes = totalSeconds / 60;
+        long seconds = totalSeconds % 60;
+        return String.format("%02d:%02d", minutes, seconds);
+    }
+    // ================== VOICE MESSAGE IMPLEMENTATION: END ====================
+
+    /**
+     * Starts the download for a given media file and updates the UI accordingly.
+     * This is now modified to return a CompletableFuture for chaining actions.
+     */
+    private java.util.concurrent.CompletableFuture<Void> startDownload(DocumentInfo docInfo, ProgressIndicator progressIndicator, Button actionButton, VBox bubble) {
+        java.util.concurrent.CompletableFuture<Void> future = new java.util.concurrent.CompletableFuture<>();
+        String fileId = docInfo.getFileId();
+
+        if (fileId == null || activeDownloadTasks.containsKey(fileId)) {
+            future.completeExceptionally(new IllegalStateException("Download already in progress or fileId is null."));
+            return future;
+        }
+
+        // Handle UI changes based on context (file vs voice)
+        if (actionButton != null) { // Generic file context
+            actionButton.setGraphic(createIconView("/Client/images/context-menu/delete.png", 24));
+            actionButton.setOnAction(e -> cancelDownload(fileId));
+        }
+        if (progressIndicator != null) { // Generic file context
+            progressIndicator.setProgress(0);
+            progressIndicator.setVisible(true);
+            if (actionButton != null) actionButton.setGraphic(null);
+        }
+
+        var app = connectionManager.getClient();
+        var transferManager = app.getFileTransferManager();
+        var executor = app.getBackgroundExecutor();
+
+        executor.submit(() -> {
+            try {
+                String destinationPath = fileDownloadService.getDocumentCacheDir().toString();
+                TransferInfo info = transferManager.initiateDownload(fileId, destinationPath);
+                if (info == null) {
+                    Platform.runLater(() -> resetDownloadUI(progressIndicator, actionButton, docInfo, bubble, "Failed to get file info."));
+                    future.completeExceptionally(new IOException("Failed to get file info from server."));
+                    return;
+                }
+                docInfo.setStoredPath(new File(info.getDestinationPath(), info.getFileName() + "." + info.getFileExtension()).getPath());
+
+                IProgressListener listener = (transferred, total) -> {
+                    double progress = (total > 0) ? ((double) transferred / total) : 0;
+                    if (progressIndicator != null) {
+                        Platform.runLater(() -> progressIndicator.setProgress(progress));
+                    }
+                };
+
+                DownloadTask downloadTask = new DownloadTask(transferManager, info, null, fileId, listener);
+                downloadTask.setOnSucceeded(e -> {
+                    activeDownloadTasks.remove(fileId);
+                    finalizeDocumentBubbleDisplay(bubble);
+                    future.complete(null);
+                });
+                downloadTask.setOnFailed(e -> {
+                    Platform.runLater(() -> resetDownloadUI(progressIndicator, actionButton, docInfo, bubble, "Download failed."));
+                    future.completeExceptionally(downloadTask.getException());
+                });
+                downloadTask.setOnCancelled(e -> {
+                    Platform.runLater(() -> resetDownloadUI(progressIndicator, actionButton, docInfo, bubble, "Download cancelled."));
+                    future.cancel(true);
+                });
+
+                activeDownloadTasks.put(fileId, downloadTask);
+                executor.submit(downloadTask);
+
+            } catch (IOException e) {
+                Platform.runLater(() -> resetDownloadUI(progressIndicator, actionButton, docInfo, bubble, "Error starting download."));
+                e.printStackTrace();
+                future.completeExceptionally(e);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Calculates the duration of a WAV audio file in seconds.
+     * @param wavFile The WAV file.
+     * @return The duration in seconds, or 0 if it cannot be determined.
+     */
+    private int getWavDuration(File wavFile) {
+        if (wavFile == null || !wavFile.exists()) {
+            return 0;
+        }
+        try (AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(wavFile)) {
+            AudioFormat format = audioInputStream.getFormat();
+            long frames = audioInputStream.getFrameLength();
+            double durationInSeconds = (frames > 0) ? (frames + 0.0) / format.getFrameRate() : 0.0;
+            return (int) Math.round(durationInSeconds);
+        } catch (Exception e) {
+            System.err.println("Could not determine WAV duration: " + e.getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Parses the duration from a voice message filename (e.g., "voice_123_15s.voice").
+     * @param filename The name of the file.
+     * @return The duration in seconds, or an empty Optional if not found.
+     */
+    private Optional<Integer> parseDurationFromFilename(String filename) {
+        if (filename == null) return Optional.empty();
+        // Regex to find "_<digits>s.voice" at the end of the string
+        Pattern pattern = Pattern.compile("_(\\d+)s\\.voice$");
+        Matcher matcher = pattern.matcher(filename);
+        if (matcher.find()) {
+            try {
+                return Optional.of(Integer.parseInt(matcher.group(1)));
+            } catch (NumberFormatException e) {
+                return Optional.empty();
+            }
+        }
+        return Optional.empty();
+    }
+
+
+    /**
+     * Cleans up resources by stopping animations and clearing data.
+     */
+    public void cleanup() {
+        // Stop all animations
+        if (typingAnimationTimeline != null) {
+            typingAnimationTimeline.stop();
+        }
+        if (onlineStatusTimeline != null) {
+            onlineStatusTimeline.stop();
+        }
+        if (connectionStatusTimeline != null) {
+            connectionStatusTimeline.stop();
+        }
+
+        // ================== VOICE MESSAGE IMPLEMENTATION: START ==================
+        stopCurrentPlayback();
+        // ================== VOICE MESSAGE IMPLEMENTATION: END ====================
+
+        // Clear data
+        allChatUsers.clear();
+        filteredChatUsers.clear();
+        currentMessages.clear();
+        messagesContainer.getChildren().clear();
+
+        // TODO (UI): Ensure all event listeners are removed to prevent memory leaks.
+        // TODO (Server): Notify server of cleanup or session end if applicable.
+    }
+
 
     /**
      * Sends the current message and updates the UI.
@@ -4819,31 +5291,6 @@ public ChatService getChatService() {
         // TODO (UI): Add transition animation for theme switch.
     }
 
-    // ============ CLEANUP ============
-
-    /**
-     * Cleans up resources by stopping animations and clearing data.
-     */
-    public void cleanup() {
-        // Stop all animations
-        if (typingAnimationTimeline != null) {
-            typingAnimationTimeline.stop();
-        }
-        if (onlineStatusTimeline != null) {
-            onlineStatusTimeline.stop();
-        }
-        if (connectionStatusTimeline != null) {
-            connectionStatusTimeline.stop();
-        }
-
-        // Clear data
-        allChatUsers.clear();
-        filteredChatUsers.clear();
-        currentMessages.clear();
-        messagesContainer.getChildren().clear();
-        // TODO (UI): Ensure all event listeners are removed to prevent memory leaks.
-        // TODO (Server): Notify server of cleanup or session end if applicable.
-    }
     public void handleUserStatusChanged(UserStatusChangedEventModel eventModel) {
         allChatUsers.stream()
                 .filter(user -> user.getChatId().equals(eventModel.getChatId().toString()))
