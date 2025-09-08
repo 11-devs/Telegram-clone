@@ -49,6 +49,12 @@ public class MessageRpcController extends RpcControllerBase {
         }
 
         GetMessageOutputModel output = new GetMessageOutputModel();
+        if(message.getSender().getProfilePictureId() != null && !message.getSender().getProfilePictureId().trim().isEmpty()) {
+            Media media = daoManager.getEntityManager().find(Media.class, UUID.fromString(message.getSender().getProfilePictureId()));
+            if (media != null) {
+                output.setSenderProfilePictureId(media.getFileId());
+            }
+        }
         output.setMessageId(message.getId());
         if (message.getSender() != null) {
             output.setSenderId(message.getSender().getId());
@@ -141,6 +147,7 @@ public class MessageRpcController extends RpcControllerBase {
                 output.setRepliedToMessageContent(repliedTo.getType().toString());
             }
         }
+
         return output;
     }
 
@@ -294,7 +301,6 @@ public class MessageRpcController extends RpcControllerBase {
         newMessage.setTimestamp(LocalDateTime.now());
         newMessage.setEdited(false);
         newMessage.setType(model.getMessageType());
-
         daoManager.getMessageDAO().insert(newMessage);
         Membership senderMembership = daoManager.getMembershipDAO().findAllByField("chat.id", chat.getId())
                 .stream()
