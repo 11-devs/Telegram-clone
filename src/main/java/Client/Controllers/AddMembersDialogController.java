@@ -47,6 +47,8 @@ public class AddMembersDialogController {
     @FXML private HBox selectedMembersHBox;
     @FXML private Separator listSeparator;
     @FXML private VBox emptyStateContainer; // ADDED: FXML binding for the empty state
+    @FXML private VBox selectedMembersContainer;  // Add this new binding
+    @FXML private Label selectedMembersCount;     // Add this new binding
 
     // --- Class members ---
     private MainChatController mainChatController;
@@ -87,20 +89,40 @@ public class AddMembersDialogController {
     private void updateSelectedCount() {
         int count = selectedContacts.size();
         selectedCountLabel.setText(count + " / 200,000");
+
+        // Update the create button state
+        if (createButton != null) {
+            createButton.setDisable(count == 0);
+        }
     }
 
     private void updateSelectedMembersPane() {
         boolean hasSelections = !selectedContacts.isEmpty();
+
+        // Update the container visibility (this was missing!)
+        selectedMembersContainer.setVisible(hasSelections);
+        selectedMembersContainer.setManaged(hasSelections);
+
+        // Update the scroll pane visibility (existing code)
         selectedMembersScrollPane.setVisible(hasSelections);
         selectedMembersScrollPane.setManaged(hasSelections);
+
+        // Update separator visibility (existing code)
         listSeparator.setVisible(hasSelections);
         listSeparator.setManaged(hasSelections);
 
+        // Update the selected members count label
+        if (selectedMembersCount != null) {
+            selectedMembersCount.setText(selectedContacts.size() + " selected");
+        }
+
+        // Clear and rebuild the member chips (existing code)
         selectedMembersHBox.getChildren().clear();
         for (SelectableContact selected : selectedContacts) {
             selectedMembersHBox.getChildren().add(createMemberChip(selected));
         }
     }
+
 
     private HBox createMemberChip(SelectableContact contact) {
         ImageView avatarView = new ImageView();
@@ -214,7 +236,6 @@ public class AddMembersDialogController {
 
         var task = mainChatController.getChatService().createGroup(input);
         task.setOnSucceeded(event -> Platform.runLater(() -> {
-            AlertUtil.showSuccess("Group '" + groupName + "' created successfully.");
             mainChatController.loadUserChatsFromServer(); // Refresh the list with new data
             closeDialog();
         }));

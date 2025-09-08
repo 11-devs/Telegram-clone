@@ -1,128 +1,195 @@
-/* ============ TELEGRAM PROFILE SECTION STYLING ============ */
+/* ============ ENHANCED & THEME-ALIGNED PROFILE STYLING ============ */
 
 /* Main Profile Container */
 .profile-container {
-  -fx-background-color: #17212B;
-  -fx-background-radius: 10px;
-  -fx-padding: 10px;
-  -fx-font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    -fx-background-color: #17212B; /* Solid base color for consistency */
+    -fx-background-radius: 10px;
+    -fx-padding: 0;
+    -fx-font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    -fx-border-color: rgba(79, 195, 247, 0.2); /* Subtle brand blue border */
+    -fx-border-width: 1px;
+    -fx-border-radius: 10px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 20, 0.3, 0, 2);
 }
 
 /* ============ PROFILE HEADER ============ */
 .profile-header {
-  -fx-background-color: #17212B;
-  -fx-border-color: transparent;
-  -fx-min-height: 60px;
+    -fx-background-color: #1A252F; /* Slightly lighter shade */
+    -fx-border-color: rgba(255, 255, 255, 0.05);
+    -fx-border-width: 0 0 1px 0;
+    -fx-background-radius: 10px 10px 0 0;
+    -fx-min-height: 60px;
 }
 
 .profile-header-title {
-  -fx-text-fill: #FFFFFF;
-  -fx-font-size: 20px;
-  -fx-font-weight: 500;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 20px;
+    -fx-font-weight: 600;
 }
 
 .header-icon-button {
-  -fx-background-color: transparent;
-  -fx-border-color: transparent;
-  -fx-cursor: hand;
-  -fx-min-width: 40px;
-  -fx-min-height: 40px;
-  -fx-pref-width: 40px;
-  -fx-pref-height: 40px;
-  -fx-background-radius: 50px;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-cursor: hand;
+    -fx-min-width: 40px;
+    -fx-min-height: 40px;
+    -fx-background-radius: 20px;
+}
+
+.header-icon-button:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.08);
+}
+
+.header-icon-button:pressed {
+    -fx-background-color: rgba(255, 255, 255, 0.12);
 }
 
 /* ============ PROFILE SCROLL PANE ============ */
 .profile-scroll-pane {
-  -fx-background-color: transparent;
-  -fx-border-color: transparent;
-  -fx-focus-color: transparent;
-  -fx-faint-focus-color: transparent;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-background-radius: 0 0 10px 10px;
 }
 
 .profile-scroll-pane .viewport,
 .profile-scroll-pane .content {
-  -fx-background-color: transparent;
-}
-
-.profile-content-container {
-  -fx-background-color: transparent;
+    -fx-background-color: transparent;
 }
 
 /* ============ PROFILE MAIN SECTION ============ */
 .profile-main-section {
-  -fx-background-color: transparent;
+    -fx-background-color: transparent;
 }
 
 .profile-picture-container {
-  -fx-background-color: transparent;
+    -fx-background-color: #2B5278; /* Consistent brand blue */
+    -fx-background-radius: 50%;
+    -fx-padding: 3px;
+    -fx-effect: dropshadow(gaussian, rgba(43, 82, 120, 0.5), 10, 0.5, 0, 2);
 }
 
 .profile-picture {
-  -fx-smooth: true;
-  -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 8, 0.3, 0, 2);
-  -fx-cursor:hand;
+    -fx-smooth: true;
+    -fx-cursor: hand;
 }
 
 .profile-name {
-  -fx-text-fill: #FFFFFF;
-  -fx-font-size: 24px;
-  -fx-font-weight: 500;
-  -fx-cursor:text;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 24px;
+    -fx-font-weight: 600;
+    -fx-cursor: text;
 }
 
 .profile-status {
-  -fx-text-fill: #4FC3F7;
-  -fx-font-size: 14px;
-  -fx-font-weight: 400;
+    -fx-text-fill: #4FC3F7; /* Bright brand blue for status */
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
 }
 
 /* ============ PROFILE SEPARATOR ============ */
 .profile-separator {
-  -fx-background-color: #92A3AF;
-  -fx-pref-height: 0.5px;
-  -fx-opacity: 0.05;
+    -fx-background-color: rgba(146, 163, 175, 0.15); /* Solid, subtle separator */
+    -fx-pref-height: 1px;
 }
 
 /* ============ PROFILE FIELDS SECTION ============ */
-.profile-fields-section {
-  -fx-background-color: transparent;
+.profile-field-row {
+    -fx-background-color: transparent;
+    -fx-min-height: 60px;
+    -fx-background-radius: 6px;
 }
 
-.profile-field-row {
-  -fx-background-color: transparent;
-  -fx-min-height: 60px;
+.profile-field-row:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.04);
 }
 
 .field-icon {
-  -fx-opacity: 0.6;
-  -fx-smooth: true;
+    -fx-opacity: 0.6;
+    -fx-smooth: true;
 }
 
 .field-value {
-  -fx-text-fill: #FFFFFF;
-  -fx-font-size: 16px;
-  -fx-font-weight: 400;
-  -fx-cursor:text;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 16px;
+    -fx-font-weight: 400;
+    -fx-cursor: text;
 }
 
 .id-value {
-   -fx-text-fill: #4FC3F7;
-   -fx-font-size: 16px;
-   -fx-font-weight: 400;
-   -fx-cursor:hand;
+    -fx-text-fill: #4FC3F7;
+    -fx-font-size: 16px;
+    -fx-font-weight: 400;
+    -fx-cursor: hand;
+}
+
+.id-value:hover {
+    -fx-underline: true;
 }
 
 .field-description {
-  -fx-text-fill: #92A3AF;
-  -fx-font-size: 13px;
-  -fx-font-weight: 400;
+    -fx-text-fill: #92A3AF;
+    -fx-font-size: 13px;
 }
 
-.field-separator {
-  -fx-background-color: rgba(146, 163, 175, 0.05);
-  -fx-pref-height: 1px;
-  -fx-padding: 0 20 0 20;
+/* ============ MEMBERS SECTION ============ */
+.members-header {
+    -fx-border-color: rgba(255, 255, 255, 0.05);
+    -fx-border-width: 1px 0 1px 0;
+    -fx-min-height: 50px;
+}
+
+.add-member-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #4FC3F7;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-padding: 6px 12px;
+    -fx-cursor: hand;
+    -fx-background-radius: 20px;
+    -fx-border-color: #4FC3F7;
+    -fx-border-width: 1px;
+    -fx-border-radius: 20px;
+}
+
+.add-member-button:hover {
+    -fx-background-color: rgba(79, 195, 247, 0.1);
+}
+
+/* ============ MEMBERS LIST ============ */
+.members-list {
+    -fx-background-color: transparent;
+}
+
+.members-list .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 8px 16px;
+}
+
+.members-list .list-cell:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.05);
+}
+
+.members-list .list-cell:selected {
+    -fx-background-color: rgba(79, 195, 247, 0.15);
+}
+
+.member-name {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 15px;
+    -fx-font-weight: 500;
+}
+
+.member-role {
+    -fx-text-fill: #92A3AF;
+    -fx-font-size: 12px;
+}
+
+.member-role.admin {
+    -fx-text-fill: #4FC3F7;
+}
+
+.member-role.owner {
+    -fx-text-fill: #FFD700; /* Gold for owner is a good choice */
 }
 
 /* QR Code Button */
@@ -138,52 +205,25 @@
 }
 
 /* ============ SCROLLBAR STYLING ============ */
-.profile-scroll-pane .scroll-bar:vertical {
-  -fx-background-color: transparent;
-  -fx-border-color: transparent;
-  -fx-pref-width: 6px;
-  -fx-max-width: 6px;
-  -fx-min-width: 6px;
-}
-
 .profile-scroll-pane .scroll-bar:vertical .track {
-  -fx-background-color: transparent;
-  -fx-border-color: transparent;
-  -fx-opacity: 0;
+    -fx-background-color: rgba(255, 255, 255, 0.05);
+    -fx-background-radius: 4px;
 }
 
 .profile-scroll-pane .scroll-bar:vertical .thumb {
-  -fx-background-color: rgba(146, 163, 175, 0.3);
-  -fx-background-radius: 3px;
-  -fx-border-radius: 3px;
-  -fx-border-color: transparent;
+    -fx-background-color: rgba(146, 163, 175, 0.4);
+    -fx-background-radius: 4px;
 }
 
 .profile-scroll-pane .scroll-bar:vertical .thumb:hover {
-  -fx-background-color: rgba(146, 163, 175, 0.5);
+    -fx-background-color: rgba(146, 163, 175, 0.6);
 }
 
-.profile-scroll-pane .scroll-bar:vertical .thumb:pressed {
-  -fx-background-color: rgba(146, 163, 175, 0.7);
+/* ============ ADMIN/DELETE ACTIONS ============ */
+.delete-button {
+    -fx-text-fill: #ef4444; /* Standard danger red */
 }
 
-.profile-scroll-pane .scroll-bar:vertical .increment-button,
-.profile-scroll-pane .scroll-bar:vertical .decrement-button {
-  -fx-background-color: transparent;
-  -fx-border-color: transparent;
-  -fx-pref-height: 0;
-  -fx-pref-width: 0;
-}
-
-/* ============ PLATFORM SPECIFIC ============ */
-.profile-container.windows {
-  -fx-font-family: "Segoe UI", sans-serif;
-}
-
-.profile-container.macos {
-  -fx-font-family: "SF Pro Display", "Helvetica Neue", sans-serif;
-}
-
-.profile-container.linux {
-  -fx-font-family: "Ubuntu", "Liberation Sans", sans-serif;
+.delete-button:hover {
+    -fx-background-color: rgba(239, 68, 68, 0.1);
 }

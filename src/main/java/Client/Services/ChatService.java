@@ -246,4 +246,8 @@ public class ChatService {
             }
         };
     }
+
+    public Task<RpcResponse<Object>> leaveChat(UUID uuid) {
+        return null;
+    }
 }

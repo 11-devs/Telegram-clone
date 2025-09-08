@@ -1050,6 +1050,36 @@
     -fx-background-color: #232E3C;
 }
 
+/* ============ TELEGRAM CONTEXT MENU STYLE Sp ============ */
+.telegram-context-menu {
+    -fx-background-color: #17212B;
+    -fx-background-insets: 0;
+    -fx-background-radius: 8px;
+    -fx-border-width: 0;
+    -fx-pref-width: 150px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 15, 0.5, 0, 0);
+}
+
+.telegram-context-menu .menu-item > .label {
+    -fx-text-fill: #FFFFFF;
+    -fx-padding: 0 0 0 10px;
+}
+
+.telegram-context-menu .menu-item {
+    -fx-background-radius: 6px;
+    -fx-padding: 8px 12px 8px 12px;
+}
+
+.telegram-context-menu .menu-item:focused > .label,
+.telegram-context-menu .menu-item:hover > .label {
+    -fx-text-fill: #FFFFFF;
+}
+
+.telegram-context-menu .menu-item:focused,
+.telegram-context-menu .menu-item:hover {
+    -fx-background-color: #232E3C;
+}
+
 /* ============ CHAT LIST CELL CUSTOM STYLING ============ */
 .chat-cell {
     -fx-background-color: transparent;

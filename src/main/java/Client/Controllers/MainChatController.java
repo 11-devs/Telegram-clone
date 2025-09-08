@@ -943,9 +943,34 @@ public ChatService getChatService() {
 
         formattingMenu.getItems().addAll(boldItem, italicItem, underlineItem, spoilerItem);
 
-        // Show context menu only when text is selected
+        formattingMenu.setStyle(
+                "-fx-background-color: #17212B;" +
+                        "-fx-background-insets: 0;" +
+                        "-fx-background-radius: 8px;" +
+                        "-fx-border-width: 0;" +
+                        "-fx-pref-width: 100px;"
+        );
+
+        for (MenuItem item : formattingMenu.getItems()) {
+            item.setStyle(
+                    "-fx-background-radius: 6px;" +
+                            "-fx-padding: 8px 12px 8px 12px;" +
+                            "-fx-text-fill: #FFFFFF;" +
+                            "-fx-label-padding: 0 0 0 10px;"
+            );
+
+            item.setOnMenuValidation(e -> {
+                item.getStyleClass().add("custom-item");
+            });
+        }
+
         formattingMenu.setOnShowing(e -> {
-            boolean textSelected = messageInputField.getSelectedText() != null && !messageInputField.getSelectedText().isEmpty();
+            formattingMenu.setStyle("    -fx-background-color: #232E3C;    -fx-text-fill: #FFFFFF;");
+        });
+
+        formattingMenu.setOnShowing(e -> {
+            boolean textSelected = messageInputField.getSelectedText() != null &&
+                    !messageInputField.getSelectedText().isEmpty();
             boldItem.setDisable(!textSelected);
             italicItem.setDisable(!textSelected);
             underlineItem.setDisable(!textSelected);
@@ -954,6 +979,7 @@ public ChatService getChatService() {
 
         messageInputField.setContextMenu(formattingMenu);
     }
+
     private void applyFormatting(String prefix, String suffix) {
         String selectedText = messageInputField.getSelectedText();
         if (selectedText == null || selectedText.isEmpty()) return;
@@ -1572,9 +1598,10 @@ public ChatService getChatService() {
         // Keep old signature for compatibility, delegate to the new one.
         return addMessageBubble(text, isOutgoing, time, status, senderName, isEdited, null, null, null);
     }
-    private HBox addMessageBubble(String text, boolean isOutgoing, String time, String status, String senderName, boolean isEdited,  String repliedToSenderName, String repliedToMessageContent, String forwardedFromName) {
-        // Keep old signature for compatibility, delegate to the new one.
-        return addMessageBubble(text, isOutgoing, time, status, senderName, isEdited, repliedToSenderName, repliedToMessageContent, forwardedFromName);
+    private HBox addMessageBubble(String text, boolean isOutgoing, String time, String status, String senderName, boolean isEdited,
+                                  String repliedToSenderName, String repliedToMessageContent, String forwardedFromName) {
+        // FIX: Call the FULL version with the last parameter as null
+        return addMessageBubble(text, isOutgoing, time, status, senderName, isEdited, repliedToSenderName, repliedToMessageContent, forwardedFromName, null);
     }
     private HBox addMessageBubble(String text, boolean isOutgoing, String time, String status, String senderName, boolean isEdited,
                                   String repliedToSenderName, String repliedToMessageContent, String forwardedFromName , String senderProfilePcitureId) {
@@ -3716,6 +3743,7 @@ public ChatService getChatService() {
      * The menu is positioned correctly relative to the 'moreOptionsButton'.
      */
     private void showMoreOptions() {
+        if (currentSelectedUser == null) return; // Add a guard clause
         if (activeMessageContextMenu != null && activeMessageContextMenu.isShowing()) {
             activeMessageContextMenu.hide();
         }
@@ -3729,48 +3757,95 @@ public ChatService getChatService() {
         MenuItem searchItem = createIconMenuItem("Search Messages", "/Client/images/context-menu/search.png");
         searchItem.setOnAction(e -> showSearchInChat());
 
-        String muteText = (currentSelectedUser != null && currentSelectedUser.isMuted()) ? "Unmute" : "Mute";
-        String muteIcon = (currentSelectedUser != null && currentSelectedUser.isMuted()) ? "/Client/images/context-menu/unmute.png" : "/Client/images/context-menu/mute.png";
+        String muteText = currentSelectedUser.isMuted() ? "Unmute" : "Mute";
+        String muteIcon = currentSelectedUser.isMuted() ? "/Client/images/context-menu/unmute.png" : "/Client/images/context-menu/mute.png";
         MenuItem muteItem = createIconMenuItem(muteText, muteIcon);
         muteItem.setOnAction(e -> toggleMute());
 
-        String pinText = (currentSelectedUser != null && currentSelectedUser.isPinned()) ? "Unpin" : "Pin";
-        String pinIcon = (currentSelectedUser != null && currentSelectedUser.isPinned()) ? "/Client/images/context-menu/unpin.png" : "/Client/images/context-menu/pin.png";
+        // Pinning is usually for main chat list, might be disabled here or handled differently.
+        // For now, we keep it.
+        String pinText = currentSelectedUser.isPinned() ? "Unpin" : "Pin";
+        String pinIcon = currentSelectedUser.isPinned() ? "/Client/images/context-menu/unpin.png" : "/Client/images/context-menu/pin.png";
         MenuItem pinItem = createIconMenuItem(pinText, pinIcon);
         pinItem.setOnAction(e -> togglePin());
 
         MenuItem clearHistoryItem = createIconMenuItem("Clear History", "/Client/images/context-menu/clear.png");
         clearHistoryItem.setOnAction(e -> clearChatHistory());
 
-        MenuItem blockUserItem = createIconMenuItem("Block User", "/Client/images/context-menu/block.png");
-        blockUserItem.setOnAction(e -> blockUser());
+        // --- DYNAMIC ITEM LOGIC ---
+        menu.getItems().addAll(viewProfileItem, searchItem, muteItem, pinItem, clearHistoryItem);
 
-        menu.getItems().addAll(
-                viewProfileItem,
-                searchItem,
-                muteItem,
-                pinItem,
-                clearHistoryItem,
-                blockUserItem
-        );
+        UserType chatType = currentSelectedUser.getType();
+        if (chatType == UserType.GROUP || chatType == UserType.SUPERGROUP) {
+            MenuItem leaveGroupItem = createIconMenuItem("Leave Group", "/Client/images/context-menu/logout-icon.png");
+            leaveGroupItem.getStyleClass().add("delete-button"); // Make it red
+            leaveGroupItem.setOnAction(e -> leaveCurrentChat());
+            menu.getItems().add(leaveGroupItem);
+        } else if (chatType == UserType.CHANNEL) {
+            MenuItem leaveChannelItem = createIconMenuItem("Leave Channel", "/Client/images/context-menu/logout-icon.png");
+            leaveChannelItem.getStyleClass().add("delete-button"); // Make it red
+            leaveChannelItem.setOnAction(e -> leaveCurrentChat());
+            menu.getItems().add(leaveChannelItem);
+        } else if (chatType == UserType.USER) {
+            MenuItem blockUserItem = createIconMenuItem("Block User", "/Client/images/context-menu/block.png");
+            blockUserItem.getStyleClass().add("delete-button"); // Make it red
+            blockUserItem.setOnAction(e -> blockUser());
+            menu.getItems().add(blockUserItem);
+        }
+        // --- END OF DYNAMIC ITEM LOGIC ---
 
+        // Positioning and showing the menu
         Point2D buttonBottomRight = new Point2D(moreOptionsButton.getWidth(), moreOptionsButton.getHeight());
         Point2D screenBottomRight = moreOptionsButton.localToScreen(buttonBottomRight);
-
-        menu.show(moreOptionsButton, -10000, -10000);
-        double menuWidth = menu.getWidth();
-        menu.hide();
-
-        double xOffset = 15;
-        double yOffset = -5;
-
-        menu.show(
-                moreOptionsButton,
-                (screenBottomRight.getX() - menuWidth) + xOffset,
-                screenBottomRight.getY() + yOffset
-        );
+        menu.show(moreOptionsButton, screenBottomRight.getX() - menu.getWidth(), screenBottomRight.getY());
 
         activeMessageContextMenu = menu;
+    }
+
+    /**
+     * Handles the logic for leaving the currently selected group or channel.
+     * It shows a confirmation dialog before proceeding.
+     */
+    private void leaveCurrentChat() {
+        if (currentSelectedUser == null) return;
+
+        String chatType = currentSelectedUser.getType() == UserType.CHANNEL ? "channel" : "group";
+        String chatName = currentSelectedUser.getDisplayName();
+
+        // Show a confirmation dialog to the user
+//        boolean confirmed = AlertUtil.showConfirmation("Leave " + chatType,
+//                "Are you sure you want to leave \"" + chatName + "\"?");
+
+        boolean confirmed = true;
+        if (confirmed) {
+            // If confirmed, create a background task to send the request
+            Task<RpcResponse<Object>> leaveChatTask = chatService.leaveChat(UUID.fromString(currentSelectedUser.getUserId()));
+
+            leaveChatTask.setOnSucceeded(event -> {
+                RpcResponse<Object> response = leaveChatTask.getValue();
+                Platform.runLater(() -> {
+                    if (response.getStatusCode() == StatusCode.OK) {
+                        // If successful, remove the chat from the list and go to the welcome state
+                        showTemporaryNotification("You have left \"" + chatName + "\"\n");
+                        allChatUsers.remove(currentSelectedUser);
+                        filteredChatUsers.remove(currentSelectedUser);
+                        goBackToWelcomeState();
+                    } else {
+                        // If failed, show an error message
+                        AlertUtil.showError("Failed to leave " + chatType + ": " + response.getMessage());
+                    }
+                });
+            });
+
+            leaveChatTask.setOnFailed(event -> {
+                Platform.runLater(() -> {
+                    AlertUtil.showError("An error occurred while trying to leave the " + chatType + ".");
+                });
+                leaveChatTask.getException().printStackTrace();
+            });
+
+            new Thread(leaveChatTask).start();
+        }
     }
 
     // ============ UTILITY METHODS ============
