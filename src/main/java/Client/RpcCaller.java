@@ -173,6 +173,10 @@ public class RpcCaller extends RpcCallerBase {
         return callRpcAndGetResponse("ChatRpcController", "getSavedMessage", GetChatInfoOutputModel.class);
 
     }
+    public RpcResponse<GetChatInfoOutputModel[]> searchPublic(String query) throws IOException {
+        return callRpcAndGetResponse("ChatRpcController", "searchPublic", GetChatInfoOutputModel[].class,query);
+
+    }
 
 
 }

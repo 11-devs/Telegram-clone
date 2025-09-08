@@ -1,5 +1,6 @@
 package Client;
 
+import Client.Services.ThemeManager;
 import JSocket2.Protocol.StatusCode;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -14,9 +15,11 @@ import java.util.Objects;
 public class Main extends Application {
 
     private static final String LOGO_PATH = "/Client/images/TelegramLogo.png";
+    private static Stage primaryStage; // Made static to be accessible
 
     @Override
-    public void start(Stage primaryStage) throws Exception {
+    public void start(Stage stage) throws Exception {
+        primaryStage = stage; // Assign to static field
         // Upload FXML file
         // --------------------------------
         // Client.Main order
@@ -39,6 +42,20 @@ public class Main extends Application {
 
         // Create a scene
         Scene scene = new Scene(root); // Initial size according to FXML
+
+        // Get the ThemeManager instance
+        ThemeManager themeManager = ThemeManager.getInstance();
+
+        // Apply theme definitions and the current theme to the initial scene
+        scene.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/Client/css/themes.css")).toExternalForm());
+        themeManager.applyTheme(scene);
+
+        // Listen for theme changes and re-apply to the primary stage's CURRENT scene.
+        themeManager.currentThemeProperty().addListener((obs, oldTheme, newTheme) -> {
+            if (newTheme != null && primaryStage.getScene() != null) {
+                themeManager.applyTheme(primaryStage.getScene());
+            }
+        });
 
         // Set window title
         primaryStage.setTitle("Telegram Desktop");

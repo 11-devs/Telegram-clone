@@ -2,6 +2,8 @@ package Client.Controllers;
 
 import Shared.Models.UserViewModel;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Pos;
+import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.layout.GridPane;
 import java.io.IOException;
@@ -51,19 +53,23 @@ public class UserCustomCell extends ListCell<UserViewModel> {
             }
             currentUser = null;
         } else {
-            // Key optimization: only run the expensive update logic if the UserViewModel has changed.
-            // This prevents reloading images and rebinding listeners when scrolling.
-            if (currentUser != item) {
-                if (controller != null) {
-                    controller.updateCell(item);
+            // *** NEW: Handle placeholder item ***
+            if ("SEARCHING_PLACEHOLDER".equals(item.getUserId())) {
+                Label searchingLabel = new Label("Searching globally...");
+                searchingLabel.getStyleClass().add("searching-placeholder-label");
+                searchingLabel.setPrefHeight(60); // Match cell height
+                searchingLabel.setAlignment(Pos.CENTER);
+                setGraphic(searchingLabel);
+            } else {
+                // Original logic for real items
+                if (currentUser != item) {
+                    if (controller != null) {
+                        controller.updateCell(item);
+                    }
                 }
+                currentUser = item;
+                setGraphic(root);
             }
-            // It's important to set the currentUser and graphic outside the if-block.
-            // `currentUser` must be up-to-date for the next `updateItem` call.
-            // `setGraphic` must be called to ensure the cell's content is visible,
-            // especially when it's being reused.
-            currentUser = item;
-            setGraphic(root);
         }
     }
 }

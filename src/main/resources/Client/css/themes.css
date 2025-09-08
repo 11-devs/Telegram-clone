@@ -1,0 +1,73 @@
+/* /resources/Client/css/themes.css */
+
+/* --- Dark Theme (Default) --- */
+.theme-dark {
+    -fx-base: #17212B; /* Main background, panels */
+    -fx-background: #0E1621; /* Chat area background */
+    -fx-control-inner-background: #202B36; /* TextFields, search bars, dialogs */
+    -fx-content-area-background: #17212B; /* For sub-sections */
+
+    -fx-text-primary: #FFFFFF;
+    -fx-text-secondary: #92A3AF; /* Subtitles, placeholders, descriptions */
+    -fx-text-accent: #4FC3F7; /* Username, links */
+
+    -fx-accent: #4FC3F7; /* Buttons, highlights, selected items */
+    -fx-accent-hover: #29B6F6;
+    -fx-accent-pressed: #0288D1;
+
+    -fx-button-primary-bg: #2F6EA5;
+    -fx-button-primary-hover-bg: #3476AB;
+
+    -fx-hover-color: #1E2832; /* Hover on list items, buttons */
+    -fx-selected-color: #2B5278; /* Selected list items */
+
+    -fx-outgoing-bubble: #2B5278;
+    -fx-incoming-bubble: #182533;
+
+    -fx-icon-color: #92A3AF;
+    -fx-icon-color-hover: #FFFFFF;
+
+    -fx-separator-color: #2C3E50;
+    -fx-border-color: #313C49;
+
+    -fx-danger-color: #E53935; /* Errors, delete buttons */
+    -fx-danger-hover-bg: rgba(229, 57, 53, 0.1);
+
+    -fx-shadow: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 15, 0.5, 0, 0);
+}
+
+/* --- Light Theme --- */
+.theme-light {
+    -fx-base: #FFFFFF;
+    -fx-background: #EFEFF4;
+    -fx-control-inner-background: #FFFFFF;
+    -fx-content-area-background: #F7F7F7;
+
+    -fx-text-primary: #000000;
+    -fx-text-secondary: #8A8A8E;
+    -fx-text-accent: #007AFF;
+
+    -fx-accent: #007AFF;
+    -fx-accent-hover: #0056b3;
+    -fx-accent-pressed: #004494;
+
+    -fx-button-primary-bg: #007AFF;
+    -fx-button-primary-hover-bg: #0056b3;
+
+    -fx-hover-color: #F0F0F0;
+    -fx-selected-color: #C7C7CC;
+
+    -fx-outgoing-bubble: #E1FEC6;
+    -fx-incoming-bubble: #FFFFFF;
+
+    -fx-icon-color: #8A8A8E;
+    -fx-icon-color-hover: #000000;
+
+    -fx-separator-color: #DCDCDC;
+    -fx-border-color: #C8C7CC;
+
+    -fx-danger-color: #FF3B30;
+    -fx-danger-hover-bg: rgba(255, 59, 48, 0.1);
+
+    -fx-shadow: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 10, 0.2, 0, 2);
+}

@@ -11,6 +11,15 @@ public class UserViewModelBuilder {
         user.setUsername(name);
         return this;
     }
+    public UserViewModelBuilder isFromPublicSearch(boolean fromPublicSearch) {
+        user.setFromPublicSearch(fromPublicSearch);
+        return this;
+    }
+
+    public UserViewModelBuilder subtitle(String subtitle) {
+        user.setSubtitle(subtitle);
+        return this;
+    }
     public UserViewModelBuilder lastMessage(String message) {
         user.setLastMessage(message);
         return this;

@@ -5,6 +5,7 @@ package Client.Controllers;
 import Client.AppConnectionManager;
 import Client.RpcCaller;
 import Client.Services.FileDownloadService;
+import Client.Services.ThemeManager;
 import JSocket2.Protocol.Rpc.RpcResponse;
 import JSocket2.Protocol.StatusCode;
 import Shared.Api.Models.AccountController.GetAccountInfoOutputModel;
@@ -81,7 +82,7 @@ public class SidebarMenuController implements Initializable {
 
     private RpcCaller rpcCaller;
     private FileDownloadService fileDownloadService;
-
+    ThemeManager themeManager;
 
     // Constructor to inject primaryStage
     public void setPrimaryStage(Stage primaryStage) {
@@ -99,6 +100,7 @@ public class SidebarMenuController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         rpcCaller = AppConnectionManager.getInstance().getRpcCaller();
         fileDownloadService = FileDownloadService.getInstance();
+        themeManager  = ThemeManager.getInstance();
         setupUserProfile();
         setupMenuItems();
         setupNightModeToggle();
@@ -135,6 +137,7 @@ public class SidebarMenuController implements Initializable {
     }
 
     private void setupNightModeToggle() {
+        isNightModeEnabled = themeManager.getCurrentTheme() == ThemeManager.Theme.DARK;
         nightModeToggleButton.setSelected(isNightModeEnabled);
 
         nightModeButton.setOnAction(event -> {
@@ -153,11 +156,11 @@ public class SidebarMenuController implements Initializable {
     }
 
     private void applyTheme() {
-        sidebarMenuContainer.getStyleClass().clear();
-        sidebarMenuContainer.getStyleClass().add("sidebar-menu-container");
 
         if (isNightModeEnabled) {
+            themeManager.setTheme(ThemeManager.Theme.DARK);
         } else {
+            themeManager.setTheme(ThemeManager.Theme.LIGHT);
         }
     }
 

@@ -1,6 +1,7 @@
 package Shared.Utils;
 
 import javafx.application.Platform;
+import Client.Services.ThemeManager;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
@@ -14,43 +15,28 @@ import javafx.stage.StageStyle;
 import javafx.scene.layout.Region;
 
 import java.net.URL;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.io.IOException;
 
 public class SceneUtil {
 
+    /**
+     * Helper method to apply theme stylesheets and the current theme class to a scene.
+     * @param scene The scene to apply the theme to.
+     */
+    private static void applyThemeToScene(Scene scene) {
+        if (scene == null) return;
+        scene.getStylesheets().add(Objects.requireNonNull(SceneUtil.class.getResource("/Client/css/themes.css")).toExternalForm());
+        ThemeManager.getInstance().applyTheme(scene);
+    }
+
     public static void changeScene(Node node, String fxmlPath) {
-        try {
-            FXMLLoader loader = new FXMLLoader(SceneUtil.class.getResource(fxmlPath));
-            Parent root = loader.load();
-            Stage stage = (Stage) node.getScene().getWindow();
-            Scene scene = new Scene(root);
-            stage.setScene(scene);
-            stage.show();
-        } catch (IOException e) {
-            System.err.println("Error loading scene: " + fxmlPath);
-            throw new RuntimeException("Error loading scene: " + fxmlPath, e);
-        }
+        changeScene(node, fxmlPath, (Object controller) -> {}, false);
     }
 
     public static <T> void changeScene(Node node, String fxmlPath, Consumer<T> dataUpdater) {
-        try {
-            FXMLLoader loader = new FXMLLoader(SceneUtil.class.getResource(fxmlPath));
-            Parent root = loader.load();
-            T controller = loader.getController();
-
-            if (dataUpdater != null) {
-                dataUpdater.accept(controller);
-            }
-
-            Stage stage = (Stage) node.getScene().getWindow();
-            Scene scene = new Scene(root);
-            stage.setScene(scene);
-            stage.show();
-        } catch (IOException e) {
-            System.err.println("Error loading scene: " + fxmlPath);
-            throw new RuntimeException("Error loading scene: " + fxmlPath, e);
-        }
+        changeScene(node, fxmlPath, dataUpdater, false);
     }
 
     public static <T> void changeScene(Node node, String fxmlPath, Consumer<T> dataUpdater, boolean maximized) {
@@ -66,8 +52,9 @@ public class SceneUtil {
             Stage stage = (Stage) node.getScene().getWindow();
             Scene scene = new Scene(root);
 
-            stage.setScene(scene);
+            applyThemeToScene(scene); // Apply theme to the new scene
 
+            stage.setScene(scene);
             stage.setMaximized(maximized);
 
             if (!maximized) {
@@ -86,20 +73,7 @@ public class SceneUtil {
     }
 
     public static void changeSceneWithSameSize(Node node, String fxmlPath) {
-        try {
-            FXMLLoader loader = new FXMLLoader(SceneUtil.class.getResource(fxmlPath));
-            Parent root = loader.load();
-            Stage stage = (Stage) node.getScene().getWindow();
-            Scene currentScene = node.getScene();
-            double width = currentScene.getWidth();
-            double height = currentScene.getHeight();
-            Scene newScene = new Scene(root, width, height);
-            stage.setScene(newScene);
-            stage.show();
-        } catch (IOException e) {
-            System.err.println("Error loading scene with same size: " + fxmlPath);
-            throw new RuntimeException("Error loading scene with same size: " + fxmlPath, e);
-        }
+        changeSceneWithSameSize(node, fxmlPath, (Object controller) -> {});
     }
 
     public static <T> void changeSceneWithSameSize(Node node, String fxmlPath, Consumer<T> dataUpdater) {
@@ -118,6 +92,8 @@ public class SceneUtil {
             double height = currentScene.getHeight();
             Scene newScene = new Scene(root, width, height);
 
+            applyThemeToScene(newScene); // Apply theme to the new scene
+
             stage.setScene(newScene);
             stage.show();
         } catch (IOException e) {
@@ -127,7 +103,6 @@ public class SceneUtil {
     }
 
     public static <T> Stage createDialog(String fxmlPath, Stage parentStage, Object parentController, Object data, String title) throws IOException {
-        // Load the FXML file
         URL fxmlUrl = SceneUtil.class.getResource(fxmlPath);
         if (fxmlUrl == null) {
             throw new IOException("FXML file not found: " + fxmlPath);
@@ -135,25 +110,23 @@ public class SceneUtil {
         FXMLLoader loader = new FXMLLoader(fxmlUrl);
         Parent root = loader.load();
 
-        // Create and configure the dialog stage
         Stage dialogStage = new Stage();
         dialogStage.initStyle(StageStyle.TRANSPARENT);
         Scene scene = new Scene(root);
         scene.setFill(Color.TRANSPARENT);
+
+        applyThemeToScene(scene); // Apply theme to the new dialog's scene
+
         dialogStage.setScene(scene);
         dialogStage.initOwner(parentStage);
         dialogStage.initModality(Modality.WINDOW_MODAL);
         dialogStage.setResizable(false);
-        dialogStage.setTitle(title); // Set the custom title
+        dialogStage.setTitle(title);
 
-        // Set the dialog stage and data to the controller
         T controller = loader.getController();
         if (controller != null) {
             try {
-                // Use reflection to call setter methods dynamically
-
                 controller.getClass().getMethod("setDialogStage", Stage.class).invoke(controller, dialogStage);
-
                 if (parentController != null) {
                     try {
                         controller.getClass().getMethod("setParentController", Object.class).invoke(controller, parentController);
@@ -173,10 +146,10 @@ public class SceneUtil {
                 e.printStackTrace();
             }
         }
-
         return dialogStage;
     }
 
+    // The loadSubScene method does not create a new scene, so it doesn't need changes.
     public static <T extends Parent> T loadSubScene(String fxmlPath, Object parentController, Stage dialogStage, Object data) {
         try {
             URL fxmlUrl = SceneUtil.class.getResource(fxmlPath);

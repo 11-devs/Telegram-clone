@@ -1,29 +1,29 @@
 .root {
-    -fx-background-color: #17212B;
+    -fx-background-color: -fx-base;
 }
 
 .title {
-    -fx-text-fill: #FFFFFF;
+    -fx-text-fill: -fx-text-primary;
     -fx-font-size: 24px;
     -fx-font-weight: bold;
 }
 
 .subtitle {
-    -fx-text-fill: #72879B;
+    -fx-text-fill: -fx-text-secondary;
     -fx-font-size: 16px;
 }
 
 .button {
-    -fx-background-color: #2F6EA5;
-    -fx-text-fill: #FFFFFF;
+    -fx-background-color: -fx-button-primary-bg;
+    -fx-text-fill: -fx-text-primary;
     -fx-font-size: 16px;
     -fx-padding: 10px 20px;
     -fx-background-radius: 5px;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 5, 0.5, 0, 0);
+    -fx-effect: -fx-shadow;
 }
 
 .button:hover {
-    -fx-background-color: #3476AB;
+    -fx-background-color: -fx-button-primary-hover-bg;
 }
 
 .verified {

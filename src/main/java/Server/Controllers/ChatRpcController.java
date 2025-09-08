@@ -16,6 +16,7 @@ import jakarta.persistence.TypedQuery;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -359,24 +360,27 @@ public class ChatRpcController extends RpcControllerBase {
         output.setUnreadCount(0);
         return Ok(output);
     }
-    public RpcResponse<List<GetChatInfoOutputModel>> searchPublic(String query) {
+    public RpcResponse<GetChatInfoOutputModel[]> searchPublic(String query) {
         UUID currentUserId = UUID.fromString(getCurrentUser().getUserId());
         String searchQuery = "%" + query.toLowerCase() + "%";
 
-        // Find accounts by username or full name, excluding the current user
-        String jpql = "SELECT a FROM Account a WHERE a.id != :currentUserId AND (LOWER(a.username) LIKE :query OR LOWER(CONCAT(a.firstName, ' ', a.lastName)) LIKE :query)";
-        List<Account> foundAccounts = daoManager.getAccountDAO().findByJpql(jpql, q -> {
+        List<GetChatInfoOutputModel> results = new ArrayList<>();
+
+        // 1. Find accounts by username or full name, excluding the current user
+        String accountJpql = "SELECT a FROM Account a WHERE a.id != :currentUserId AND (LOWER(a.username) LIKE :query OR LOWER(CONCAT(a.firstName, ' ', a.lastName)) LIKE :query)";
+        List<Account> foundAccounts = daoManager.getAccountDAO().findByJpql(accountJpql, q -> {
             q.setParameter("currentUserId", currentUserId);
             q.setParameter("query", searchQuery);
-            q.setMaxResults(10); // Limit results for performance
+            q.setMaxResults(10); // Limit results
         });
 
-        List<GetChatInfoOutputModel> results = foundAccounts.stream()
+        results.addAll(foundAccounts.stream()
                 .map(account -> {
                     GetChatInfoOutputModel output = new GetChatInfoOutputModel();
-                    output.setId(account.getId());
+                    output.setId(account.getId()); // This is the Account ID
                     output.setType(ChatType.PRIVATE.toString());
                     output.setTitle(account.getFirstName() + " " + account.getLastName());
+                    output.setUsername(account.getUsername());
 
                     if(account.getProfilePictureId() != null && !account.getProfilePictureId().trim().isEmpty()) {
                         Media media = daoManager.getEntityManager().find(Media.class, UUID.fromString(account.getProfilePictureId()));
@@ -384,16 +388,67 @@ public class ChatRpcController extends RpcControllerBase {
                             output.setProfilePictureId(media.getFileId());
                         }
                     }
-
-                    output.setLastMessage("@" + account.getUsername()); // Use the last message to show the username
+                    output.setLastMessage("@" + account.getUsername()); // Subtitle for UI
                     output.setOnline(getServerSessionManager().isUserOnline(account.getId().toString()));
                     if (account.getLastSeen() != null) {
                         output.setLastSeen(account.getLastSeen().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
                     }
                     return output;
                 })
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()));
 
-        return Ok(results);
+        // 2. Find public channels by title
+        String channelJpql = "SELECT c FROM Channel c WHERE c.isPublic = true AND LOWER(c.title) LIKE :query";
+        List<Channel> foundChannels = daoManager.getChannelDAO().findByJpql(channelJpql, q -> {
+            q.setParameter("query", searchQuery);
+            q.setMaxResults(10);
+        });
+
+        results.addAll(foundChannels.stream()
+                .map(channel -> {
+                    GetChatInfoOutputModel output = new GetChatInfoOutputModel();
+                    output.setId(channel.getId()); // This is the Chat ID
+                    output.setType(ChatType.CHANNEL.toString());
+                    output.setTitle(channel.getTitle());
+                    if(channel.getProfilePictureId() != null && !channel.getProfilePictureId().trim().isEmpty()) {
+                        Media media = daoManager.getEntityManager().find(Media.class, UUID.fromString(channel.getProfilePictureId()));
+                        if (media != null) {
+                            output.setProfilePictureId(media.getFileId());
+                        }
+                    }
+                    long memberCount = daoManager.getMembershipDAO().countByJpql("SELECT COUNT(m) FROM Membership m WHERE m.chat.id = :chatId",
+                            q -> q.setParameter("chatId", channel.getId()));
+                    output.setLastMessage(memberCount + " subscribers");
+                    return output;
+                })
+                .collect(Collectors.toList()));
+
+        // 3. Find groups by title
+        String groupJpql = "SELECT g FROM GroupChat g WHERE LOWER(g.title) LIKE :query";
+        List<GroupChat> foundGroups = daoManager.getGroupChatDAO().findByJpql(groupJpql, q -> {
+            q.setParameter("query", searchQuery);
+            q.setMaxResults(10);
+        });
+
+        results.addAll(foundGroups.stream()
+                .map(group -> {
+                    GetChatInfoOutputModel output = new GetChatInfoOutputModel();
+                    output.setId(group.getId()); // This is the Chat ID
+                    output.setType(ChatType.GROUP.toString());
+                    output.setTitle(group.getTitle());
+                    if(group.getProfilePictureId() != null && !group.getProfilePictureId().trim().isEmpty()) {
+                        Media media = daoManager.getEntityManager().find(Media.class, UUID.fromString(group.getProfilePictureId()));
+                        if (media != null) {
+                            output.setProfilePictureId(media.getFileId());
+                        }
+                    }
+                    long memberCount = daoManager.getMembershipDAO().countByJpql("SELECT COUNT(m) FROM Membership m WHERE m.chat.id = :chatId",
+                            q -> q.setParameter("chatId", group.getId()));
+                    output.setLastMessage(memberCount + " members");
+                    return output;
+                })
+                .collect(Collectors.toList()));
+
+        return Ok(results.toArray(new GetChatInfoOutputModel[0]));
     }
 }

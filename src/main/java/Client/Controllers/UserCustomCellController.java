@@ -106,18 +106,29 @@ public class UserCustomCellController {
                             return generateTypingText();
                         });
                     } else {
-                        // When not typing, the text depends on draft status and the last message.
-                        return currentUser.isDraftProperty().flatMap(isDraft ->
-                                currentUser.lastMessageProperty().map(lastMessage -> {
-                                    if (Boolean.TRUE.equals(isDraft)) {
-                                        lastMessageLabel.getStyleClass().setAll("last-message-label", "draft-indicator");
-                                        return formatDraftText(lastMessage);
-                                    } else {
-                                        lastMessageLabel.getStyleClass().setAll("last-message-label");
-                                        return formatLastMessageText(lastMessage);
-                                    }
-                                })
-                        );
+                        // Check if it's a public search result first
+                        return currentUser.isFromPublicSearchProperty().flatMap(isPublicSearch -> {
+                            if (Boolean.TRUE.equals(isPublicSearch)) {
+                                // For public search results, bind to the subtitle property
+                                return currentUser.subtitleProperty().map(subtitle -> {
+                                    lastMessageLabel.getStyleClass().setAll("last-message-label", "search-subtitle");
+                                    return formatLastMessageText(subtitle);
+                                });
+                            } else {
+                                // When not a search result, use original logic for drafts and last messages.
+                                return currentUser.isDraftProperty().flatMap(isDraft ->
+                                        currentUser.lastMessageProperty().map(lastMessage -> {
+                                            if (Boolean.TRUE.equals(isDraft)) {
+                                                lastMessageLabel.getStyleClass().setAll("last-message-label", "draft-indicator");
+                                                return formatDraftText(lastMessage);
+                                            } else {
+                                                lastMessageLabel.getStyleClass().setAll("last-message-label");
+                                                return formatLastMessageText(lastMessage);
+                                            }
+                                        })
+                                );
+                            }
+                        });
                     }
                 })
         );
