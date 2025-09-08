@@ -44,15 +44,6 @@
                         <Label fx:id="userNameLabel" prefHeight="58.0" prefWidth="126.0" styleClass="user-name" text="User Name" />
                     </children>
                 </VBox>
-                <Button fx:id="profileDropdownButton" styleClass="profile-dropdown-button">
-                    <graphic>
-                        <ImageView fitHeight="20.0" fitWidth="30.0" pickOnBounds="true" preserveRatio="true">
-                            <image>
-                                <Image url="@../images/chevron-down-icon.png" />
-                            </image>
-                        </ImageView>
-                    </graphic>
-                </Button>
             </children>
         </HBox>
     </VBox>

@@ -168,6 +168,7 @@
     -fx-background-radius: 8px;
     -fx-border-width: 0;
     -fx-pref-width: 150px;
+    -fx-cursor: hand;
 }
 
 .context-menu .menu-item {
@@ -248,6 +249,6 @@
 
 .settings-scroll-pane .scroll-bar:vertical .increment-arrow,
 .settings-scroll-pane .scroll-bar:vertical .decrement-arrow {
-    -fx-shape: "";
+    -fx-shape: " ";
     -fx-padding: 0;
 }

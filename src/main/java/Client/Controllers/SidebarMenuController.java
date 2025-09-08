@@ -50,7 +50,6 @@ public class SidebarMenuController implements Initializable {
     // User Profile Elements
     @FXML private ImageView userAvatarImage;
     @FXML private Label userNameLabel;
-    @FXML private Button profileDropdownButton;
 
     // Menu Item Buttons
     @FXML private Button myProfileButton;
@@ -117,8 +116,6 @@ public class SidebarMenuController implements Initializable {
         } catch (Exception e) {
             System.out.println("Could not load user avatar image");
         }
-
-        profileDropdownButton.setOnAction(event -> handleProfileDropdown());
     }
 
     private void setupMenuItems() {
@@ -215,12 +212,6 @@ public class SidebarMenuController implements Initializable {
         });
 
         new Thread(getAccountInfoTask).start();
-    }
-
-    @FXML
-    private void handleProfileDropdown() {
-        System.out.println("Profile dropdown clicked");
-        close();
     }
 
     @FXML
@@ -450,11 +441,7 @@ public class SidebarMenuController implements Initializable {
     private void handleCalls() {
         System.out.println("Calls clicked");
         close();
-        if (primaryStage != null) {
-            DialogUtil.showNotificationDialog(primaryStage, "Will be developed in future versions.\\\\\\\\n");
-        } else {
-            System.out.println("primaryStage is null!");
-        }
+        DialogUtil.showNotificationDialog((Stage) sidebarMenuContainer.getScene().getWindow(), "Will be developed in future versions.\n");
     }
 
     @FXML

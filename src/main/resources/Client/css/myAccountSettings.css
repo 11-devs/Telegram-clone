@@ -9,6 +9,8 @@
 .settings-sub-section {
     -fx-background-color: #17212B;
     -fx-font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+        -fx-background-radius: 10px;
+        -fx-border-radius: 10px;
 }
 
 /* ScrollPane styles are aligned with settings.css for a consistent look and feel. */
@@ -213,4 +215,10 @@
 
 .profile-scroll-pane .scroll-bar:vertical .thumb:hover {
     -fx-background-color: rgba(146, 163, 175, 0.5);
+}
+
+.profile-scroll-pane .scroll-bar:vertical .increment-button .increment-arrow,
+.profile-scroll-pane .scroll-bar:vertical .decrement-button .decrement-arrow {
+    -fx-shape: " "; /* Remove button arrows */
+    -fx-padding: 0; /* Remove extra padding */
 }

@@ -16,6 +16,7 @@ import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Rectangle2D;
 import javafx.geometry.Side;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -26,6 +27,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 
 import java.io.File;
@@ -56,6 +58,8 @@ public class SettingsController {
     @FXML private Button moreOptionsButton;
 
     private Stage dialogStage;
+    private double originalWidth;
+    private double originalHeight;
     private FileDownloadService fileDownloadService;
     private Object parentController;
     private Object currentSubController;
@@ -175,7 +179,13 @@ public class SettingsController {
 
     @FXML
     private void handleMyAccount() {
-        showSubSection("/Client/fxml/myAccountSettings.fxml", "Info");
+        if (dialogStage != null) {
+            if (this.originalWidth == 0 && this.originalHeight == 0) {
+                this.originalWidth = dialogStage.getWidth();
+                this.originalHeight = dialogStage.getHeight();
+            }
+        }
+        showSubSectionWithResize("/Client/fxml/myAccountSettings.fxml", "Info");
     }
 
     @FXML
@@ -259,6 +269,29 @@ public class SettingsController {
         }
     }
 
+    private void showSubSectionWithResize(String fxmlPath, String title) {
+        if (fxmlPath.contains("myAccountSettings.fxml") && accountInfo == null) {
+            return;
+        }
+
+        Parent subSectionRoot = SceneUtil.loadSubSceneAndResize(
+                fxmlPath, this, this.dialogStage, this.accountInfo
+        );
+
+        if (subSectionRoot != null) {
+            settingsTitleLabel.setText(title);
+            backButton.setVisible(true);
+            backButton.setManaged(true);
+            settingsContentPane.getChildren().setAll(subSectionRoot);
+            settingsContentPane.setVisible(true);
+            settingsContentPane.setManaged(true);
+            mainSettingsContent.setVisible(false);
+            mainSettingsContent.setManaged(false);
+        } else {
+            AlertUtil.showError("Failed to load settings sub-section: " + title);
+        }
+    }
+
     // Method to navigate back to the main settings content
     public void goBackToMainSettings() {
         if (currentSubController instanceof MyAccountSettingsController) {
@@ -266,6 +299,16 @@ public class SettingsController {
             loadInitialUserData();
         }
         currentSubController = null;
+
+        // بازگرداندن اندازه پنجره به حالت اولیه
+        if (dialogStage != null && originalWidth > 0 && originalHeight > 0) {
+            dialogStage.setWidth(originalWidth);
+            dialogStage.setHeight(originalHeight);
+            // Center the stage again after restoring size
+            Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
+            dialogStage.setX((screenBounds.getWidth() - dialogStage.getWidth()) / 2);
+            dialogStage.setY((screenBounds.getHeight() - dialogStage.getHeight()) / 2);
+        }
 
         settingsTitleLabel.setText("Settings");
         backButton.setVisible(false);
@@ -297,7 +340,7 @@ public class SettingsController {
         }
 
         // --- Set the action
-        editItem.setOnAction(event -> handleEdit());
+        editItem.setOnAction(event -> handleMyAccount());
 
         contextMenu.getItems().add(editItem);
 
@@ -322,10 +365,6 @@ public class SettingsController {
 
         // --- Show the menu aligned to the button ---
         contextMenu.show(moreOptionsButton, Side.BOTTOM, 0, 5);
-    }
-
-    private void handleEdit() {
-
     }
 
     private void handleLogOut() {

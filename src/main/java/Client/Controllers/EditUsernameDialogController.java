@@ -4,10 +4,13 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 public class EditUsernameDialogController {
 
+    @FXML
+    public VBox dialogRoot;
     @FXML
     private TextField usernameField;
     @FXML
@@ -79,6 +82,7 @@ public class EditUsernameDialogController {
         }
     }
 
+    // TODO: check for duplication
     private boolean validateUsername(String username) {
         if (username.isEmpty()) {
             showError("Username cannot be empty.");

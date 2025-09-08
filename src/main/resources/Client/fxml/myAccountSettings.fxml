@@ -13,9 +13,9 @@
 <?import javafx.scene.shape.Circle?>
 <?import javafx.scene.shape.SVGPath?>
 
-<VBox fx:id="root" prefHeight="618.0" prefWidth="400.0" styleClass="settings-sub-section" stylesheets="@../css/myAccountSettings.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.Controllers.MyAccountSettingsController">
+<VBox fx:id="root" prefHeight="713.0" prefWidth="400.0" styleClass="settings-sub-section" stylesheets="@../css/myAccountSettings.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.Controllers.MyAccountSettingsController">
     <!-- Content -->
-    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="profile-scroll-pane" VBox.vgrow="ALWAYS">
+    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" prefWidth="400.0" styleClass="profile-scroll-pane" VBox.vgrow="ALWAYS">
         <content>
             <VBox styleClass="profile-content-container">
                 <!-- Profile Picture Section -->

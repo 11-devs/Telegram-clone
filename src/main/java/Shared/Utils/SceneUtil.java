@@ -1,5 +1,6 @@
 package Shared.Utils;
 
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
@@ -10,6 +11,7 @@ import javafx.stage.Modality;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import javafx.scene.layout.Region;
 
 import java.net.URL;
 import java.util.function.Consumer;
@@ -219,6 +221,84 @@ public class SceneUtil {
 
         } catch (Exception e) {
             System.err.println("Error loading sub-scene: " + fxmlPath);
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    // In Shared.Utils.SceneUtil
+
+    /**
+     * Loads a sub-scene and explicitly resizes the parent Stage to fit the
+     * preferred size defined within the loaded FXML file.
+     * This is a more robust method than sizeToScene().
+     *
+     * @param fxmlPath         The path to the FXML file.
+     * @param parentController The parent controller.
+     * @param dialogStage      The stage to be resized.
+     * @param data             The data to be passed to the new controller.
+     * @return The loaded Parent node.
+     */
+    public static <T extends Parent> T loadSubSceneAndResize(String fxmlPath, Object parentController, Stage dialogStage, Object data) {
+        try {
+            URL fxmlUrl = SceneUtil.class.getResource(fxmlPath);
+            if (fxmlUrl == null) {
+                System.err.println("FXML file not found: " + fxmlPath);
+                return null;
+            }
+
+            FXMLLoader loader = new FXMLLoader(fxmlUrl);
+            T subSectionRoot = loader.load();
+
+            // --- NEW & IMPROVED RESIZING LOGIC ---
+            if (dialogStage != null && subSectionRoot instanceof Region) {
+                Region rootRegion = (Region) subSectionRoot;
+                double prefWidth = rootRegion.getPrefWidth();
+                double prefHeight = rootRegion.getPrefHeight();
+
+                // Check if valid dimensions are set in the FXML
+                if (prefWidth > 0 && prefHeight > 0) {
+                    // We use Platform.runLater to ensure this happens after the scene graph is updated
+                    Platform.runLater(() -> {
+                        dialogStage.setWidth(prefWidth);
+                        dialogStage.setHeight(prefHeight);
+                        // Center the stage on the screen after resizing
+                        Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
+                        dialogStage.setX((screenBounds.getWidth() - dialogStage.getWidth()) / 2);
+                        dialogStage.setY((screenBounds.getHeight() - dialogStage.getHeight()) / 2);
+                    });
+                }
+            }
+
+            // --- The rest of the method for setting up the controller remains the same ---
+            Object subController = loader.getController();
+            if (subController != null) {
+                // ... (Your existing reflection code for setting controllers and data)
+                try {
+                    subController.getClass().getMethod("setDialogStage", Stage.class).invoke(subController, dialogStage);
+                } catch (NoSuchMethodException ignored) {}
+                try {
+                    subController.getClass().getMethod("setParentController", parentController.getClass()).invoke(subController, parentController);
+                } catch (NoSuchMethodException e) {
+                    try {
+                        subController.getClass().getMethod("setParentController", Object.class).invoke(subController, parentController);
+                    } catch (NoSuchMethodException ignored) {}
+                }
+                try {
+                    if (data != null) {
+                        subController.getClass().getMethod("setData", data.getClass()).invoke(subController, data);
+                    }
+                } catch (NoSuchMethodException e) {
+                    try {
+                        subController.getClass().getMethod("setData", Object.class).invoke(subController, data);
+                    } catch (NoSuchMethodException ignored) {}
+                }
+            }
+
+            return subSectionRoot;
+
+        } catch (Exception e) {
+            System.err.println("Error loading and resizing sub-scene: " + fxmlPath);
             e.printStackTrace();
             return null;
         }

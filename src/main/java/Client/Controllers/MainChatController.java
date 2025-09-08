@@ -3105,18 +3105,19 @@ public ChatService getChatService() {
      * This method is now simpler and delegates most logic to enableChatControls.
      */
     private void disableChatControls() {
-        boolean canSendMessage = false;
+        // FIX: When no chat is selected, both containers must be hidden.
+        messageInputContainer.setVisible(false);
+        messageInputContainer.setManaged(false);
 
-        messageInputContainer.setVisible(canSendMessage);
-        messageInputContainer.setManaged(canSendMessage);
+        channelMuteToggleButton.setVisible(false);
+        channelMuteToggleButton.setManaged(false);
 
-        channelMuteToggleButton.setVisible(!canSendMessage);
-        channelMuteToggleButton.setManaged(!canSendMessage);
+        // Also disable the individual components for safety
+        messageInputField.setDisable(true);
+        sendButton.setDisable(true);
+        attachmentButton.setDisable(true);
 
-        messageInputField.setDisable(!canSendMessage);
-        sendButton.setDisable(!canSendMessage);
-        attachmentButton.setDisable(!canSendMessage);
-
+        // Disable header buttons
         callButton.setDisable(true);
         videoCallButton.setDisable(true);
         searchInChatButton.setDisable(true);
