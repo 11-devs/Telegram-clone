@@ -2,7 +2,15 @@
 
 A lightweight **Telegram clone** built with a client‑server architecture for real‑time messaging.
 
-<img width="973" height="824" alt="welcome" src="https://github.com/user-attachments/assets/da64f396-bcae-4d6a-9fda-2b1007246242" />
+<img width="1536" height="1024" alt="TelegramLogo2" src="https://github.com/user-attachments/assets/8e634985-7045-4cbf-9c94-686bfff6048e" />
+
+
+
+
+
+
+
+
 
 
 
