@@ -4878,16 +4878,9 @@ public ChatService getChatService() {
 
     private void confirmAndDeleteMessage(UUID messageId) {
         if (messageId == null) return;
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Delete Message");
-        alert.setHeaderText("Are you sure you want to delete this message?");
-        alert.setContentText("This action cannot be undone.");
 
-        alert.showAndWait().ifPresent(response -> {
-            if (response == ButtonType.OK) {
-                deleteMessage(messageId);
-            }
-        });
+        deleteMessage(messageId);
+
     }
 
     /**
