@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox fx:id="dialogRoot" prefHeight="250.0" prefWidth="320.0" styleClass="dialog-root" stylesheets="@../css/editUsernameDialog.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.Controllers.EditUsernameDialogController">
+   <children>
+      <Label fx:id="usernameLabel" styleClass="field-label-dialog" text="Username">
+         <VBox.margin>
+            <Insets bottom="5.0" left="20.0" right="20.0" top="20.0" />
+         </VBox.margin>
+      </Label>
+
+      <Label fx:id="errorLabel" styleClass="error-label" text="" visible="false" managed="false">
+         <VBox.margin>
+            <Insets bottom="10.0" left="20.0" right="20.0" />
+         </VBox.margin>
+      </Label>
+
+      <Label styleClass="dialog-title" text="Edit your ID">
+         <VBox.margin>
+            <Insets bottom="20.0" left="20.0" right="20.0" />
+         </VBox.margin>
+      </Label>
+
+      <VBox alignment="CENTER" prefHeight="109.0" prefWidth="280.0" spacing="5.0">
+         <children>
+            <TextField fx:id="usernameField" alignment="CENTER" styleClass="dialog-text-field" />
+         </children>
+         <VBox.margin>
+            <Insets bottom="20.0" left="20.0" right="20.0" />
+         </VBox.margin>
+      </VBox>
+
+      <HBox alignment="BOTTOM_RIGHT" prefWidth="320.0" VBox.vgrow="ALWAYS">
+         <children>
+            <Button fx:id="cancelButton" mnemonicParsing="false" onAction="#handleCancel" styleClass="dialog-button" text="Cancel">
+               <HBox.margin>
+                  <Insets right="10.0" />
+               </HBox.margin>
+            </Button>
+            <Button fx:id="saveButton" mnemonicParsing="false" onAction="#handleSave" styleClass="dialog-button" text="Save" />
+         </children>
+         <padding>
+            <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+         </padding>
+      </HBox>
+   </children>
+</VBox>

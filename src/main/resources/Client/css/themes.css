@@ -1,0 +1,232 @@
+/*
+ * ==========================================================================
+ *                            THEMES DEFINITION
+ * ==========================================================================
+ * This file centralizes all design tokens for the application's themes.
+ * By defining colors, fonts, sizes, and effects as CSS variables, we can
+ * easily manage and switch between different themes (e.g., dark, light).
+ *
+ * All theme variables are scoped within a theme class (e.g., .theme-dark).
+ * Apply the corresponding class to the root node of your scene to activate
+ * the theme.
+ * ==========================================================================
+ */
+
+.theme-dark {
+    /*
+     * ======================================================
+     *                    COLOR PALETTE
+     * ======================================================
+     */
+    --fx-accent: var(--color-accent-primary); /* For compatibility with controls like sliders */
+
+    /* --- Base & Background Colors --- */
+    --color-bg-base: #17212B; /* Primary background for windows, sidebars */
+    --color-bg-secondary: #202B36; /* Slightly lighter background for dialogs, cards */
+    --color-bg-tertiary: #0E1621; /* Darkest background, used for the main chat area */
+    --color-bg-hover: #1E2832; /* Hover state for list items and buttons */
+    --color-bg-pressed: #232E3C; /* Pressed state for list items */
+    --color-bg-element: #2F3A4A; /* Background for discrete UI elements like checkboxes */
+    --color-bg-selection: #2B5278; /* Selected items in lists, outgoing messages */
+    --color-bg-bubble-incoming: #182533; /* Incoming message bubbles */
+
+    /* --- Text & Icon Colors --- */
+    --color-text-primary: #FFFFFF; /* Main text color */
+    --color-text-secondary: #92A3AF; /* Subtitles, labels, secondary info */
+    --color-text-placeholder: #72879B; /* Placeholder text in input fields */
+    --color-text-accent: #4FC3F7; /* For links, highlighted text, and active states */
+    --color-text-inverted: #17212B; /* Text on light-colored backgrounds */
+    --color-text-danger: #E53935; /* Text for delete actions or errors */
+
+    /* --- Accent & Status Colors --- */
+    --color-accent-primary: #4FC3F7; /* Main interactive color (bright blue) */
+    --color-accent-primary-deep: #2F6EA5; /* Deeper blue for primary buttons */
+    --color-accent-primary-deep-hover: #3476AB; /* Hover state for deep blue buttons */
+    --color-accent-danger: #E53935; /* Errors, deletion, critical actions */
+    --color-status-online: #4CAF50; /* Green for 'online' status */
+    --color-status-warning: #F1C40F; /* Yellow for warnings */
+
+    /* --- Transparent Accent Colors for Backgrounds/Borders --- */
+    --color-accent-primary-bg-light: rgba(79, 195, 247, 0.1); /* Subtle background for hovered/active elements */
+    --color-accent-primary-border: rgba(79, 195, 247, 0.2); /* Subtle border for hovered/active elements */
+    --color-accent-danger-bg-light: rgba(229, 57, 53, 0.1); /* Subtle background for danger actions on hover */
+
+    /* --- UI Element Colors (Borders, Separators) --- */
+    --color-border-separator: #2C3E50; /* Dividers and separators */
+    --color-border-default: #313C49; /* Default border for inputs, checkboxes */
+    --color-border-strong: #0F1419; /* Stronger border for pane dividers */
+    --color-border-interactive: #5A6B7C; /* Borders on interactive elements */
+    --color-border-interactive-hover: #72879B; /* Hover state for interactive borders */
+    --color-border-focused: var(--color-accent-primary); /* Border color for focused elements */
+
+    /* --- Scrollbar Colors --- */
+    --color-scrollbar-thumb: rgba(146, 163, 175, 0.4);
+    --color-scrollbar-thumb-hover: rgba(146, 163, 175, 0.6);
+    --color-scrollbar-track: rgba(255, 255, 255, 0.05);
+
+    /* --- Shadow & Overlay Colors --- */
+    --color-shadow-primary: rgba(0, 0, 0, 0.4);
+    --color-shadow-secondary: rgba(0, 0, 0, 0.3);
+    --color-shadow-light: rgba(0, 0, 0, 0.2);
+
+
+    /*
+     * ======================================================
+     *                       TYPOGRAPHY
+     * ======================================================
+     */
+    --font-family-ui: "Segoe UI", system-ui, -apple-system, sans-serif;
+
+    /* --- Font Sizes --- */
+    --font-size-xs: 11px;   /* Message time, badges */
+    --font-size-sm: 12px;   /* Sub-labels, small text */
+    --font-size-md: 14px;   /* Main body text, inputs */
+    --font-size-lg: 16px;   /* Titles, important labels */
+    --font-size-xl: 18px;   /* Section headers, dialog titles */
+    --font-size-2xl: 20px;  /* Main view titles */
+    --font-size-3xl: 24px;  /* Large profile names */
+
+    /* --- Font Weights --- */
+    --font-weight-light: 300;
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+
+
+    /*
+     * ======================================================
+     *                   BORDERS & RADII
+     * ======================================================
+     */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 20px;
+    --radius-full: 50%;
+
+
+    /*
+     * ======================================================
+     *                EFFECTS & TRANSITIONS
+     * ======================================================
+     */
+
+    /* Common drop shadow effects. Use these for consistency. */
+    --shadow-dialog: dropshadow(gaussian, var(--color-shadow-primary), 20, 0.5, 0, 2);
+    --shadow-modal: dropshadow(gaussian, var(--color-shadow-primary), 15, 0.5, 0, 0);
+    --shadow-button: dropshadow(gaussian, var(--color-shadow-secondary), 5, 0.5, 0, 0);
+    --shadow-card: dropshadow(gaussian, var(--color-shadow-light), 4, 0.2, 0, 1);
+    --shadow-raised: dropshadow(gaussian, rgba(0, 0, 0, 0.16), 8, 0.3, 0, 2);
+}
+
+/*
+ * ==========================================================================
+ *                          LIGHT THEME DEFINITION
+ * ==========================================================================
+ */
+.theme-light {
+    /*
+     * ======================================================
+     *                    COLOR PALETTE
+     * ======================================================
+     */
+    --fx-accent: var(--color-accent-primary); /* For compatibility with controls like sliders */
+
+    /* --- Base & Background Colors --- */
+    --color-bg-base: #FFFFFF; /* Primary background for windows, sidebars */
+    --color-bg-secondary: #F7F8FA; /* Slightly darker background for dialogs, cards */
+    --color-bg-tertiary: #F0F2F5; /* Background for the main chat area */
+    --color-bg-hover: #F0F2F5; /* Hover state for list items and buttons */
+    --color-bg-pressed: #E8EAEF; /* Pressed state for list items */
+    --color-bg-element: #E0E0E0; /* Background for discrete UI elements like checkboxes */
+    --color-bg-selection: #D2EAFB; /* Selected items in lists, outgoing messages */
+    --color-bg-bubble-incoming: #F0F2F5; /* Incoming message bubbles */
+
+    /* --- Text & Icon Colors --- */
+    --color-text-primary: #0F1419; /* Main text color */
+    --color-text-secondary: #657786; /* Subtitles, labels, secondary info */
+    --color-text-placeholder: #AAB8C2; /* Placeholder text in input fields */
+    --color-text-accent: #4FC3F7; /* For links, highlighted text, and active states */
+    --color-text-inverted: #FFFFFF; /* Text on dark-colored backgrounds */
+    --color-text-danger: #D32F2F; /* Text for delete actions or errors */
+
+    /* --- Accent & Status Colors --- */
+    --color-accent-primary: #4FC3F7; /* Main interactive color (bright blue) */
+    --color-accent-primary-deep: #2F6EA5; /* Deeper blue for primary buttons */
+    --color-accent-primary-deep-hover: #3476AB; /* Hover state for deep blue buttons */
+    --color-accent-danger: #E53935; /* Errors, deletion, critical actions */
+    --color-status-online: #4CAF50; /* Green for 'online' status */
+    --color-status-warning: #F1C40F; /* Yellow for warnings */
+
+    /* --- Transparent Accent Colors for Backgrounds/Borders --- */
+    --color-accent-primary-bg-light: rgba(79, 195, 247, 0.15); /* Subtle background for hovered/active elements */
+    --color-accent-primary-border: rgba(79, 195, 247, 0.3); /* Subtle border for hovered/active elements */
+    --color-accent-danger-bg-light: rgba(229, 57, 53, 0.1); /* Subtle background for danger actions on hover */
+
+    /* --- UI Element Colors (Borders, Separators) --- */
+    --color-border-separator: #E1E8ED; /* Dividers and separators */
+    --color-border-default: #CFD8DC; /* Default border for inputs, checkboxes */
+    --color-border-strong: #D1D9DE; /* Stronger border for pane dividers */
+    --color-border-interactive: #B0BEC5; /* Borders on interactive elements */
+    --color-border-interactive-hover: #90A4AE; /* Hover state for interactive borders */
+    --color-border-focused: var(--color-accent-primary); /* Border color for focused elements */
+
+    /* --- Scrollbar Colors --- */
+    --color-scrollbar-thumb: rgba(0, 0, 0, 0.25);
+    --color-scrollbar-thumb-hover: rgba(0, 0, 0, 0.4);
+    --color-scrollbar-track: rgba(0, 0, 0, 0.05);
+
+    /* --- Shadow & Overlay Colors --- */
+    --color-shadow-primary: rgba(0, 0, 0, 0.15);
+    --color-shadow-secondary: rgba(0, 0, 0, 0.12);
+    --color-shadow-light: rgba(0, 0, 0, 0.08);
+
+
+    /*
+     * ======================================================
+     *                       TYPOGRAPHY
+     * ======================================================
+     */
+    --font-family-ui: "Segoe UI", system-ui, -apple-system, sans-serif;
+
+    /* --- Font Sizes --- */
+    --font-size-xs: 11px;
+    --font-size-sm: 12px;
+    --font-size-md: 14px;
+    --font-size-lg: 16px;
+    --font-size-xl: 18px;
+    --font-size-2xl: 20px;
+    --font-size-3xl: 24px;
+
+    /* --- Font Weights --- */
+    --font-weight-light: 300;
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+
+
+    /*
+     * ======================================================
+     *                   BORDERS & RADII
+     * ======================================================
+     */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 20px;
+    --radius-full: 50%;
+
+
+    /*
+     * ======================================================
+     *                EFFECTS & TRANSITIONS
+     * ======================================================
+     */
+    --shadow-dialog: dropshadow(gaussian, var(--color-shadow-primary), 20, 0.5, 0, 2);
+    --shadow-modal: dropshadow(gaussian, var(--color-shadow-primary), 15, 0.5, 0, 0);
+    --shadow-button: dropshadow(gaussian, var(--color-shadow-secondary), 5, 0.5, 0, 0);
+    --shadow-card: dropshadow(gaussian, var(--color-shadow-light), 4, 0.2, 0, 1);
+    --shadow-raised: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 8, 0.3, 0, 2);
+}

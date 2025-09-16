@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.jfoenix.controls.JFXToggleButton?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Circle?>
+
+<VBox fx:id="sidebarMenuContainer" focusTraversable="true" maxWidth="320.0" minWidth="280.0" prefWidth="300.0" styleClass="sidebar-menu-container" stylesheets="@../css/sidebarMenu.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.Controllers.SidebarMenuController">
+
+    <!-- Sidebar Header with User Profile -->
+    <VBox styleClass="sidebar-header">
+        <padding>
+            <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+        </padding>
+        <StackPane alignment="CENTER_LEFT" prefHeight="71.0" prefWidth="258.0" styleClass="user-avatar-container">
+            <children>
+                <ImageView fx:id="userAvatarImage" fitHeight="60.0" fitWidth="60.0" pickOnBounds="true" preserveRatio="true" styleClass="user-avatar">
+                    <image>
+                        <Image url="@../images/11Devs-white.png" />
+                    </image>
+                    <clip>
+                        <Circle centerX="30" centerY="30" radius="30" />
+                    </clip>
+                    <StackPane.margin>
+                        <Insets left="7.0" />
+                    </StackPane.margin>
+                </ImageView>
+            </children>
+        </StackPane>
+
+        <HBox alignment="CENTER_LEFT" prefHeight="40.0" prefWidth="267.0" spacing="15.0" styleClass="user-profile-section">
+            <children>
+                <VBox prefHeight="24.0" prefWidth="224.0" spacing="4.0" HBox.hgrow="ALWAYS">
+                    <children>
+                        <Label fx:id="userNameLabel" prefHeight="58.0" prefWidth="126.0" styleClass="user-name" text="User Name" />
+                    </children>
+                </VBox>
+            </children>
+        </HBox>
+    </VBox>
+
+    <Separator styleClass="menu-separator" />
+
+    <!-- Menu Items Container -->
+    <ScrollPane fitToWidth="true" hbarPolicy="NEVER" styleClass="menu-scroll-pane" vbarPolicy="AS_NEEDED" VBox.vgrow="ALWAYS">
+        <content>
+            <VBox styleClass="menu-items-container">
+                <padding>
+                    <Insets bottom="10.0" top="10.0" />
+                </padding>
+                <!-- My Profile -->
+                <Button fx:id="myProfileButton" alignment="CENTER_LEFT" prefWidth="311.0" styleClass="menu-item-button">
+                    <graphic>
+                        <HBox alignment="CENTER_LEFT" spacing="20.0">
+                            <children>
+                                <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="menu-item-icon">
+                                    <image><Image url="@../images/profile-icon.png" /></image>
+                                </ImageView>
+                                <Label styleClass="menu-item-text" text="My Profile" />
+                            </children>
+                        </HBox>
+                    </graphic>
+                </Button>
+                <!-- New Group -->
+                <Button fx:id="newGroupButton" alignment="CENTER_LEFT" prefWidth="314.0" styleClass="menu-item-button">
+                    <graphic>
+                        <HBox alignment="CENTER_LEFT" spacing="20.0">
+                            <children>
+                                <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="menu-item-icon">
+                                    <image>
+                                        <Image url="@../images/group-icon.png" />
+                                    </image>
+                                </ImageView>
+                                <Label styleClass="menu-item-text" text="New Group" />
+                            </children>
+                        </HBox>
+                    </graphic>
+                </Button>
+                <!-- New Channel -->
+                <Button fx:id="newChannelButton" alignment="CENTER_LEFT" prefWidth="322.0" styleClass="menu-item-button">
+                    <graphic>
+                        <HBox alignment="CENTER_LEFT" spacing="20.0">
+                            <children>
+                                <ImageView fitHeight="23.0" fitWidth="21.0" styleClass="menu-item-icon">
+                                    <image>
+                                        <Image url="@../images/channel-icon.png" />
+                                    </image>
+                                </ImageView>
+                                <Label styleClass="menu-item-text" text="New Channel" />
+                            </children>
+                        </HBox>
+                    </graphic>
+                </Button>
+                <!-- Contacts -->
+                <Button fx:id="contactsButton" alignment="CENTER_LEFT" prefWidth="321.0" styleClass="menu-item-button">
+                    <graphic>
+                        <HBox alignment="CENTER_LEFT" spacing="20.0">
+                            <children>
+                                <ImageView fitHeight="20.0" fitWidth="20.0" styleClass="menu-item-icon">
+                                    <image>
+                                        <Image url="@../images/contacts-icon.png" />
+                                    </image>
+                                </ImageView>
+                                <Label prefWidth="78.0" styleClass="menu-item-text" text="Contacts" />
+                            </children>
+                        </HBox>
+                    </graphic>
+                </Button>
+                <!-- Calls -->
+                <Button fx:id="callsButton" alignment="CENTER_LEFT" prefWidth="329.0" styleClass="menu-item-button">
+                    <graphic>
+                        <HBox alignment="CENTER_LEFT" spacing="20.0">
+                            <children>
+                                <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="menu-item-icon">
+                                    <image>
+                                        <Image url="@../images/calls-icon.png" />
+                                    </image>
+                                </ImageView>
+                                <Label styleClass="menu-item-text" text="Calls" />
+                            </children>
+                        </HBox>
+                    </graphic>
+                </Button>
+                <!-- Saved Messages -->
+                <Button fx:id="savedMessagesButton" alignment="CENTER_LEFT" prefWidth="328.0" styleClass="menu-item-button">
+                    <graphic>
+                        <HBox alignment="CENTER_LEFT" spacing="20.0">
+                            <children>
+                                <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="menu-item-icon">
+                                    <image>
+                                        <Image url="@../images/saved-messages-icon.png" />
+                                    </image>
+                                </ImageView>
+                                <Label styleClass="menu-item-text" text="Saved Messages" />
+                            </children>
+                        </HBox>
+                    </graphic>
+                </Button>
+                <!-- Settings -->
+                <Button fx:id="settingsButton" alignment="CENTER_LEFT" prefWidth="337.0" styleClass="menu-item-button">
+                    <graphic>
+                        <HBox alignment="CENTER_LEFT" spacing="20.0">
+                            <children>
+                                <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="menu-item-icon">
+                                    <image>
+                                        <Image url="@../images/settings-icon.png" />
+                                    </image>
+                                </ImageView>
+                                <Label styleClass="menu-item-text" text="Settings" />
+                            </children>
+                        </HBox>
+                    </graphic>
+                </Button>
+                <!-- Night Mode -->
+                <Button fx:id="nightModeButton" alignment="CENTER_LEFT" maxWidth="Infinity" styleClass="menu-item-toggle-button">
+                    <graphic>
+                        <HBox alignment="CENTER_LEFT" spacing="20.0">
+                            <children>
+                                <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="menu-item-icon">
+                                    <image>
+                                        <Image url="@../images/night-mode-icon.png" />
+                                    </image>
+                                </ImageView>
+                                <Label styleClass="menu-item-text" text="Night Mode" />
+                                <Region HBox.hgrow="ALWAYS" />
+                                <JFXToggleButton fx:id="nightModeToggleButton" mouseTransparent="true" styleClass="sidebar-toggle-button" text="" />
+                            </children>
+                        </HBox>
+                    </graphic>
+                </Button>
+                <Region VBox.vgrow="ALWAYS" />
+            </VBox>
+        </content>
+    </ScrollPane>
+
+    <!-- Footer with Version Info -->
+    <VBox styleClass="sidebar-footer">
+        <padding>
+            <Insets bottom="20.0" left="20.0" right="20.0" top="15.0" />
+        </padding>
+        <children>
+            <Label fx:id="appNameLabel" styleClass="app-name" text="Telegram Desktop" />
+            <Label fx:id="versionLabel" styleClass="version-info" text="Version 1.0.0 - 11-Devs GitHub" />
+        </children>
+    </VBox>
+</VBox>

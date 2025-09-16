@@ -1,0 +1,123 @@
+/* --- Root Pane & Controls Container --- */
+.video-player-root {
+    -fx-background-color: black;
+}
+
+.controls-container {
+    -fx-background-color: linear-gradient(to top, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.0));
+    -fx-padding: 0 15px 10px 15px;
+    -fx-alignment: bottom_center;
+}
+
+/* --- Control Buttons & Icons --- */
+.control-button {
+    -fx-background-color: transparent;
+    -fx-padding: 8px;
+    -fx-background-radius: 50%; /* Makes the hover effect circular */
+    -fx-cursor: hand;
+    -fx-transition: -fx-background-color 0.2s ease-in-out;
+}
+
+.control-button:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.2);
+}
+
+.control-icon {
+    -fx-fill: white;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 5, 0.2, 0, 1);
+}
+
+/* --- Time Labels --- */
+.time-label {
+    -fx-text-fill: white;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.7), 5, 0.5, 0, 1);
+}
+
+/* --- Sliders (General) --- */
+.slider {
+    -fx-cursor: hand;
+}
+
+.slider .thumb {
+    -fx-background-color: white;
+    -fx-padding: 6px; /* Makes the thumb larger and easier to grab */
+    -fx-background-radius: 50%;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 8, 0.3, 0, 1);
+}
+
+.slider:hover .thumb {
+    -fx-padding: 7px;
+}
+
+/* --- Time Slider with Buffer and Progress --- */
+#timeSlider {
+    -fx-padding: 10px 0; /* Add vertical padding to make the track easier to click */
+}
+
+/* This is the container for our custom tracks */
+#timeSliderContainer .pane {
+    /* Add a smooth transition to all panes inside the container */
+    -fx-transition: -fx-height 0.15s ease-in-out;
+}
+
+#timeSliderContainer .track-background {
+    -fx-background-color: rgba(255, 255, 255, 0.3);
+    -fx-height: 4px;
+    -fx-background-radius: 2px;
+}
+
+#timeSliderContainer .buffer-bar {
+    -fx-background-color: rgba(255, 255, 255, 0.6);
+    -fx-height: 4px;
+    -fx-background-radius: 2px;
+}
+
+#timeSliderContainer .progress-bar {
+    -fx-background-color: -fx-accent; /* Use a theme accent color, e.g., #0099ff */
+    -fx-height: 4px;
+    -fx-background-radius: 2px;
+}
+
+/* --- ENHANCEMENT: Grow the timeline on hover --- */
+#timeSliderContainer:hover .track-background,
+#timeSliderContainer:hover .buffer-bar,
+#timeSliderContainer:hover .progress-bar {
+    -fx-height: 6px;
+}
+
+/* We hide the default JavaFX track and use our custom ones */
+#timeSlider .track {
+    -fx-background-color: transparent;
+}
+
+#timeSlider .thumb {
+    -fx-translate-y: -1; /* Fine-tune thumb position over the custom track */
+    -fx-transition: -fx-padding 0.15s ease-in-out;
+}
+
+#timeSlider:hover .thumb {
+    -fx-padding: 8px; /* Make thumb bigger on hover */
+}
+
+
+/* --- Volume Slider --- */
+.volume-slider-container {
+    -fx-padding: 0 0 0 5px; /* Spacing between volume icon and slider */
+    -fx-alignment: center-left;
+}
+
+#volumeSlider {
+    -fx-pref-width: 80px;
+}
+
+#volumeSlider .track {
+    -fx-background-color: rgba(255, 255, 255, 0.5);
+    -fx-pref-height: 3px;
+    -fx-background-radius: 2px;
+}
+
+#volumeSlider .thumb {
+    -fx-padding: 5px;
+}

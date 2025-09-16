@@ -1,0 +1,68 @@
+/* Client/css/batteryAnimationsSettings.css */
+
+.settings-sub-section {
+    -fx-background-color: #17212B;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+}
+
+.sub-section-header {
+    -fx-text-fill: #4FC3F7; /* Telegram blue */
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
+.sub-section-content {
+    -fx-text-fill: #D5D8DC;
+    -fx-font-size: 13px;
+    -fx-padding: 0 0 10 0;
+}
+
+.setting-row {
+    -fx-background-color: transparent;
+    -fx-padding: 5 0 5 0;
+}
+
+.setting-label {
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+}
+
+.settings-checkbox {
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-padding: 5 0 5 0;
+}
+
+.settings-checkbox .box {
+    -fx-background-color: #2F3A4A;
+    -fx-border-color: #313C49;
+    -fx-border-radius: 3px;
+    -fx-background-radius: 3px;
+    -fx-padding: 3px;
+}
+
+.settings-checkbox:selected .box {
+    -fx-background-color: #2F6EA5;
+    -fx-border-color: #2F6EA5;
+}
+
+.settings-checkbox .mark {
+    -fx-background-color: white;
+}
+
+.slider .track {
+    -fx-background-color: #313C49;
+    -fx-pref-height: 4px;
+    -fx-background-radius: 2px;
+}
+
+.slider .thumb {
+    -fx-background-color: #2F6EA5;
+    -fx-padding: 6px;
+    -fx-background-radius: 50%;
+}
+
+.slider:hover .thumb {
+    -fx-background-color: #3476AB;
+}

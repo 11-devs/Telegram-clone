@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.shape.SVGPath?>
+
+<VBox fx:id="settingsContainer" prefHeight="528.0" prefWidth="400.0" styleClass="settings-container" stylesheets="@../css/settings.css" translateY="20.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.Controllers.SettingsController">
+    <children>
+        <!-- Title Bar -->
+        <HBox alignment="CENTER_LEFT" styleClass="title-bar">
+            <padding>
+                <Insets bottom="12.0" left="20.0" right="20.0" top="12.0" />
+            </padding>
+            <children>
+                <Button fx:id="backButton" managed="false" onAction="#goBackToMainSettings" styleClass="icon-button" visible="false">
+                    <graphic>
+                        <SVGPath content="M12 8a.5.5 0 0 1-.5.5H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H11.5a.5.5 0 0 1 .5.5" fill="#92A3AF" scaleX="1.5" scaleY="1.5" />
+                    </graphic>
+                </Button>
+                <Label fx:id="settingsTitleLabel" styleClass="settings-title" text="Settings">
+                    <HBox.margin>
+                        <Insets left="10.0" />
+                    </HBox.margin>
+                </Label>
+                <Region HBox.hgrow="ALWAYS" />
+                <Button fx:id="moreOptionsButton" styleClass="icon-button">
+                    <graphic>
+                        <SVGPath content="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" scaleX="1" scaleY="1" styleClass="svg-icon" />
+                    </graphic>
+                </Button>
+                <Button fx:id="closeButton" onAction="#handleClose" styleClass="icon-button">
+                    <graphic>
+                        <SVGPath content="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" scaleX="1" scaleY="1" styleClass="svg-icon" />
+                    </graphic>
+                </Button>
+            </children>
+        </HBox>
+
+        <!-- StackPane to hold main settings and sub-sections -->
+        <StackPane VBox.vgrow="ALWAYS">
+            <!-- Main Settings Content (initially visible) -->
+            <VBox fx:id="mainSettingsContent">
+                <!-- User Profile Section -->
+                <HBox alignment="CENTER_LEFT" styleClass="user-profile-section">
+                    <padding>
+                        <Insets bottom="15.0" left="20.0" right="20.0" top="15.0" />
+                    </padding>
+                    <children>
+                        <StackPane styleClass="profile-picture-container">
+                            <children>
+                                <ImageView fx:id="profilePictureImage" fitHeight="70.0" fitWidth="70.0" pickOnBounds="true" preserveRatio="true" styleClass="profile-picture">
+                                    <image>
+                                        <Image url="@../images/11Devs-white.png" />
+                                    </image>
+                                    <clip>
+                                        <Circle centerX="35" centerY="35" radius="35" />
+                                    </clip>
+                                </ImageView>
+                            </children>
+                        </StackPane>
+                        <VBox alignment="CENTER_LEFT" spacing="2.0" HBox.hgrow="ALWAYS">
+                            <HBox.margin>
+                                <Insets left="15.0" />
+                            </HBox.margin>
+                            <children>
+                                <Label fx:id="nameLabel" styleClass="profile-name" text="Alex Johnson" />
+                                <Label fx:id="phoneNumberLabel" styleClass="profile-phone" text="+1 234 567 8901" />
+                                <Label fx:id="usernameLabel" styleClass="profile-username" text="me" />
+                            </children>
+                        </VBox>
+                    </children>
+                </HBox>
+
+                <!-- The separator element is removed here -->
+
+                <!-- Menu Options ScrollPane -->
+                <ScrollPane fitToWidth="true" hbarPolicy="NEVER" prefHeight="442.0" prefWidth="400.0" styleClass="settings-scroll-pane" VBox.vgrow="ALWAYS">
+                    <content>
+                        <VBox styleClass="menu-options-container">
+                            <children>
+                                <Button fx:id="myAccountButton" onAction="#handleMyAccount" styleClass="menu-item-button">
+                                    <graphic>
+                                        <HBox alignment="CENTER_LEFT" spacing="15.0" HBox.hgrow="ALWAYS">
+                                            <SVGPath content="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.93 0 3.5 1.57 3.5 3.5S13.93 12 12 12 8.5 10.43 8.5 8.5 10.07 5 12 5zm0 14.2c-2.6 0-4.9-1.39-6.2-3.48.04-2.07 4.1-3.2 6.2-3.2s6.16 1.13 6.2 3.2c-1.3 2.09-3.6 3.48-6.2 3.48z" styleClass="menu-item-icon" />
+                                            <Label styleClass="menu-item-text" text="My Account" HBox.hgrow="ALWAYS" />
+                                        </HBox>
+                                    </graphic>
+                                </Button>
+                                <Button fx:id="notificationsButton" onAction="#handleNotifications" styleClass="menu-item-button">
+                                    <graphic>
+                                        <HBox alignment="CENTER_LEFT" spacing="15.0" HBox.hgrow="ALWAYS">
+                                            <SVGPath content="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.55-.45-1-1-1s-1 .45-1 1v.68C7.63 4.36 6 6.93 6 11v5l-2 2v1h16v-1l-2-2z" styleClass="menu-item-icon" />
+                                            <Label styleClass="menu-item-text" text="Notifications" HBox.hgrow="ALWAYS" />
+                                        </HBox>
+                                    </graphic>
+                                </Button>
+                                <Button fx:id="privacySecurityButton" onAction="#handlePrivacySecurity" styleClass="menu-item-button">
+                                    <graphic>
+                                        <HBox alignment="CENTER_LEFT" spacing="15.0" HBox.hgrow="ALWAYS">
+                                            <SVGPath content="M18 10h-1V7c0-2.76-2.24-5-5-5S7 4.24 7 7v3H6c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-8c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm-3-8V7c0-1.66 1.34-3 3-3s3 1.34 3 3v3H9z" styleClass="menu-item-icon" />
+                                            <Label styleClass="menu-item-text" text="Privacy and Security" HBox.hgrow="ALWAYS" />
+                                        </HBox>
+                                    </graphic>
+                                </Button>
+                                <Button fx:id="chatSettingsButton" onAction="#handleChatSettings" styleClass="menu-item-button">
+                                    <graphic>
+                                        <HBox alignment="CENTER_LEFT" spacing="15.0" HBox.hgrow="ALWAYS">
+                                            <SVGPath content="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" styleClass="menu-item-icon" />
+                                            <Label styleClass="menu-item-text" text="Chat Settings" HBox.hgrow="ALWAYS" />
+                                        </HBox>
+                                    </graphic>
+                                </Button>
+                                <Button fx:id="foldersButton" onAction="#handleFolders" styleClass="menu-item-button">
+                                    <graphic>
+                                        <HBox alignment="CENTER_LEFT" spacing="15.0" HBox.hgrow="ALWAYS">
+                                            <SVGPath content="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" styleClass="menu-item-icon" />
+                                            <Label styleClass="menu-item-text" text="Folders" HBox.hgrow="ALWAYS" />
+                                        </HBox>
+                                    </graphic>
+                                </Button>
+                                <Button fx:id="advancedButton" onAction="#handleAdvanced" styleClass="menu-item-button">
+                                    <graphic>
+                                        <HBox alignment="CENTER_LEFT" spacing="15.0" HBox.hgrow="ALWAYS">
+                                            <SVGPath content="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.09-.77-1.72-1.07L14 2h-4l-.5 2.1c-.63.3-1.2.67-1.72 1.07l-2.49-1c-.22-.08-.49 0-.61.22l-2 3.46c-.12.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.09.77 1.72 1.07L10 22h4l.5-2.1c.63-.3 1.2-.67 1.72-1.07l2.49 1c.22-.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" styleClass="menu-item-icon" />
+                                            <Label styleClass="menu-item-text" text="Advanced" HBox.hgrow="ALWAYS" />
+                                        </HBox>
+                                    </graphic>
+                                </Button>
+                                <Button fx:id="appearanceButton" onAction="#handleAppearance" styleClass="menu-item-button">
+                                    <graphic>
+                                        <HBox alignment="CENTER_LEFT" spacing="15.0" HBox.hgrow="ALWAYS">
+                                            <SVGPath content="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" styleClass="menu-item-icon" />
+                                            <Label styleClass="menu-item-text" text="Appearance" HBox.hgrow="ALWAYS" />
+                                        </HBox>
+                                    </graphic>
+                                </Button>
+                            </children>
+                        </VBox>
+                    </content>
+                </ScrollPane>
+            </VBox>
+            <!-- Placeholder for sub-sections (initially hidden) -->
+            <StackPane fx:id="settingsContentPane" />
+        </StackPane>
+    </children>
+</VBox>

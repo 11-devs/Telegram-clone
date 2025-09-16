@@ -1,0 +1,25 @@
+.root {
+    -fx-background-color: #17212B;
+    -fx-background-radius: 10px;
+    -fx-padding: 10px;
+}
+
+.message-text {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 14px;
+    -fx-alignment: center;
+    -fx-background-color: #17212B;
+}
+
+
+.ok-button {
+    -fx-background-color: #17212B;
+    -fx-text-fill: #6AB2F2;
+    -fx-font-size: 14px;
+    -fx-padding: 5px 15px;
+    -fx-background-radius: 5px;
+}
+
+.ok-button:hover {
+    -fx-background-color: #1D2A39;
+}

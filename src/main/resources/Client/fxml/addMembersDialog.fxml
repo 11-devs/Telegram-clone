@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.SVGPath?>
+<?import javafx.scene.layout.StackPane?>
+
+<VBox fx:id="dialogRoot" alignment="TOP_CENTER" prefHeight="620.0" prefWidth="430.0" spacing="16.0" styleClass="dialog-root" stylesheets="@../css/addMembersDialog.css" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.Controllers.AddMembersDialogController">
+    <padding>
+        <Insets bottom="18.0" left="22.0" right="22.0" top="18.0" />
+    </padding>
+    <children>
+        <!-- Enhanced Header Section -->
+        <VBox spacing="6.0">
+            <children>
+                <HBox alignment="CENTER_LEFT" prefHeight="28.0">
+                    <children>
+                        <VBox spacing="2.0">
+                            <children>
+                                <Label styleClass="dialog-title" text="Add Members" />
+                                <Label styleClass="dialog-subtitle" text="Select contacts to add to your group" />
+                            </children>
+                        </VBox>
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Label fx:id="selectedCountLabel" styleClass="selected-count-label" text="0 / 200,000" />
+                    </children>
+                </HBox>
+            </children>
+        </VBox>
+
+        <!-- Enhanced Search Bar -->
+        <HBox alignment="CENTER_LEFT" styleClass="search-bar-container">
+            <children>
+                <SVGPath content="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" styleClass="search-icon" />
+                <TextField fx:id="searchField" promptText="Search contacts..." styleClass="search-field" HBox.hgrow="ALWAYS" />
+            </children>
+        </HBox>
+
+        <!-- Enhanced Selected Members Section -->
+        <VBox fx:id="selectedMembersContainer" spacing="8.0" managed="false" visible="false">
+            <children>
+                <HBox alignment="CENTER_LEFT">
+                    <children>
+                        <Label styleClass="section-title" text="Selected Members" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Label fx:id="selectedMembersCount" styleClass="section-count" text="0 selected" />
+                    </children>
+                </HBox>
+
+                <ScrollPane fx:id="selectedMembersScrollPane" fitToHeight="true" hbarPolicy="AS_NEEDED" vbarPolicy="NEVER" styleClass="selected-members-scrollpane">
+                    <content>
+                        <HBox fx:id="selectedMembersHBox" alignment="CENTER_LEFT" spacing="10.0">
+                            <padding>
+                                <Insets bottom="6.0" left="6.0" right="6.0" top="6.0" />
+                            </padding>
+                        </HBox>
+                    </content>
+                </ScrollPane>
+            </children>
+        </VBox>
+
+        <!-- Enhanced Separator -->
+        <Separator fx:id="listSeparator" managed="false" visible="false" />
+
+        <!-- Enhanced Main Content Area -->
+        <StackPane VBox.vgrow="ALWAYS">
+            <children>
+                <!-- Contacts List -->
+                <ListView fx:id="contactsListView" styleClass="contacts-list-view" />
+
+                <!-- Enhanced Empty State -->
+                <VBox fx:id="emptyStateContainer" alignment="CENTER" spacing="14.0" styleClass="empty-state-container" visible="false" managed="false">
+                    <children>
+                        <!-- Empty State Icon -->
+                        <StackPane>
+                            <children>
+                                <ImageView fitHeight="72.0" fitWidth="72.0" pickOnBounds="true" preserveRatio="true" styleClass="empty-state-icon">
+                                    <image>
+                                        <Image url="@../images/delete.png" />
+                                    </image>
+                                </ImageView>
+                                <!-- Subtle glow effect behind icon -->
+                                <ImageView fitHeight="76.0" fitWidth="76.0" pickOnBounds="true" preserveRatio="true" opacity="0.2">
+                                    <image>
+                                        <Image url="@../images/delete.png" />
+                                    </image>
+                                    <effect>
+                                        <javafx.scene.effect.GaussianBlur radius="6" />
+                                    </effect>
+                                </ImageView>
+                            </children>
+                        </StackPane>
+
+                        <!-- Empty State Text -->
+                        <VBox alignment="CENTER" spacing="6.0">
+                            <children>
+                                <Label fx:id="emptyStateTitle" styleClass="empty-state-title" text="No contacts found" textAlignment="CENTER" />
+                                <Label fx:id="emptyStateSubtitle" styleClass="empty-state-subtitle" text="Add new contacts to start a group chat." textAlignment="CENTER" wrapText="true" maxWidth="260.0" />
+                            </children>
+                        </VBox>
+
+                        <!-- Optional Action Button for Empty State -->
+                        <Button styleClass="empty-state-action-button" text="Add Contacts" visible="false" managed="false" />
+                    </children>
+                    <padding>
+                        <Insets bottom="25.0" left="25.0" right="25.0" top="25.0" />
+                    </padding>
+                </VBox>
+            </children>
+        </StackPane>
+
+        <!-- Enhanced Footer -->
+        <HBox alignment="CENTER_RIGHT" spacing="12.0">
+            <children>
+                <!-- Loading Indicator (Hidden by default) -->
+                <HBox fx:id="loadingIndicator" alignment="CENTER" spacing="8.0" visible="false" managed="false" styleClass="loading-indicator">
+                    <children>
+                        <Region styleClass="loading-spinner" />
+                        <Label styleClass="loading-text" text="Creating group..." />
+                    </children>
+                </HBox>
+
+                <Region HBox.hgrow="ALWAYS" />
+
+                <!-- Action Buttons -->
+                <Button fx:id="backButton" mnemonicParsing="false" onAction="#handleBack" styleClass="dialog-button" text="CANCEL" />
+
+                <Button fx:id="createButton" defaultButton="true" mnemonicParsing="false" onAction="#handleCreate" styleClass="dialog-button, create-button" text="CREATE" />
+            </children>
+            <VBox.margin>
+                <Insets top="6.0" />
+            </VBox.margin>
+        </HBox>
+    </children>
+</VBox>

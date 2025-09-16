@@ -1,0 +1,533 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.jfoenix.controls.JFXToggleButton?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ContextMenu?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.shape.SVGPath?>
+<?import javafx.scene.text.Text?>
+
+<StackPane fx:id="rootStackPane" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.Controllers.MainChatController">
+    <children>
+        <BorderPane fx:id="mainChatContainer" prefHeight="800.0" prefWidth="1200.0" styleClass="main-chat-container" stylesheets="@../css/mainChat.css">
+
+            <!-- ======================= LEFT SIDEBAR ======================= -->
+            <left>
+                <VBox fx:id="leftSidebar" maxWidth="420.0" minWidth="300.0" prefWidth="380.0" styleClass="sidebar">
+                    <!-- Sidebar Header -->
+                    <HBox alignment="CENTER_LEFT" spacing="0.0" styleClass="sidebar-header">
+                        <padding>
+                            <Insets bottom="8.0" left="16.0" right="16.0" top="8.0" />
+                        </padding>
+                        <children>
+                            <Button fx:id="menuButton" styleClass="icon-button">
+                                <graphic>
+                                    <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
+                                        <image>
+                                            <Image url="@../images/menu-icon.png" />
+                                        </image>
+                                    </ImageView>
+                                </graphic>
+                            </Button>
+                            <HBox alignment="CENTER_LEFT" styleClass="search-container" HBox.hgrow="ALWAYS">
+                                <children>
+                                    <TextField fx:id="searchField" promptText="Search" styleClass="search-field" HBox.hgrow="ALWAYS" />
+                                </children>
+                                <HBox.margin>
+                                    <Insets left="8.0" />
+                                </HBox.margin>
+                                <padding>
+                                    <Insets bottom="6.0" left="12.0" right="12.0" top="6.0" />
+                                </padding>
+                            </HBox>
+                        </children>
+                    </HBox>
+
+                    <!-- Chat List -->
+                    <ListView fx:id="chatListView" styleClass="chat-list" VBox.vgrow="ALWAYS" />
+
+                    <!-- Sidebar Footer -->
+                    <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="sidebar-footer">
+                        <padding>
+                            <Insets bottom="12.0" left="16.0" right="16.0" top="12.0" />
+                        </padding>
+                        <children>
+                            <Button fx:id="settingsButton" styleClass="footer-button, icon-button">
+                                <graphic>
+                                    <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                                        <image>
+                                            <Image url="@../images/settings-icon.png" />
+                                        </image>
+                                    </ImageView>
+                                </graphic>
+                            </Button>
+                            <Region HBox.hgrow="ALWAYS" />
+                            <HBox alignment="CENTER" spacing="6.0" styleClass="connection-status">
+                                <children>
+                                    <Circle fx:id="connectionIndicator" radius="4.0" styleClass="connection-dot" />
+                                    <Label fx:id="connectionLabel" styleClass="connection-text" text="Connected" />
+                                </children>
+                            </HBox>
+                        </children>
+                    </HBox>
+                </VBox>
+            </left>
+
+    <!-- Main Chat Area -->
+    <center>
+        <VBox styleClass="chat-area">
+            <!-- Chat Header -->
+            <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="chat-header">
+                <padding>
+                    <Insets bottom="12.0" left="20.0" right="20.0" top="12.0" />
+                </padding>
+                <children>
+                    <!-- User Avatar with Status -->
+                    <StackPane styleClass="header-avatar-container">
+                        <children>
+                            <ImageView fx:id="headerAvatarImage" fitHeight="40.0" fitWidth="40.0" pickOnBounds="true" preserveRatio="true" styleClass="header-avatar">
+                                <image>
+                                    <Image url="@../images/11Devs-black.png" />
+                                </image>
+                                <clip>
+                                    <Circle centerX="20" centerY="20" radius="20" />
+                                </clip>
+                            </ImageView>
+                            <!-- Online Status Indicator -->
+                            <Circle fx:id="onlineIndicator" radius="6.0" styleClass="online-indicator" visible="false" StackPane.alignment="BOTTOM_RIGHT">
+                                <StackPane.margin>
+                                    <Insets bottom="1.0" right="1.0" />
+                                </StackPane.margin>
+                            </Circle>
+                        </children>
+                    </StackPane>
+
+                    <!-- Chat Info -->
+                    <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                        <children>
+                            <HBox alignment="CENTER_LEFT" spacing="6.0">
+                                <children>
+                                    <Label fx:id="chatTitleLabel" styleClass="chat-title" text="Select a chat" />
+                                    <ImageView fx:id="mutedIcon" fitHeight="14.0" fitWidth="14.0" styleClass="muted-icon" visible="false">
+                                        <image>
+                                            <Image url="@../images/mute-icon.png" />
+                                        </image>
+                                    </ImageView>
+                                </children>
+                            </HBox>
+                            <HBox alignment="CENTER_LEFT" spacing="4.0">
+                                <children>
+                                    <Label fx:id="chatSubtitleLabel" prefHeight="18.0" prefWidth="234.0" styleClass="chat-subtitle" text="Click on a chat to start messaging" />
+                                    <Label fx:id="membersCountLabel" styleClass="members-count" text="" visible="false" />
+                                </children>
+                            </HBox>
+                        </children>
+                    </VBox>
+
+                    <!-- Header Actions -->
+                    <HBox alignment="CENTER_RIGHT" spacing="8.0">
+                        <children>
+                            <!-- Search in Chat -->
+                            <Button fx:id="searchInChatButton" styleClass="action-button, icon-button">
+                                <graphic>
+                                    <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                                        <image>
+                                            <Image url="@../images/search-icon.png" />
+                                        </image>
+                                    </ImageView>
+                                </graphic>
+                            </Button>
+
+                            <!-- Call Button -->
+                            <Button fx:id="callButton" styleClass="action-button, icon-button">
+                                <graphic>
+                                    <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                                        <image>
+                                            <Image url="@../images/calls-icon.png" />
+                                        </image>
+                                    </ImageView>
+                                </graphic>
+                            </Button>
+
+                            <!-- Video Call Button -->
+                            <Button fx:id="videoCallButton" styleClass="action-button, icon-button">
+                                <graphic>
+                                    <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                                        <image>
+                                            <Image url="@../images/video-call-icon.png" />
+                                        </image>
+                                    </ImageView>
+                                </graphic>
+                            </Button>
+
+                            <!-- More Options -->
+                            <Button fx:id="moreOptionsButton" styleClass="action-button, icon-button">
+                                <graphic>
+                                    <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                                        <image>
+                                            <Image url="@../images/more-options-icon.png" />
+                                        </image>
+                                    </ImageView>
+                                </graphic>
+                                <contextMenu>
+                                    <ContextMenu>
+                                        <items>
+                                            <MenuItem text="View Profile" />
+                                            <MenuItem text="Search Messages" />
+                                            <MenuItem text="Mute Notifications" />
+                                            <MenuItem text="Clear History" />
+                                            <MenuItem text="Delete Chat" />
+                                        </items>
+                                    </ContextMenu>
+                                </contextMenu>
+                            </Button>
+                        </children>
+                    </HBox>
+                </children>
+            </HBox>
+
+            <!-- Messages Area -->
+            <StackPane prefWidth="468.0" styleClass="messages-container" VBox.vgrow="ALWAYS">
+                <children>
+                    <!-- Messages ScrollPane -->
+                    <ScrollPane fx:id="messagesScrollPane" fitToWidth="true" hbarPolicy="NEVER" styleClass="messages-scroll-pane" vbarPolicy="AS_NEEDED">
+                        <content>
+                            <VBox fx:id="messagesContainer" spacing="4.0" styleClass="messages-list">
+                                <padding>
+                                    <Insets bottom="16.0" left="16.0" right="16.0" top="16.0" />
+                                </padding>
+                            </VBox>
+                        </content>
+                    </ScrollPane>
+
+                    <!-- Welcome State -->
+                    <VBox fx:id="welcomeStateContainer" alignment="CENTER" spacing="24.0" styleClass="welcome-state">
+                        <children>
+                            <StackPane styleClass="telegram-logo-container">
+                                <children>
+                                    <ImageView fitHeight="120.0" fitWidth="120.0" styleClass="telegram-logo">
+                                        <image>
+                                            <Image url="@../images/telegram-logo.png" />
+                                        </image>
+                                    </ImageView>
+                                </children>
+                            </StackPane>
+                            <VBox alignment="CENTER" spacing="8.0">
+                                <children>
+                                    <Label styleClass="welcome-title" text="Telegram Desktop" />
+                                    <Text styleClass="welcome-subtitle" text="Please select a chat to start messaging" textAlignment="CENTER" wrappingWidth="300.0" />
+                                </children>
+                            </VBox>
+                        </children>
+                    </VBox>
+
+                    <!-- Empty Chat State -->
+                    <VBox fx:id="emptyChatStateContainer" alignment="CENTER" spacing="20.0" styleClass="empty-chat-state" visible="false">
+                        <children>
+                            <VBox alignment="CENTER" spacing="6.0">
+                                <children>
+                                    <Label styleClass="empty-chat-title" text="No messages here yet..." />
+                                    <Label styleClass="empty-chat-subtitle" text="Send a message to start the conversation" textAlignment="CENTER" wrapText="true" />
+                                </children>
+                            </VBox>
+                        </children>
+                    </VBox>
+
+                    <!-- Scroll to Bottom Button -->
+                    <StackPane fx:id="scrollToBottomContainer" alignment="BOTTOM_RIGHT" maxHeight="40.0" maxWidth="40.0" minHeight="40.0" minWidth="40.0" prefHeight="40.0" prefWidth="40.0" styleClass="scroll-to-bottom-container" visible="false" StackPane.alignment="BOTTOM_RIGHT">
+                        <StackPane.margin>
+                            <Insets bottom="10.0" right="10.0" />
+                        </StackPane.margin>
+                        <children>
+                            <Button fx:id="scrollToBottomButton" styleClass="scroll-to-bottom-button">
+                                <graphic>
+                                    <ImageView fitHeight="40.0" fitWidth="40.0" pickOnBounds="true" preserveRatio="true">
+                                        <image>
+                                            <Image url="@../images/arrow-down-icon.png" />
+                                        </image>
+                                    </ImageView>
+                                </graphic>
+                            </Button>
+                        </children>
+                    </StackPane>
+                </children>
+            </StackPane>
+
+            <!-- Message Input Area -->
+            <StackPane fx:id="messageInputWrapper" alignment="CENTER" styleClass="message-input-container-wrapper">
+                <children>
+                    <VBox fx:id="messageInputContainer" alignment="BOTTOM_CENTER" minHeight="59.0" prefHeight="59.0" prefWidth="569.0" styleClass="message-input-container">
+                        <!-- Reply/Forward Preview -->
+                        <HBox fx:id="replyPreviewContainer" alignment="CENTER_LEFT" managed="false" spacing="12.0" styleClass="reply-preview" visible="false">
+                            <padding>
+                                <Insets bottom="8.0" left="20.0" right="13.0" top="8.0" />
+                            </padding>
+                            <children>
+                                <VBox styleClass="reply-bar" />
+                                <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label fx:id="replyToLabel" styleClass="reply-to-label" text="Reply to User" />
+                                        <Label fx:id="replyMessageLabel" prefHeight="18.0" prefWidth="483.0" styleClass="reply-message-label" text="Original message text..." />
+                                    </children>
+                                </VBox>
+                                <Button fx:id="closeReplyButton" onAction="#closeReplyPreview" styleClass="close-reply-button">
+                                    <graphic>
+                                        <SVGPath content="M18 18L12 12M12 12L6 6M12 12L18 6M12 12L6 18" fill="#666666" stroke="#666666" strokeLineCap="ROUND" strokeLineJoin="ROUND" strokeWidth="2">
+                                            <StackPane.margin>
+                                                <Insets right="2" top="2" />
+                                            </StackPane.margin>
+                                        </SVGPath>
+                                    </graphic>
+                                </Button>
+                            </children>
+                        </HBox>
+
+                        <!-- Main Input Row -->
+                        <HBox fx:id="messageInputArea" alignment="CENTER" prefHeight="58.0" prefWidth="569.0" spacing="8.0" styleClass="message-input-area">
+                            <padding>
+                                <Insets bottom="9.0" left="4.0" right="4.0" top="9.0" />
+                            </padding>
+                            <children>
+                                <!-- Attachment Menu Button -->
+                                <Button fx:id="attachmentButton" alignment="CENTER" minHeight="23.0" prefHeight="23.0" prefWidth="27.0" styleClass="attachment-button, icon-button">
+                                    <graphic>
+                                        <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
+                                            <image>
+                                                <Image url="@../images/attachment-icon.png" />
+                                            </image>
+                                        </ImageView>
+                                    </graphic>
+                                </Button>
+
+                                <!-- Message Input Field Container -->
+                                <VBox prefWidth="433.0" styleClass="input-field-container" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <TextArea fx:id="messageInputField" prefRowCount="1" prefWidth="433.0" promptText="Write a message..." styleClass="message-input-field" wrapText="true">
+                                            <padding>
+                                                <Insets top="3.0" />
+                                            </padding>
+                                        </TextArea>
+                                    </children>
+                                </VBox>
+
+                                <!-- Voice/Send Button -->
+                                <Button fx:id="sendButton" styleClass="send-button">
+                                    <graphic>
+                                        <ImageView fx:id="sendButtonIcon" fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
+                                            <image>
+                                                <Image url="@../images/microphone-icon.png" />
+                                            </image>
+                                        </ImageView>
+                                    </graphic>
+                                </Button>
+                            </children>
+                        </HBox>
+                    </VBox>
+                    <Button fx:id="channelMuteToggleButton" managed="false" maxWidth="Infinity" onAction="#toggleMuteState" styleClass="channel-mute-button" text="Mute" visible="false" />
+                </children>
+            </StackPane>
+        </VBox>
+    </center>
+
+    <!-- Right Panel -->
+    <right>
+        <VBox fx:id="rightPanel" maxWidth="420.0" minWidth="249.0" prefHeight="798.0" prefWidth="249.0" styleClass="right-panel">
+            <Button fx:id="closeRightPanelButton" onAction="#hideRightPanel" styleClass="close-right-panel-button">
+                <graphic>
+                    <SVGPath content="M18 18L12 12M12 12L6 6M12 12L18 6M12 12L6 18" fill="#92A3AF" stroke="#92A3AF" strokeLineCap="ROUND" strokeLineJoin="ROUND" strokeWidth="2" />
+                </graphic>
+                <VBox.margin>
+                    <Insets left="10.0" top="10.0" />
+                </VBox.margin>
+            </Button>
+            <!-- Profile Header -->
+            <VBox alignment="CENTER" spacing="16.0" styleClass="profile-header-section">
+                <padding>
+                    <Insets bottom="24.0" left="24.0" right="24.0" top="32.0" />
+                </padding>
+                <children>
+                    <!-- Large Avatar with Status -->
+                    <StackPane styleClass="profile-avatar-container">
+                        <children>
+                            <ImageView fx:id="profileAvatarImage" fitHeight="100.0" fitWidth="100.0" pickOnBounds="true" preserveRatio="true" styleClass="profile-avatar">
+                                <clip>
+                                    <Circle centerX="50" centerY="50" radius="50" />
+                                </clip>
+                                <image>
+                                    <Image url="@../images/11Devs-black.png" />
+                                </image>
+                            </ImageView>
+                            <Circle fx:id="profileOnlineIndicator" radius="8.0" styleClass="profile-online-indicator" visible="false" StackPane.alignment="BOTTOM_RIGHT">
+                                <StackPane.margin>
+                                    <Insets bottom="4.0" right="4.0" />
+                                </StackPane.margin>
+                            </Circle>
+                        </children>
+                    </StackPane>
+
+                    <!-- User Info -->
+                    <VBox alignment="CENTER" spacing="6.0">
+                        <children>
+                            <HBox alignment="CENTER" spacing="8.0">
+                                <children>
+                                    <Label fx:id="profileNameLabel" alignment="CENTER" prefHeight="24.0" prefWidth="127.0" styleClass="profile-name" text="User Name" />
+                                </children>
+                            </HBox>
+                            <Label fx:id="profileUsernameLabel" styleClass="profile-username" text="\@ID" visible="false" />
+                            <Label fx:id="profileStatusLabel" styleClass="profile-status" text="last seen recently" />
+                            <Label fx:id="profilePhoneLabel" styleClass="profile-phone" text="+1 234 567 8900" visible="false" />
+                        </children>
+                    </VBox>
+
+                    <!-- Quick Actions -->
+                    <HBox alignment="CENTER" spacing="16.0" styleClass="profile-quick-actions">
+                        <children>
+                            <VBox alignment="CENTER" spacing="8.0">
+                                <children>
+                                    <Button fx:id="profileCallButton" styleClass="quick-action-button">
+                                        <graphic>
+                                            <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
+                                                <image>
+                                                    <Image url="@../images/calls-icon.png" />
+                                                </image>
+                                            </ImageView>
+                                        </graphic>
+                                    </Button>
+                                    <Label styleClass="quick-action-label" text="Call" />
+                                </children>
+                            </VBox>
+                            <VBox alignment="CENTER" spacing="8.0">
+                                <children>
+                                    <Button fx:id="profileVideoButton" styleClass="quick-action-button">
+                                        <graphic>
+                                            <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
+                                                <image>
+                                                    <Image url="@../images/video-call-icon.png" />
+                                                </image>
+                                            </ImageView>
+                                        </graphic>
+                                    </Button>
+                                    <Label styleClass="quick-action-label" text="Video" />
+                                </children>
+                            </VBox>
+                            <VBox alignment="CENTER" spacing="8.0">
+                                <children>
+                                    <Button fx:id="profileSearchButton" styleClass="quick-action-button">
+                                        <graphic>
+                                            <ImageView fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true">
+                                                <image>
+                                                    <Image url="@../images/search-icon.png" />
+                                                </image>
+                                            </ImageView>
+                                        </graphic>
+                                    </Button>
+                                    <Label styleClass="quick-action-label" text="Search" />
+                                </children>
+                            </VBox>
+                        </children>
+                    </HBox>
+                </children>
+            </VBox>
+
+            <!-- Settings Section -->
+            <VBox styleClass="profile-settings-section">
+                <children>
+                    <!-- Notifications -->
+                    <HBox alignment="CENTER_LEFT" maxWidth="1.7976931348623157E308" prefHeight="60.0" prefWidth="249.0" spacing="16.0" styleClass="profile-setting-item">
+                        <padding>
+                            <Insets bottom="16.0" left="24.0" right="24.0" top="16.0" />
+                        </padding>
+                        <children>
+                            <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="setting-icon">
+                                <image>
+                                    <Image url="@../images/notification-icon.png" />
+                                </image>
+                            </ImageView>
+                            <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                                <children>
+                                    <Label styleClass="setting-title" text="Notifications" />
+                                    <Label fx:id="notificationStatusLabel" styleClass="setting-subtitle" text="Enabled" />
+                                </children>
+                            </VBox>
+                            <JFXToggleButton fx:id="notificationsToggle" graphicTextGap="0.0" prefWidth="82.0" styleClass="notificationsToggle" />
+                        </children>
+                    </HBox>
+                    <HBox alignment="CENTER_LEFT" prefWidth="249.0" spacing="16.0" styleClass="profile-setting-item">
+                        <padding>
+                            <Insets bottom="16.0" left="24.0" right="24.0" top="16.0" />
+                        </padding>
+                        <children>
+                            <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="setting-icon">
+                                <image>
+                                    <Image url="@../images/lock-icon.png" />
+                                </image>
+                            </ImageView>
+                            <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                                <children>
+                                    <Label styleClass="setting-title" text="Encryption" />
+                                    <Label styleClass="setting-subtitle" text="Messages are encrypted" />
+                                </children>
+                            </VBox>
+                        </children>
+                    </HBox>
+                    <!-- Encryption -->
+
+                    <!-- More Options -->
+                    <HBox fx:id="MoreHBox" alignment="CENTER_LEFT" spacing="16.0" styleClass="profile-setting-item">
+                        <padding>
+                            <Insets bottom="16.0" left="24.0" right="24.0" top="16.0" />
+                        </padding>
+                        <children>
+                            <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="chevron-icon">
+                                <image>
+                                    <Image url="@../images/GitHub-icon2.png" />
+                                </image>
+                                <HBox.margin>
+                                    <Insets />
+                                </HBox.margin>
+                            </ImageView>
+                            <Label styleClass="setting-title" text="More" HBox.hgrow="ALWAYS" />
+                        </children>
+                    </HBox>
+                    <HBox fx:id="DeleteContactBox" alignment="CENTER_LEFT" prefWidth="249.0" spacing="16.0" styleClass="profile-setting-item">
+                        <padding>
+                            <Insets bottom="16.0" left="24.0" right="24.0" top="16.0" />
+                        </padding>
+                        <children>
+                            <ImageView fitHeight="24.0" fitWidth="24.0" styleClass="setting-icon">
+                                <image>
+                                    <Image url="@../images/close-icon.png" />
+                                </image>
+                            </ImageView>
+                            <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                                <children>
+                                    <Label styleClass="setting-title" text="Delete Contact" />
+                                    <Label styleClass="setting-subtitle" text="" />
+                                </children>
+                            </VBox>
+                        </children>
+                    </HBox>
+                </children>
+            </VBox>
+
+            <!-- Media and Files Section -->
+            <VBox styleClass="media-files-section" VBox.vgrow="ALWAYS" />
+        </VBox>
+    </right>
+        </BorderPane>
+    </children>
+</StackPane>

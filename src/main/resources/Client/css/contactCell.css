@@ -1,0 +1,59 @@
+/* Client/css/contactCell.css */
+
+.contact-cell {
+    -fx-background-color: #17212B;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-cursor: hand;
+    -fx-background-radius: 0;
+    -fx-min-height: 60px; /* Slightly smaller than chat cell */
+    -fx-pref-height: 60px;
+    -fx-max-height: 60px;
+    -fx-transition: -fx-background-color 0.2s ease;
+}
+
+.contact-cell:hover {
+    -fx-background-color: #232E3A;
+}
+
+/* Avatar styling */
+.avatar-image {
+    -fx-background-radius: 20px; /* Smaller radius for smaller avatar */
+    -fx-border-radius: 50%;
+    -fx-smooth: true;
+    -fx-border-color: white;
+}
+
+.type-logo { /* For bot/channel/group icon overlay */
+    -fx-fill: #6B7A86;
+    -fx-opacity: 0.8;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 3, 0.2, 0, 1);
+}
+
+/* User name label */
+.user-name-label {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-family: "System";
+    -fx-font-size: 14px; /* Slightly smaller font */
+    -fx-font-weight: 500;
+    -fx-alignment: CENTER_LEFT;
+}
+
+/* Status label (e.g., Online, last seen, bot description) */
+.status-label {
+    -fx-text-fill: #92A3AF;
+    -fx-font-family: "System";
+    -fx-font-size: 12px;
+    -fx-font-weight: 400;
+    -fx-alignment: CENTER_LEFT;
+    -fx-max-width: 200px;
+    -fx-pref-width: 200px;
+}
+
+/* Online status indicator dot */
+.online-indicator {
+    -fx-fill: #4CAF50; /* online color */
+    -fx-stroke: #17212B; /* Background color for border effect */
+    -fx-stroke-width: 2px; /* Thicker stroke for visibility */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 3, 0.2, 0, 1);
+}

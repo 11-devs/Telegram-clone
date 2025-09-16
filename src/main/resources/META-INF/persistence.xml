@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<persistence xmlns="https://jakarta.ee/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd"
+             version="3.0">
+
+    <persistence-unit name="telegramclonePU" transaction-type="RESOURCE_LOCAL">
+
+        <class>Shared.Models.Account.Account</class>
+        <class>Shared.Models.Chat.Chat</class>
+        <class>Shared.Models.Chat.PrivateChat</class>
+        <class>Shared.Models.Chat.GroupChat</class>
+        <class>Shared.Models.Chat.Channel</class>
+        <class>Shared.Models.Chat.SavedMessages</class>
+        <class>Shared.Models.Interaction.Interaction</class>
+        <class>Shared.Models.Interaction.Reaction</class>
+        <class>Shared.Models.Interaction.View</class>
+        <class>Shared.Models.Contact.Contact</class>
+        <class>Shared.Models.Folder.Folder</class>
+        <class>Shared.Models.Media.Media</class>
+        <class>Shared.Models.Membership.Membership</class>
+        <class>Shared.Models.Message.Message</class>
+        <class>Shared.Models.Message.MediaMessage</class>
+        <class>Shared.Models.Message.PollMessage</class>
+        <class>Shared.Models.Message.SystemMessage</class>
+        <class>Shared.Models.Message.TextMessage</class>
+        <class>Shared.Models.Notification.Notification</class>
+        <class>Shared.Models.Relationship.Block</class>
+        <class>Shared.Models.Relationship.Mute</class>
+        <class>Shared.Models.Relationship.Pin</class>
+        <class>Shared.Models.Session.Session</class>
+        <class>Shared.Models.Setting.GeneralSetting</class>
+        <class>Shared.Models.Setting.NotificationSetting</class>
+        <class>Shared.Models.Setting.PrivacySetting</class>
+        <class>Shared.Models.Setting.Setting</class>
+        <class>Shared.Models.PendingAuth.PendingAuth</class>
+
+        <properties>
+            <!-- Standard JPA properties -->
+            <property name="jakarta.persistence.jdbc.url" value="jdbc:postgresql://localhost:5432/new1db"/>
+            <property name="jakarta.persistence.jdbc.user" value="postgres"/>
+            <property name="jakarta.persistence.jdbc.password" value="12345678"/>
+            <property name="jakarta.persistence.jdbc.driver" value="org.postgresql.Driver"/>
+<!--            <property name="jakarta.persistence.schema-generation.database.action" value="drop-and-create"/>-->
+             <!-- Hibernate properties -->
+            <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQLDialect"/>
+            <property name="hibernate.hbm2ddl.auto" value="update"/>
+
+
+            <!-- Connection Pool -->
+            <property name="hibernate.hikari.dataSourceClassName" value="org.postgresql.ds.PGSimpleDataSource"/>
+            <property name="hibernate.hikari.minimumIdle" value="5"/>
+            <property name="hibernate.hikari.maximumPoolSize" value="20"/>
+            <property name="hibernate.hikari.idleTimeout" value="30000"/>
+            <!-- Performance Optimizations -->
+            <property name="hibernate.jdbc.batch_size" value="20"/>
+            <property name="hibernate.order_inserts" value="true"/>
+            <property name="hibernate.order_updates" value="true"/>
+
+            <property name="hibernate.show_sql" value="false"/>
+            <property name="hibernate.format_sql" value="false"/>
+            <property name="hibernate.use_sql_comments" value="false"/>
+        </properties>
+    </persistence-unit>
+
+    <persistence-unit name="TelegramCloneSQLite" transaction-type="RESOURCE_LOCAL">
+        <class>Shared.Models.Account.Account</class>
+
+
+        <properties>
+            <property name="jakarta.persistence.jdbc.url" value="jdbc:sqlite:./DB/sqlite_db_file.db"/>
+            <property name="jakarta.persistence.jdbc.driver" value="org.sqlite.JDBC"/>
+            <property name="hibernate.dialect" value="org.hibernate.community.dialect.SQLiteDialect"/>
+            <property name="hibernate.hbm2ddl.auto" value="update"/>
+        </properties>
+    </persistence-unit>
+</persistence>

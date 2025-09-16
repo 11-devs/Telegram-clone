@@ -1,0 +1,305 @@
+/* ============ ENHANCED & THEME-ALIGNED PROFILE STYLING ============ */
+
+/* Main Profile Container */
+.profile-container {
+    -fx-background-color: #17212B; /* Solid base color for consistency */
+    -fx-background-radius: 10px;
+    -fx-padding: 0;
+    -fx-font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    -fx-border-color: rgba(79, 195, 247, 0.2); /* Subtle brand blue border */
+    -fx-border-width: 1px;
+    -fx-border-radius: 10px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 20, 0.3, 0, 2);
+}
+
+/* ============ PROFILE HEADER ============ */
+.profile-header {
+    -fx-background-color: #1A252F; /* Slightly lighter shade */
+    -fx-border-color: rgba(255, 255, 255, 0.05);
+    -fx-border-width: 0 0 1px 0;
+    -fx-background-radius: 10px 10px 0 0;
+    -fx-min-height: 60px;
+}
+
+.profile-header-title {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 20px;
+    -fx-font-weight: 600;
+}
+
+.header-icon-button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-cursor: hand;
+    -fx-min-width: 40px;
+    -fx-min-height: 40px;
+    -fx-background-radius: 20px;
+}
+
+.header-icon-button:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.08);
+}
+
+.header-icon-button:pressed {
+    -fx-background-color: rgba(255, 255, 255, 0.12);
+}
+
+/* ============ PROFILE SCROLL PANE ============ */
+.profile-scroll-pane {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-background-radius: 0 0 10px 10px;
+}
+
+.profile-scroll-pane .viewport,
+.profile-scroll-pane .content {
+    -fx-background-color: transparent;
+}
+
+/* ============ PROFILE MAIN SECTION ============ */
+.profile-main-section {
+    -fx-background-color: transparent;
+}
+
+.profile-picture-container {
+    -fx-background-color: #2B5278; /* Consistent brand blue */
+    -fx-background-radius: 50%;
+    -fx-padding: 3px;
+    -fx-effect: dropshadow(gaussian, rgba(43, 82, 120, 0.5), 10, 0.5, 0, 2);
+}
+
+.profile-picture {
+    -fx-smooth: true;
+    -fx-cursor: hand;
+}
+
+.profile-name {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 24px;
+    -fx-font-weight: 600;
+    -fx-cursor: text;
+}
+
+.profile-status {
+    -fx-text-fill: #4FC3F7; /* Bright brand blue for status */
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+}
+
+/* ============ PROFILE SEPARATOR ============ */
+.profile-separator {
+    -fx-background-color: rgba(146, 163, 175, 0.15); /* Solid, subtle separator */
+    -fx-pref-height: 1px;
+}
+
+/* ============ PROFILE FIELDS SECTION ============ */
+.profile-field-row {
+    -fx-background-color: transparent;
+    -fx-min-height: 60px;
+    -fx-background-radius: 6px;
+}
+
+.profile-field-row:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.04);
+}
+
+.field-icon {
+    -fx-opacity: 0.6;
+    -fx-smooth: true;
+}
+
+.field-value {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 16px;
+    -fx-font-weight: 400;
+    -fx-cursor: text;
+}
+
+.id-value {
+    -fx-text-fill: #4FC3F7;
+    -fx-font-size: 16px;
+    -fx-font-weight: 400;
+    -fx-cursor: hand;
+}
+
+.id-value:hover {
+    -fx-underline: true;
+}
+
+.field-description {
+    -fx-text-fill: #92A3AF;
+    -fx-font-size: 13px;
+}
+
+/* ============ MEMBERS SECTION ============ */
+.members-header {
+    -fx-border-color: rgba(255, 255, 255, 0.05);
+    -fx-border-width: 1px 0 1px 0;
+    -fx-min-height: 50px;
+}
+
+.add-member-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #4FC3F7;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-padding: 6px 12px;
+    -fx-cursor: hand;
+    -fx-background-radius: 20px;
+    -fx-border-color: #4FC3F7;
+    -fx-border-width: 1px;
+    -fx-border-radius: 20px;
+}
+
+.add-member-button:hover {
+    -fx-background-color: rgba(79, 195, 247, 0.1);
+}
+
+/* ============ MEMBERS LIST ============ */
+/* ============ ENHANCED & THEME-ALIGNED MEMBERS LIST ============ */
+
+/* 1. Main ListView Container
+ * We keep the background transparent to inherit the container's dark color.
+ * Adding top/bottom padding creates breathing room from the header/footer. */
+.members-list {
+    -fx-background-color: transparent;
+    -fx-padding: 8px 0; /* Vertical padding */
+}
+
+
+/* 2. Base Style for List Cells
+ * Defines the default look for each row in the list. */
+.members-list .list-cell {
+    -fx-background-color: transparent; /* No background by default */
+    -fx-text-fill: #FFFFFF; /* Ensures text is white, overriding JavaFX defaults */
+    -fx-padding: 10px 20px; /* Comfortable padding inside each cell */
+    -fx-border-color: rgba(255, 255, 255, 0.08); /* Subtle separator line */
+    -fx-border-width: 0 0 1px 0; /* Border only on the bottom */
+    -fx-background-radius: 6px; /* Slightly rounded corners for hover/selection */
+    -fx-background-insets: 0 4px; /* Inset the background slightly for a floating effect */
+}
+
+/* Remove the bottom border from the very last cell to avoid a double line */
+.members-list .list-cell:last-visible {
+    -fx-border-width: 0;
+}
+
+
+/* 3. Interaction States (Hover & Selected)
+ * Provides visual feedback to the user. These rules are placed after the
+ * base style to ensure they have priority. */
+
+/* Style for a cell when the mouse hovers over it */
+.members-list .list-cell:filled:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.06); /* Subtle white overlay */
+    -fx-cursor: hand;
+}
+
+/* Style for a cell when it is selected */
+.members-list .list-cell:filled:selected {
+    -fx-background-color: rgba(79, 195, 247, 0.15); /* Brand blue selection color */
+}
+
+/* Ensure text inside a selected cell remains white and readable */
+.members-list .list-cell:filled:selected .text {
+    -fx-fill: #FFFFFF;
+}
+
+
+/* 4. Empty List Placeholder
+ * This styles the message that appears when the ListView has no items. */
+.members-list .placeholder .label {
+    -fx-text-fill: #92A3AF; /* Use the secondary text color */
+    -fx-font-size: 14px;
+}
+
+/* Ensure empty cells at the end of the list don't show hover effects */
+.members-list .list-cell:empty {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+}
+
+
+/* 5. ScrollBar Styling
+ * Ensures the scrollbar matches the rest of the application's theme.
+ * This is consistent with your .profile-scroll-pane style. */
+.members-list .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-padding: 0 0 0 5px; /* Give it a little space from the content */
+}
+
+.members-list .scroll-bar:vertical .track {
+    -fx-background-color: rgba(255, 255, 255, 0.05);
+    -fx-background-radius: 4px;
+    -fx-border-radius: 4px;
+}
+
+.members-list .scroll-bar:vertical .thumb {
+    -fx-background-color: rgba(146, 163, 175, 0.4);
+    -fx-background-radius: 4px;
+}
+
+.members-list .scroll-bar:vertical .thumb:hover {
+    -fx-background-color: rgba(146, 163, 175, 0.6);
+}
+
+/* Hide the scrollbar arrows for a cleaner, modern look */
+.members-list .scroll-bar .increment-button,
+.members-list .scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+.member-name {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 15px;
+    -fx-font-weight: 500;
+}
+
+.member-role {
+    -fx-text-fill: #92A3AF;
+    -fx-font-size: 12px;
+}
+
+.member-role.admin {
+    -fx-text-fill: #4FC3F7;
+}
+
+.member-role.owner {
+    -fx-text-fill: #FFD700; /* Gold for owner is a good choice */
+}
+
+/* QR Code Button */
+.qr-code-button {
+  -fx-background-color: transparent;
+  -fx-border-color: transparent;
+  -fx-cursor: hand;
+  -fx-min-width: 40px;
+  -fx-min-height: 40px;
+  -fx-pref-width: 40px;
+  -fx-pref-height: 40px;
+  -fx-padding: 10;
+}
+
+/* ============ SCROLLBAR STYLING ============ */
+.profile-scroll-pane .scroll-bar:vertical .track {
+    -fx-background-color: rgba(255, 255, 255, 0.05);
+    -fx-background-radius: 4px;
+}
+
+.profile-scroll-pane .scroll-bar:vertical .thumb {
+    -fx-background-color: rgba(146, 163, 175, 0.4);
+    -fx-background-radius: 4px;
+}
+
+.profile-scroll-pane .scroll-bar:vertical .thumb:hover {
+    -fx-background-color: rgba(146, 163, 175, 0.6);
+}
+
+/* ============ ADMIN/DELETE ACTIONS ============ */
+.delete-button {
+    -fx-text-fill: #ef4444; /* Standard danger red */
+}
+
+.delete-button:hover {
+    -fx-background-color: rgba(239, 68, 68, 0.1);
+}
