@@ -26,12 +26,11 @@ The application is packed with features that mirror a professional messaging cli
 - **Real-Time Private & Group Chats:** Instantaneous message delivery in both one-on-one and multi-user group chats.
 - **Advanced Message Interactions:**
   - **Edit & Delete:** Modify or retract your messages after sending.
-  - **Reply & Forward:** Quote-reply to specific messages or forward them to other chats.
+  - **Reply & Forward:** reply to specific messages or forward them to other chats.
   - **Text Formatting:** Use Markdown-style formatting for **\*\*bold\*\***, **\_\_italic\_\_**, **++underline++**, and **||spoiler||** text.
 - **Media & File Sharing:**
   - **File Transfers:** Send and receive any file type with progress indicators for uploads and downloads.
   - **Voice Messages:** Record, send, and play back voice notes with an integrated audio player.
-  - **Video Player:** In-app video player for viewing shared video files.
 - **Real-Time Feedback:**
   - **Typing Indicators:** See when other users are typing in real-time.
   - **Message Status:** Track message status with icons for *Sending*, *Delivered*, and *Read*.
