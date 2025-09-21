@@ -1,16 +1,18 @@
-# Telegram‑Clone
+<div align="center">
+  <h1>Telegram Clone Desktop</h1>
+  <p>
+    An advanced, feature-rich desktop chat application built from the ground up with a custom networking framework, demonstrating deep knowledge of software architecture, real-time communication, and modern UI development.
+  </p>
 
-A lightweight **Telegram clone** built with a client‑server architecture for real‑time messaging.
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+  [![Java Version](https://img.shields.io/badge/Java-21-blue.svg)](https://www.oracle.com/java/technologies/downloads/)
+  [![JavaFX Version](https://img.shields.io/badge/JavaFX-21-orange.svg)](https://openjfx.io/)
+  [![Database](https://img.shields.io/badge/Database-PostgreSQL-blue.svg)](https://www.postgresql.org/)
+  [![Framework](https://img.shields.io/badge/Framework-JSocket2-brightgreen.svg)](https://github.com/MahdiHoseinpoor/JSocket2)
 
-<img width="973" height="824" alt="welcome" src="https://github.com/user-attachments/assets/da64f396-bcae-4d6a-9fda-2b1007246242" />
+</div>
 
-
-
-
-
-
-
-
+---
 
 ## Table of Contents
 
@@ -108,10 +110,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Credits
 
+Developed by:
+
 [Aryan Ghasemi](https://github.com/AryanGh-imp)
 
 [Mahdi Hoseinpoor](https://github.com/MahdiHoseinpoor)
 
 [Ali Ghaedrahmat](https://github.com/AliGhaedrahmat)
-
-Special thanks to the open-source community and the creators of Java, JavaFX, PostgreSQL, and other tools that made this project possible.
