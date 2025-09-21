@@ -101,7 +101,7 @@
                         <children>
                             <ImageView fx:id="headerAvatarImage" fitHeight="40.0" fitWidth="40.0" pickOnBounds="true" preserveRatio="true" styleClass="header-avatar">
                                 <image>
-                                    <Image url="@../images/11Devs-black.png" />
+                                    <Image url="@../images/11Devs-white.png" />
                                 </image>
                                 <clip>
                                     <Circle centerX="20" centerY="20" radius="20" />
@@ -368,7 +368,7 @@
                                     <Circle centerX="50" centerY="50" radius="50" />
                                 </clip>
                                 <image>
-                                    <Image url="@../images/11Devs-black.png" />
+                                    <Image url="@../images/11Devs-white.png" />
                                 </image>
                             </ImageView>
                             <Circle fx:id="profileOnlineIndicator" radius="8.0" styleClass="profile-online-indicator" visible="false" StackPane.alignment="BOTTOM_RIGHT">

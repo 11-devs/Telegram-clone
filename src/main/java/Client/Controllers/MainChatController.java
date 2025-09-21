@@ -5149,7 +5149,7 @@ public ChatService getChatService() {
      */
     private void loadDefaultHeaderAvatar() {
         try {
-            Image defaultAvatar = new Image(Objects.requireNonNull(getClass().getResource("/Client/images/11Devs-black.png")).toExternalForm());
+            Image defaultAvatar = new Image(Objects.requireNonNull(getClass().getResource("/Client/images/11Devs-white.png")).toExternalForm());
             headerAvatarImage.setImage(defaultAvatar);
         } catch (Exception e) {
             System.err.println("Error loading default header avatar: " + e.getMessage());

@@ -25,7 +25,7 @@
                     <children>
                         <ImageView fx:id="profileImageView" fitHeight="64.0" fitWidth="64.0" pickOnBounds="true" preserveRatio="true" styleClass="profile-image">
                             <image>
-                                <Image url="@../images/11Devs-black.png" />
+                                <Image url="@../images/11Devs-white.png" />
                             </image>
                             <clip>
                                 <Circle centerX="32.0" centerY="32.0" radius="32.0" />

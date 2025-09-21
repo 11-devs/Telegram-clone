@@ -30,7 +30,7 @@
             <children>
                 <ImageView fx:id="avatarImage" fitHeight="40.0" fitWidth="40.0" pickOnBounds="true" preserveRatio="true" styleClass="avatar-image">
                     <image>
-                        <Image url="@../images/11Devs-black.png" /> <!-- Using existing placeholder image -->
+                        <Image url="@../images/11Devs-white.png" /> <!-- Using existing placeholder image -->
                     </image>
                     <clip>
                         <!-- Directly define the circle clip here -->
