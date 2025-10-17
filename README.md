@@ -14,6 +14,9 @@
 
 <img width="1536" height="1024" alt="TelegramLogo4" src="https://github.com/user-attachments/assets/1037a0e7-451a-4653-a397-cba433e8edd4" />
 
+> **Disclaimer**: This project is not affiliated with, endorsed by, or associated with Telegram Messenger LLP or any of its official products.
+All names, logos, and references to "Telegram" are used for educational and demonstration purposes only.
+The goal of this project is to study and recreate real-time messaging architectures and modern UI design patterns in Java.
 
 </div>
 
