@@ -6,11 +6,13 @@
   An advanced, feature-rich desktop chat application built from the ground up with a custom networking framework — demonstrating deep knowledge of software architecture, real-time communication, and modern UI development.
 </p>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Java Version](https://img.shields.io/badge/Java-23-blue.svg)](https://www.oracle.com/java/technologies/downloads/)
-[![JavaFX Version](https://img.shields.io/badge/JavaFX-21-orange.svg)](https://openjfx.io/)
-[![Database](https://img.shields.io/badge/Database-PostgreSQL-blue.svg)](https://www.postgresql.org/)
-[![Framework](https://img.shields.io/badge/Framework-JSocket2-brightgreen.svg)](https://github.com/MahdiHoseinpoor/JSocket2)
+[![License: MIT](https://img.shields.io/badge/License-MIT-2d3436.svg)](https://opensource.org/licenses/MIT)
+[![Java Version](https://img.shields.io/badge/Java-23-red.svg)](https://www.oracle.com/java/technologies/downloads/)
+[![JavaFX Version](https://img.shields.io/badge/JavaFX-21-0984e3.svg)](https://openjfx.io/)
+[![Database](https://img.shields.io/badge/Database-PostgreSQL-1e3799.svg)](https://www.postgresql.org/)
+[![Framework](https://img.shields.io/badge/Framework-JSocket2-6c5ce7.svg)](https://github.com/MahdiHoseinpoor/JSocket2)
+[![rating](https://img.shields.io/badge/%231-Advanced_Programming_Final_Project-f7dc6f.svg)]()
+
 
 <img width="1536" height="1024" alt="TelegramLogo4" src="https://github.com/user-attachments/assets/1037a0e7-451a-4653-a397-cba433e8edd4" />
 
