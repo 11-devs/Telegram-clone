@@ -116,8 +116,7 @@ cd Telegram-clone
 ## 🎥 Demo Video
 
 Check out the demo video:  
-👉 [**▶️ Telegram Clone Demo**](telegramclone-video.mkv)
-
+👉 [▶️ Telegram Clone Demo](https://github.com/11-devs/Telegram-clone/raw/master/telegramclone-video.mkv)
 
 ---
 
